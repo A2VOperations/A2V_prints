@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import React, { useState, useRef, useEffect } from 'react'
 
 const categories = [
@@ -40,14 +41,14 @@ export default function Navbar() {
         <nav className="w-full bg-[#f5f6fb] border-b border-gray-200/60 py-4 px-4 sm:px-6 lg:px-8 select-none sticky top-0 z-40 shadow-xs">
             <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-4 md:gap-8">
                 {/* Brand Logo */}
-                <a href="#" className="flex items-center gap-2.5 cursor-pointer shrink-0 group">
-                    <div className="w-10 h-10 rounded-full bg-[linear-gradient(90deg,_hsla(20,100%,52%,1)_0%,_hsla(328,100%,51%,1)_100%)] flex items-center justify-center shadow-md shadow-purple-500/20 text-white font-extrabold text-xl tracking-tighter group-hover:scale-105 transition-transform duration-200">
+                <Link href="/" className="flex items-center gap-2.5 cursor-pointer shrink-0 group">
+                    <div className="w-10 h-10 rounded-full bg-[linear-gradient(90deg,hsla(20,100%,52%,1)_0%,hsla(328,100%,51%,1)_100%)] flex items-center justify-center shadow-md shadow-purple-500/20 text-white font-extrabold text-xl tracking-tighter group-hover:scale-105 transition-transform duration-200">
                         <span className="translate-y-[-1px]">P</span>
                     </div>
                     <span className="text-2xl font-bold tracking-tight text-[#111827]">
                         Printop
                     </span>
-                </a>
+                </Link>
 
                 {/* Search Bar (Desktop / Tablet) */}
                 <form

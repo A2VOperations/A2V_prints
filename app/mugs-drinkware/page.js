@@ -1,0 +1,402 @@
+'use client'
+
+import React, { useState } from 'react'
+import Link from 'next/link'
+
+const products = [
+  {
+    id: 1,
+    title: 'White Ceramic Photo Mug 330ml',
+    price: 'From ₹149',
+    badge: 'Popular',
+    description: 'Classic AAA-grade glossy white ceramic mug with full wrap-around edge-to-edge sublimation photo printing.',
+    type: 'ceramic',
+    capacity: 'ml330',
+    print: 'sublimation',
+    image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80',
+    fallback: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80'
+  },
+  {
+    id: 2,
+    title: 'Insulated Stainless Thermos Bottle',
+    price: 'From ₹499',
+    badge: 'Best Seller',
+    description: 'Double-wall vacuum insulated 500ml steel bottle keeps drinks hot or cold for 12 hours. Custom UV printed logo.',
+    type: 'steel',
+    capacity: 'ml500',
+    print: 'sublimation',
+    image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=600&q=80',
+    fallback: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=600&q=80'
+  },
+  {
+    id: 3,
+    title: 'Magic Color-Changing Ceramic Mug',
+    price: 'From ₹299',
+    badge: 'Magic',
+    description: 'Heat-sensitive coating magically reveals your hidden personalized photo or design when hot liquid is poured inside.',
+    type: 'magic',
+    capacity: 'ml330',
+    print: 'sublimation',
+    image: 'https://images.unsplash.com/photo-1577937927133-66ef06acdf18?auto=format&fit=crop&w=600&q=80',
+    fallback: 'https://images.unsplash.com/photo-1577937927133-66ef06acdf18?auto=format&fit=crop&w=600&q=80'
+  },
+  {
+    id: 4,
+    title: 'Matte Black Laser Engraved Flask',
+    price: 'From ₹599',
+    badge: 'Premium',
+    description: 'Executive 750ml metallic black travel flask with precision metallic silver laser etched corporate logo.',
+    type: 'flask',
+    capacity: 'ml750',
+    print: 'laser',
+    image: 'https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=600&q=80',
+    fallback: 'https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=600&q=80'
+  },
+  {
+    id: 5,
+    title: 'Inner Color Accent Ceramic Mug',
+    price: 'From ₹199',
+    description: 'Two-tone ceramic mug with vibrant colored handle and inner walls available in Red, Blue, Yellow, or Black.',
+    type: 'ceramic',
+    capacity: 'ml330',
+    print: 'sublimation',
+    image: 'https://images.unsplash.com/photo-1572119865084-43c285814d63?auto=format&fit=crop&w=600&q=80',
+    fallback: 'https://images.unsplash.com/photo-1572119865084-43c285814d63?auto=format&fit=crop&w=600&q=80'
+  },
+  {
+    id: 6,
+    title: 'Eco Bamboo Lid Sipper Bottle',
+    price: 'From ₹449',
+    badge: 'Eco',
+    description: 'Stainless steel body with natural organic bamboo screw lid and steel carrying loop. Elegant sustainable gifting.',
+    type: 'steel',
+    capacity: 'ml500',
+    print: 'laser',
+    image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80',
+    fallback: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80'
+  },
+  {
+    id: 7,
+    title: 'Frosted Glass Beer Mug 500ml',
+    price: 'From ₹349',
+    description: 'Heavyweight frosted translucent glass mug with thick sturdy handle. Perfect for pubs, cafes, and celebrations.',
+    type: 'ceramic',
+    capacity: 'ml500',
+    print: 'single',
+    image: 'https://images.unsplash.com/photo-1535958636474-b021ee887b13?auto=format&fit=crop&w=600&q=80',
+    fallback: 'https://images.unsplash.com/photo-1535958636474-b021ee887b13?auto=format&fit=crop&w=600&q=80'
+  },
+  {
+    id: 8,
+    title: 'Sports Gym Shaker with Logo',
+    price: 'From ₹249',
+    description: 'BPA-free 750ml protein shaker bottle with stainless mixing ball and leak-proof flip cap for fitness promotions.',
+    type: 'flask',
+    capacity: 'ml750',
+    print: 'single',
+    image: 'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?auto=format&fit=crop&w=600&q=80',
+    fallback: 'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?auto=format&fit=crop&w=600&q=80'
+  }
+]
+
+export default function MugsDrinkwarePage() {
+  const [filters, setFilters] = useState({
+    ceramic: false,
+    steel: false,
+    magic: false,
+    flask: false,
+    ml330: false,
+    ml500: false,
+    ml750: false,
+    sublimation: false,
+    laser: false,
+    single: false
+  })
+
+  const toggleFilter = (key) => {
+    setFilters((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const clearAll = () => {
+    setFilters({
+      ceramic: false,
+      steel: false,
+      magic: false,
+      flask: false,
+      ml330: false,
+      ml500: false,
+      ml750: false,
+      sublimation: false,
+      laser: false,
+      single: false
+    })
+  }
+
+  const getCount = (key, val) => products.filter(p => p[key] === val).length
+
+  const filteredProducts = products.filter((item) => {
+    const isTypeFiltered = filters.ceramic || filters.steel || filters.magic || filters.flask
+    const matchType = !isTypeFiltered || filters[item.type]
+
+    const isCapacityFiltered = filters.ml330 || filters.ml500 || filters.ml750
+    const matchCapacity = !isCapacityFiltered || filters[item.capacity]
+
+    const isPrintFiltered = filters.sublimation || filters.laser || filters.single
+    const matchPrint = !isPrintFiltered || filters[item.print]
+
+    return matchType && matchCapacity && matchPrint
+  })
+
+  return (
+    <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 bg-white min-h-screen">
+      <style dangerouslySetInnerHTML={{ __html: `
+        .brand-gradient-bg {
+          background: linear-gradient(90deg, #ff520a 0%, #ff0585 100%);
+        }
+        .brand-gradient-text {
+          background: linear-gradient(90deg, #ff520a 0%, #ff0585 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          color: transparent;
+        }
+        .btn-primary {
+          background: linear-gradient(90deg, #ff520a 0%, #ff0585 100%);
+          color: #ffffff;
+          transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+          filter: hue-rotate(-10deg) brightness(1.1);
+          transform: scale(1.02);
+          box-shadow: 0 10px 20px rgba(255, 82, 10, 0.2);
+        }
+        .btn-secondary {
+          background-color: #001c37;
+          color: #ffffff;
+          transition: all 0.3s ease;
+        }
+        .btn-secondary:hover {
+          background-color: #002d5a;
+          transform: scale(1.02);
+        }
+        .ambient-shadow {
+          box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+      ` }} />
+
+      <nav aria-label="Breadcrumb" className="mb-6">
+        <ol className="flex items-center space-x-2 text-sm text-slate-500 font-medium">
+          <li><Link href="/" className="hover:text-[#ff520a] transition-colors">Home</Link></li>
+          <li className="text-slate-400">/</li>
+          <li aria-current="page" className="text-[#a93100] font-bold">Custom Mugs & Drinkware</li>
+        </ol>
+      </nav>
+
+      <section className="mb-12 relative overflow-hidden rounded-2xl bg-[#f8f9fa] p-6 sm:p-10 md:p-12 border border-slate-200/80 ambient-shadow flex flex-col md:flex-row items-center justify-between gap-8">
+        <div className="absolute inset-0 opacity-10 brand-gradient-bg pointer-events-none" />
+        
+        <div className="z-10 max-w-2xl">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-4 leading-tight">
+            Personalized <span className="brand-gradient-text">Mugs & Drinkware</span>.
+          </h1>
+          <p className="text-base sm:text-lg text-slate-600 mb-6 leading-relaxed">
+            High-quality ceramic coffee mugs, vacuum insulated stainless steel water bottles, and magic heat-sensitive color changing cups. Perfect for corporate gifting, anniversary souvenirs, and brand merchandise.
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <button className="btn-primary font-bold text-sm px-6 py-3 rounded-xl shadow-md">
+              Explore Drinkware
+            </button>
+            <button className="bg-white border border-slate-300 text-slate-800 hover:border-[#ff520a] hover:text-[#ff520a] font-bold text-sm px-6 py-3 rounded-xl transition-colors shadow-xs">
+              Bulk Gifting Quotes
+            </button>
+          </div>
+        </div>
+
+        <div className="z-10 hidden md:block w-full max-w-md shrink-0">
+          <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden ambient-shadow border border-white/60">
+            <img
+              src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80"
+              alt="Custom printed coffee mugs and bottles"
+              className="w-full h-full object-cover"
+              loading="lazy"
+              onError={(e) => {
+                if (e.target.src !== 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80') {
+                  e.target.src = 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80'
+                }
+              }}
+            />
+          </div>
+        </div>
+      </section>
+
+      <div className="flex flex-col lg:flex-row gap-8">
+        <aside className="w-full lg:w-64 flex-shrink-0">
+          <div className="sticky top-24 bg-[#f8f9fa] rounded-2xl border border-slate-200/80 p-6 ambient-shadow">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-bold text-slate-900">Filters</h2>
+              <button onClick={clearAll} className="text-slate-500 hover:text-[#a93100] text-sm font-semibold transition-colors">
+                Clear All
+              </button>
+            </div>
+
+            <div className="mb-6 pb-6 border-b border-slate-200">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">Drinkware Type</h3>
+              <div className="space-y-2.5">
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <div className="flex items-center gap-3">
+                    <input type="checkbox" checked={filters.ceramic} onChange={() => toggleFilter('ceramic')} className="w-4 h-4 text-[#ff520a] rounded border-slate-300 focus:ring-[#ff520a]" />
+                    <span className="text-sm text-slate-700 group-hover:text-[#a93100] transition-colors font-medium">Ceramic Mugs</span>
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-full">{getCount('type', 'ceramic')}</span>
+                </label>
+
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <div className="flex items-center gap-3">
+                    <input type="checkbox" checked={filters.steel} onChange={() => toggleFilter('steel')} className="w-4 h-4 text-[#ff520a] rounded border-slate-300 focus:ring-[#ff520a]" />
+                    <span className="text-sm text-slate-700 group-hover:text-[#a93100] transition-colors font-medium">Stainless Steel Bottles</span>
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-full">{getCount('type', 'steel')}</span>
+                </label>
+
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <div className="flex items-center gap-3">
+                    <input type="checkbox" checked={filters.magic} onChange={() => toggleFilter('magic')} className="w-4 h-4 text-[#ff520a] rounded border-slate-300 focus:ring-[#ff520a]" />
+                    <span className="text-sm text-slate-700 group-hover:text-[#a93100] transition-colors font-medium">Magic Color-Changing</span>
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-full">{getCount('type', 'magic')}</span>
+                </label>
+
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <div className="flex items-center gap-3">
+                    <input type="checkbox" checked={filters.flask} onChange={() => toggleFilter('flask')} className="w-4 h-4 text-[#ff520a] rounded border-slate-300 focus:ring-[#ff520a]" />
+                    <span className="text-sm text-slate-700 group-hover:text-[#a93100] transition-colors font-medium">Travel Flasks & Shakers</span>
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-full">{getCount('type', 'flask')}</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="mb-6 pb-6 border-b border-slate-200">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">Capacity</h3>
+              <div className="space-y-2.5">
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <div className="flex items-center gap-3">
+                    <input type="checkbox" checked={filters.ml330} onChange={() => toggleFilter('ml330')} className="w-4 h-4 text-[#ff520a] rounded border-slate-300 focus:ring-[#ff520a]" />
+                    <span className="text-sm text-slate-700 group-hover:text-[#a93100] transition-colors font-medium">330 ml Standard Mug</span>
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-full">{getCount('capacity', 'ml330')}</span>
+                </label>
+
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <div className="flex items-center gap-3">
+                    <input type="checkbox" checked={filters.ml500} onChange={() => toggleFilter('ml500')} className="w-4 h-4 text-[#ff520a] rounded border-slate-300 focus:ring-[#ff520a]" />
+                    <span className="text-sm text-slate-700 group-hover:text-[#a93100] transition-colors font-medium">500 ml Medium Bottle</span>
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-full">{getCount('capacity', 'ml500')}</span>
+                </label>
+
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <div className="flex items-center gap-3">
+                    <input type="checkbox" checked={filters.ml750} onChange={() => toggleFilter('ml750')} className="w-4 h-4 text-[#ff520a] rounded border-slate-300 focus:ring-[#ff520a]" />
+                    <span className="text-sm text-slate-700 group-hover:text-[#a93100] transition-colors font-medium">750+ ml Large Flask</span>
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-full">{getCount('capacity', 'ml750')}</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">Print Style</h3>
+              <div className="space-y-2.5">
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <div className="flex items-center gap-3">
+                    <input type="checkbox" checked={filters.sublimation} onChange={() => toggleFilter('sublimation')} className="w-4 h-4 text-[#ff520a] rounded border-slate-300 focus:ring-[#ff520a]" />
+                    <span className="text-sm text-slate-700 group-hover:text-[#a93100] transition-colors font-medium">Full Sublimation Wrap</span>
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-full">{getCount('print', 'sublimation')}</span>
+                </label>
+
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <div className="flex items-center gap-3">
+                    <input type="checkbox" checked={filters.laser} onChange={() => toggleFilter('laser')} className="w-4 h-4 text-[#ff520a] rounded border-slate-300 focus:ring-[#ff520a]" />
+                    <span className="text-sm text-slate-700 group-hover:text-[#a93100] transition-colors font-medium">Precision Laser Engraved</span>
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-full">{getCount('print', 'laser')}</span>
+                </label>
+
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <div className="flex items-center gap-3">
+                    <input type="checkbox" checked={filters.single} onChange={() => toggleFilter('single')} className="w-4 h-4 text-[#ff520a] rounded border-slate-300 focus:ring-[#ff520a]" />
+                    <span className="text-sm text-slate-700 group-hover:text-[#a93100] transition-colors font-medium">Single Side Logo Print</span>
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-full">{getCount('print', 'single')}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <div className="flex-grow">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <p className="text-sm text-slate-600 font-medium">Showing {filteredProducts.length} results</p>
+            
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sort by:</span>
+              <select className="bg-white border border-slate-300 rounded-xl text-sm py-2 pl-3 pr-8 font-semibold text-slate-700 focus:ring-2 focus:ring-[#ff520a] focus:border-[#ff520a] outline-none shadow-xs">
+                <option>Recommended</option>
+                <option>Price: Low to High</option>
+                <option>Price: High to Low</option>
+                <option>Newest</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredProducts.map((item) => (
+              <div
+                key={item.id}
+                className="group bg-white rounded-2xl border border-slate-200/80 overflow-hidden ambient-shadow transition-all duration-300 hover:-translate-y-1 hover:shadow-xl flex flex-col h-full"
+              >
+                <div className="relative aspect-[4/3] bg-[#f8f9fa] p-4 flex items-center justify-center overflow-hidden">
+                  {item.badge && (
+                    <div className="absolute top-3 left-3 bg-white text-slate-800 px-3 py-1 rounded-full text-xs font-bold shadow-sm border border-slate-200 z-10">
+                      {item.badge}
+                    </div>
+                  )}
+                  <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-lg text-xs font-bold text-[#a93100] shadow-sm z-10">
+                    {item.price}
+                  </div>
+
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-full object-contain mix-blend-darken transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                    onError={(e) => {
+                      if (e.target.src !== item.fallback) {
+                        e.target.src = item.fallback
+                      }
+                    }}
+                  />
+                </div>
+
+                <div className="p-6 flex flex-col flex-grow">
+                  <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-[#a93100] transition-colors">
+                    {item.title}
+                  </h3>
+                  <p className="text-sm text-slate-600 mb-6 flex-grow leading-relaxed">
+                    {item.description}
+                  </p>
+                  <button className="w-full btn-secondary text-sm font-bold py-3 rounded-xl flex justify-center items-center gap-2 shadow-sm">
+                    <span>Personalize Mug</span>
+                    <span>→</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </main>
+  )
+}
