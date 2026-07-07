@@ -67,7 +67,7 @@ export default function Categories() {
     }
 
     return (
-        <section className="py-12 sm:py-16 bg-white relative overflow-hidden border-b border-slate-100">
+        <section className="pt-12 sm:pt-16 bg-white relative overflow-hidden border-b border-slate-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 group/section relative">
                 {/* Header Row */}
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 sm:mb-8">
@@ -128,7 +128,7 @@ export default function Categories() {
                                 <div className="w-full aspect-square rounded-2xl border border-slate-200/80 group-hover:border-[#5348e2]/40 bg-white shadow-xs group-hover:shadow-xl transition-all duration-300 relative flex items-center justify-center overflow-hidden transform group-hover:-translate-y-1">
                                     {/* Optional Badge */}
                                     {cat.badge && (
-                                        <span className="absolute top-2.5 left-2.5 z-20 px-2 py-0.5 rounded-md bg-[linear-gradient(90deg,hsla(20,100%,52%,1)_0%,hsla(328,100%,51%,1)_100%)] text-white text-[10px] font-extrabold tracking-wider uppercase shadow-xs">
+                                        <span className="absolute top-2.5 left-2.5 z-20 px-2 py-0.5 rounded-md bg-[linear-gradient(90deg,#F06800_0%,hsla(328,100%,51%,1)_100%)] text-white text-[10px] font-extrabold tracking-wider uppercase shadow-xs">
                                             {cat.badge}
                                         </span>
                                     )}

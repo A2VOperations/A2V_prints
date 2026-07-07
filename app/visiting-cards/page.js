@@ -2,89 +2,10 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import productsData from "./products.json"
+const products = productsData.products
 
-const products = [
-  {
-    id: 1,
-    title: 'Standard Visiting Cards',
-    price: 'From ₹249',
-    description: 'Classic, reliable, and professional. 300 gsm matte finish paper perfect for everyday networking.',
-    paper: 'standard',
-    finish: 'matte',
-    shape: 'rectangle',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBi-wgEzTQR89_U-5JsG69zF3jU4VMeO5ZjCv3Yaqz-3O0KwpMv7zEDmbHSAdTvlyKskkTKKHlET441paDKWCvzsh1cs3oFlhaIfKF0GnkGCaXJ6rapFe-HUxoCU00raLc1VIGAaapgdAZCghOSjlrcPu8iPpzHlhOlPJGZlq_Sp_HLLHffsvRJaNj_VS5A4zVvEqsXtb4epWBXfY3jFmpy45i5YxsMnvCOc1L7VthOExzBFuLY_jCo',
-    fallback: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 2,
-    title: 'Rounded Corner Cards',
-    price: 'From ₹349',
-    badge: 'Popular',
-    description: 'A modern twist on a classic. Smooth, 1/4" rounded corners on premium 350 gsm cardstock.',
-    paper: 'premium',
-    finish: 'matte',
-    shape: 'rounded',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDqjqAB5ZvmiajJsA-Hem_Q2FgXbJjILx8end-MqoWBEPjXLeJU0m4muKNzDZ34GUgo2YuSxUAn4GdGa3Kqpbcy6zc1zXVUjszmMIhNq1b5mG3TuLcB2i60KcsskAqsKbiTIZZmtQhRyTkCJj5CpEIu_pLhYAD2puogGd27OMQF7rxKWMm5UaJ42Sggvb70iQtSf19LRYyTArFjVGeLj0vnHD684yVaJ_BAqxvoHYDS9kUMdS3QDJO6',
-    fallback: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 3,
-    title: 'Square Cards',
-    price: 'From ₹399',
-    description: 'Stand out from the stack. Unique 2.5" x 2.5" square dimensions ideal for creative professionals.',
-    paper: 'premium',
-    finish: 'matte',
-    shape: 'square',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC8eUVDM6zxd4Skl5XJwAuDnSQcsiugK4cOrMq6f8pw3Ez3W7s7m6z0Ow_NeYjG8twaL568x50Zx7K1tdxr22qRuK7GRCgpwAT7d5LVj7HJ9YsA2C8wS-BJXuOkLtgMSc0Pm-zEgvhmRX23cC7O-kEJ8bvc_t72gC4QCEx56ugRnXSdMzLRTh1-MMXaw-1DP-0s75dnZK8xO5fPXscqSldsnqZut3pZ8Tk3Y22RQ2NDBf98lDA0rQxD',
-    fallback: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 4,
-    title: 'Spot UV Cards',
-    price: 'From ₹599',
-    description: 'Add striking contrast. Raised, glossy highlights on top of a smooth silk matte finish.',
-    paper: 'premium',
-    finish: 'spotUv',
-    shape: 'rectangle',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuClLrc_K88_Su00V-U-Q7Gi0j8BswRsCj7hlFF2e8Ucw-ZBmntKk-f9tgKCOvHyVkyeDRPkICFBtv5VtXnqYXWjZw0mstOeiBUAReiEMqUMTjuhwHGqZdNuCpo4TDMtPnlxheYA96-0LUD9lpgN4e3SO7tznWRBDRXKH8UH6PzvGm9R1Q3pr3K1BbJ-peDRP5mKDjRyDba_w9EzoYXM_TMb-RjMwHU6jeIeFQQWx6bNgCjTFXebR3K4',
-    fallback: 'https://images.unsplash.com/photo-1572945281869-9fb178824b74?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 5,
-    title: 'Metallic Foil Cards',
-    price: 'From ₹799',
-    badge: 'Premium',
-    description: 'Shine brilliantly. Real metallic foil stamped accents available in Gold, Silver, or Copper.',
-    paper: 'luxury',
-    finish: 'foil',
-    shape: 'rectangle',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCugGRpYEoJOruIieV-zU7mzoMJdLz8Lyk2ARlXSxF1NRhU1RW66Xfezh6Nava0NHRjlbl4NHE0relChIDWsRh2ixb9tLUbzTGyFg1tvx4G1cP4scwlHyE9SDa26NTq60OgE68c3EwCaMz4plRtcCKq3RKJK-486I8WiAi-H_WGjod1UkuAK8najMSVUxaXgdl3BQiaZbDKJLa4p5pA5Gaik3xEPlxV0NmSSrCaIe9rFFnb8qgsN8-K',
-    fallback: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 6,
-    title: 'Ultra-Thick Painted Edge',
-    price: 'From ₹899',
-    description: 'Unignorable weight. 600 gsm double-thick luxury paper with vibrant colored edges.',
-    paper: 'luxury',
-    finish: 'matte',
-    shape: 'rectangle',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCPL56U3gcOJOrIFcw8nl7Zr0q69Ni3hR6oBc0cJxAuz4Ie-0ed5BdvRICyYYU7YStBbNoLx2zTNrm7tzkFT1lX_5LGLYyYXjnicsCLze9kf_-G-J-hCUBG69JyyvBpdZXHWRJEV9hI-e3wPdS78d5vbDPkUWIBjXas2dpmYqMINM1uEmaArEOs7v4lY7QI9Ii_Y8I6H2sRTbW-18UoJNryyF_C0fhfIVkn89jfF4R7qw5n5gt8az7L',
-    fallback: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 7,
-    title: 'Gloss Coated Cards',
-    price: 'From ₹299',
-    badge: 'Best Value',
-    description: 'High-gloss UV aqueous coating that makes colors pop and protects against fading and moisture.',
-    paper: 'standard',
-    finish: 'glossy',
-    shape: 'rectangle',
-    image: 'https://cdn.dotpe.in/longtail/store-items/7054875/aTqrPdlG.png',
-    fallback: 'https://images.unsplash.com/photo-1594980596870-8aa52a78d8cd?auto=format&fit=crop&w=600&q=80'
-  },
-]
+
 
 export default function VisitingCardsPage() {
   const [filters, setFilters] = useState({
@@ -137,7 +58,8 @@ export default function VisitingCardsPage() {
   return (
     <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 bg-white min-h-screen">
       {/* Custom Styles replicating exact user design specifications */}
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .brand-gradient-bg {
           background: linear-gradient(90deg, #ff520a 0%, #ff0585 100%);
         }
@@ -184,7 +106,7 @@ export default function VisitingCardsPage() {
       {/* Category Header */}
       <section className="mb-12 relative overflow-hidden rounded-2xl bg-[#f8f9fa] p-6 sm:p-10 md:p-12 border border-slate-200/80 ambient-shadow flex flex-col md:flex-row items-center justify-between gap-8">
         <div className="absolute inset-0 opacity-10 brand-gradient-bg pointer-events-none" />
-        
+
         <div className="z-10 max-w-2xl">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-4 leading-tight">
             Make a Lasting <span className="brand-gradient-text">Impression</span>.
@@ -428,7 +350,7 @@ export default function VisitingCardsPage() {
         <div className="flex-grow">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <p className="text-sm text-slate-600 font-medium">Showing {filteredProducts.length} results</p>
-            
+
             <div className="flex items-center gap-2 self-end sm:self-auto">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sort by:</span>
               <select className="bg-white border border-slate-300 rounded-xl text-sm py-2 pl-3 pr-8 font-semibold text-slate-700 focus:ring-2 focus:ring-[#ff520a] focus:border-[#ff520a] outline-none shadow-xs">
@@ -442,9 +364,10 @@ export default function VisitingCardsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((item) => (
-              <div
+              <Link
                 key={item.id}
-                className="group bg-white rounded-2xl border border-slate-200/80 overflow-hidden ambient-shadow transition-all duration-300 hover:-translate-y-1 hover:shadow-xl flex flex-col h-full"
+                href={`/visiting-cards/${item.id}`}
+                className="group bg-white rounded-2xl border border-slate-200/80 overflow-hidden ambient-shadow transition-all duration-300 hover:-translate-y-1 hover:shadow-xl flex flex-col h-full cursor-pointer"
               >
                 <div className="relative aspect-[4/3] bg-[#f8f9fa] p-4 flex items-center justify-center overflow-hidden">
                   {item.badge && (
@@ -476,12 +399,12 @@ export default function VisitingCardsPage() {
                   <p className="text-sm text-slate-600 mb-6 flex-grow leading-relaxed">
                     {item.description}
                   </p>
-                  <button className="w-full btn-secondary text-sm font-bold py-3 rounded-xl flex justify-center items-center gap-2 shadow-sm">
+                  <span className="w-full btn-secondary text-sm font-bold py-3 rounded-xl flex justify-center items-center gap-2 shadow-sm">
                     <span>Start Designing</span>
                     <span>→</span>
-                  </button>
+                  </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

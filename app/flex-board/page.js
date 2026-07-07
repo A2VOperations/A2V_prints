@@ -2,101 +2,8 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-
-const products = [
-  {
-    id: 1,
-    title: 'Standard Shop Frontlit Flex',
-    price: 'From ₹899',
-    badge: 'Popular',
-    description: 'Weather-resistant 340gsm frontlit flex printing mounted on a sturdy iron pipe frame for retail store banners.',
-    type: 'frontlit',
-    frame: 'iron',
-    thickness: 'gsm340',
-    image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 2,
-    title: 'LED Backlit Glow Sign Board',
-    price: 'From ₹3,499',
-    badge: 'Best Seller',
-    description: '440gsm premium star flex backlit sheet with internal branded LED tube modules for high nighttime visibility.',
-    type: 'backlit',
-    frame: 'aluminum',
-    thickness: 'gsm440',
-    image: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 3,
-    title: 'Heavy Iron Box Frame Hoarding',
-    price: 'From ₹2,499',
-    description: 'Reinforced 3-inch square iron box structure designed for large highway billboards and roof-top advertisements.',
-    type: 'frontlit',
-    frame: 'iron',
-    thickness: 'gsm440',
-    image: 'https://images.unsplash.com/photo-1542744094-3a3e2203538c?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1542744094-3a3e2203538c?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 4,
-    title: '3D Acrylic Letter LED Board',
-    price: 'From ₹5,999',
-    badge: 'Premium',
-    description: 'Laser-cut embossed 3D acrylic letters with waterproof LED illumination mounted on aluminum composite panel.',
-    type: 'acrylic',
-    frame: 'aluminum',
-    thickness: 'gsm440',
-    image: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 5,
-    title: 'Vinyl Printed Sunboard Sign',
-    price: 'From ₹499',
-    badge: 'New',
-    description: 'High-definition solvent vinyl print laminated on 5mm foam sunboard sheet for indoor branding and menus.',
-    type: 'sunboard',
-    frame: 'wall',
-    thickness: 'gsm280',
-    image: 'https://images.unsplash.com/photo-1572945281869-9fb178824b74?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1572945281869-9fb178824b74?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 6,
-    title: 'Reflective Night-Glow Highway',
-    price: 'From ₹1,799',
-    description: 'Retro-reflective radium sheeting that shines brightly when hit by vehicle headlights. Ideal for road signage.',
-    type: 'frontlit',
-    frame: 'pole',
-    thickness: 'gsm340',
-    image: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 7,
-    title: 'Double-Sided Pole Mount Flex',
-    price: 'From ₹1,299',
-    description: 'Twin-sided flex board with center mounting brackets engineered for street light poles and boulevard marketing.',
-    type: 'frontlit',
-    frame: 'pole',
-    thickness: 'gsm340',
-    image: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 8,
-    title: 'Wooden Framed Exhibition Panel',
-    price: 'From ₹999',
-    description: 'Lightweight pine wood frame stretched with matte star flex for indoor stall backdrops and corporate events.',
-    type: 'sunboard',
-    frame: 'wall',
-    thickness: 'gsm280',
-    image: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80'
-  }
-]
+import productsData from "./products.json"
+const products = productsData.products
 
 export default function FlexBoardPage() {
   const [filters, setFilters] = useState({
@@ -150,7 +57,8 @@ export default function FlexBoardPage() {
 
   return (
     <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 bg-white min-h-screen">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .brand-gradient-bg {
           background: linear-gradient(90deg, #ff520a 0%, #ff0585 100%);
         }
@@ -195,7 +103,7 @@ export default function FlexBoardPage() {
 
       <section className="mb-12 relative overflow-hidden rounded-2xl bg-[#f8f9fa] p-6 sm:p-10 md:p-12 border border-slate-200/80 ambient-shadow flex flex-col md:flex-row items-center justify-between gap-8">
         <div className="absolute inset-0 opacity-10 brand-gradient-bg pointer-events-none" />
-        
+
         <div className="z-10 max-w-2xl">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-4 leading-tight">
             Durable <span className="brand-gradient-text">Flex Board & Signage</span>.
@@ -348,7 +256,7 @@ export default function FlexBoardPage() {
         <div className="flex-grow">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <p className="text-sm text-slate-600 font-medium">Showing {filteredProducts.length} results</p>
-            
+
             <div className="flex items-center gap-2 self-end sm:self-auto">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sort by:</span>
               <select className="bg-white border border-slate-300 rounded-xl text-sm py-2 pl-3 pr-8 font-semibold text-slate-700 focus:ring-2 focus:ring-[#ff520a] focus:border-[#ff520a] outline-none shadow-xs">

@@ -2,102 +2,9 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import productsData from "./products.json"
+const products = productsData.products
 
-const products = [
-  {
-    id: 1,
-    title: 'White Ceramic Photo Mug 330ml',
-    price: 'From ₹149',
-    badge: 'Popular',
-    description: 'Classic AAA-grade glossy white ceramic mug with full wrap-around edge-to-edge sublimation photo printing.',
-    type: 'ceramic',
-    capacity: 'ml330',
-    print: 'sublimation',
-    image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 2,
-    title: 'Insulated Stainless Thermos Bottle',
-    price: 'From ₹499',
-    badge: 'Best Seller',
-    description: 'Double-wall vacuum insulated 500ml steel bottle keeps drinks hot or cold for 12 hours. Custom UV printed logo.',
-    type: 'steel',
-    capacity: 'ml500',
-    print: 'sublimation',
-    image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 3,
-    title: 'Magic Color-Changing Ceramic Mug',
-    price: 'From ₹299',
-    badge: 'Magic',
-    description: 'Heat-sensitive coating magically reveals your hidden personalized photo or design when hot liquid is poured inside.',
-    type: 'magic',
-    capacity: 'ml330',
-    print: 'sublimation',
-    image: 'https://images.unsplash.com/photo-1577937927133-66ef06acdf18?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1577937927133-66ef06acdf18?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 4,
-    title: 'Matte Black Laser Engraved Flask',
-    price: 'From ₹599',
-    badge: 'Premium',
-    description: 'Executive 750ml metallic black travel flask with precision metallic silver laser etched corporate logo.',
-    type: 'flask',
-    capacity: 'ml750',
-    print: 'laser',
-    image: 'https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 5,
-    title: 'Inner Color Accent Ceramic Mug',
-    price: 'From ₹199',
-    description: 'Two-tone ceramic mug with vibrant colored handle and inner walls available in Red, Blue, Yellow, or Black.',
-    type: 'ceramic',
-    capacity: 'ml330',
-    print: 'sublimation',
-    image: 'https://images.unsplash.com/photo-1572119865084-43c285814d63?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1572119865084-43c285814d63?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 6,
-    title: 'Eco Bamboo Lid Sipper Bottle',
-    price: 'From ₹449',
-    badge: 'Eco',
-    description: 'Stainless steel body with natural organic bamboo screw lid and steel carrying loop. Elegant sustainable gifting.',
-    type: 'steel',
-    capacity: 'ml500',
-    print: 'laser',
-    image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 7,
-    title: 'Frosted Glass Beer Mug 500ml',
-    price: 'From ₹349',
-    description: 'Heavyweight frosted translucent glass mug with thick sturdy handle. Perfect for pubs, cafes, and celebrations.',
-    type: 'ceramic',
-    capacity: 'ml500',
-    print: 'single',
-    image: 'https://images.unsplash.com/photo-1535958636474-b021ee887b13?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1535958636474-b021ee887b13?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 8,
-    title: 'Sports Gym Shaker with Logo',
-    price: 'From ₹249',
-    description: 'BPA-free 750ml protein shaker bottle with stainless mixing ball and leak-proof flip cap for fitness promotions.',
-    type: 'flask',
-    capacity: 'ml750',
-    print: 'single',
-    image: 'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?auto=format&fit=crop&w=600&q=80'
-  }
-]
 
 export default function MugsDrinkwarePage() {
   const [filters, setFilters] = useState({
@@ -149,7 +56,8 @@ export default function MugsDrinkwarePage() {
 
   return (
     <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 bg-white min-h-screen">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .brand-gradient-bg {
           background: linear-gradient(90deg, #ff520a 0%, #ff0585 100%);
         }
@@ -194,7 +102,7 @@ export default function MugsDrinkwarePage() {
 
       <section className="mb-12 relative overflow-hidden rounded-2xl bg-[#f8f9fa] p-6 sm:p-10 md:p-12 border border-slate-200/80 ambient-shadow flex flex-col md:flex-row items-center justify-between gap-8">
         <div className="absolute inset-0 opacity-10 brand-gradient-bg pointer-events-none" />
-        
+
         <div className="z-10 max-w-2xl">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-4 leading-tight">
             Personalized <span className="brand-gradient-text">Mugs & Drinkware</span>.
@@ -339,7 +247,7 @@ export default function MugsDrinkwarePage() {
         <div className="flex-grow">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <p className="text-sm text-slate-600 font-medium">Showing {filteredProducts.length} results</p>
-            
+
             <div className="flex items-center gap-2 self-end sm:self-auto">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sort by:</span>
               <select className="bg-white border border-slate-300 rounded-xl text-sm py-2 pl-3 pr-8 font-semibold text-slate-700 focus:ring-2 focus:ring-[#ff520a] focus:border-[#ff520a] outline-none shadow-xs">

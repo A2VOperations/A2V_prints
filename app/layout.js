@@ -3,6 +3,7 @@ import "./globals.css";
 import Topbar from "./components/topbar";
 import Navbar from "./components/navbar";
 import Megabar from "./components/megabar";
+import Footer from "./components/footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,8 +30,10 @@ export default function RootLayout({ children }) {
         <Topbar />
         <Navbar />
         <Megabar />
-        {children}
+        <div className="flex-grow flex flex-col">{children}</div>
+        <Footer />
       </body>
     </html>
   );
 }
+

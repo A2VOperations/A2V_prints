@@ -42,12 +42,7 @@ export default function Navbar() {
             <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-4 md:gap-8">
                 {/* Brand Logo */}
                 <Link href="/" className="flex items-center gap-2.5 cursor-pointer shrink-0 group">
-                    <div className="w-10 h-10 rounded-full bg-[linear-gradient(90deg,hsla(20,100%,52%,1)_0%,hsla(328,100%,51%,1)_100%)] flex items-center justify-center shadow-md shadow-purple-500/20 text-white font-extrabold text-xl tracking-tighter group-hover:scale-105 transition-transform duration-200">
-                        <span className="translate-y-[-1px]">P</span>
-                    </div>
-                    <span className="text-2xl font-bold tracking-tight text-[#111827]">
-                        Printop
-                    </span>
+                    <img src="/A2V  Groups Logo.png" alt="logo" className='w-25 h-12' />
                 </Link>
 
                 {/* Search Bar (Desktop / Tablet) */}
@@ -92,8 +87,8 @@ export default function Navbar() {
                                                 setIsCategoryOpen(false)
                                             }}
                                             className={`w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer flex items-center justify-between ${selectedCategory === cat
-                                                    ? 'bg-purple-50 text-[#9842dc] font-semibold'
-                                                    : 'hover:bg-gray-50 text-gray-700'
+                                                ? 'bg-purple-50 text-[#9842dc] font-semibold'
+                                                : 'hover:bg-gray-50 text-gray-700'
                                                 }`}
                                         >
                                             <span>{cat}</span>
@@ -118,7 +113,7 @@ export default function Navbar() {
                         {/* Search Button */}
                         <button
                             type="submit"
-                            className="bg-[linear-gradient(90deg,hsla(20,100%,52%,1)_0%,hsla(328,100%,51%,1)_100%)] hover:opacity-95 text-white text-sm font-medium px-7 py-2 rounded-full shadow-md shadow-purple-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shrink-0"
+                            className="bg-[linear-gradient(90deg,#F06800_0%,hsla(328,100%,51%,1)_100%)] hover:opacity-95 text-white text-sm font-medium px-7 py-2 rounded-full shadow-md shadow-purple-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shrink-0"
                         >
                             Search
                         </button>

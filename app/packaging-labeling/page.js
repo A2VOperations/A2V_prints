@@ -2,102 +2,9 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import productsData from "./products.json"
+const products = productsData.products
 
-const products = [
-  {
-    id: 1,
-    title: 'Corrugated Shipping Box',
-    price: 'From ₹19 / box',
-    badge: 'Popular',
-    description: '3-ply and 5-ply sturdy corrugated cardboard shipping boxes with inside and outside custom brand printing.',
-    type: 'boxes',
-    material: 'kraft',
-    finish: 'matte',
-    image: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 2,
-    title: 'Waterproof Vinyl Bottle Labels',
-    price: 'From ₹149 / 100 pcs',
-    badge: 'Best Seller',
-    description: 'Oil and moisture resistant BOPP vinyl stickers with strong adhesive for beverages, jars, and cosmetics.',
-    type: 'labels',
-    material: 'vinyl',
-    finish: 'glossy',
-    image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 3,
-    title: 'Kraft Paper Shopping Bags',
-    price: 'From ₹24 / bag',
-    badge: 'Eco Friendly',
-    description: '100% biodegradable recycled brown kraft paper bags with twisted handles and elegant single-color screen print.',
-    type: 'bags',
-    material: 'kraft',
-    finish: 'matte',
-    image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 4,
-    title: 'Luxury Rigid Gift Box',
-    price: 'From ₹189 / box',
-    badge: 'Premium',
-    description: 'Thick premium rigid cardboard boxes with magnetic closure lids and satin ribbon inserts for luxury gifting.',
-    type: 'boxes',
-    material: 'sbs',
-    finish: 'foil',
-    image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 5,
-    title: 'Holographic Foil Stickers',
-    price: 'From ₹299 / 100 pcs',
-    badge: 'New',
-    description: 'Iridescent rainbow holographic foil stickers cut to custom shapes. Eye-catching branding for tech and fashion.',
-    type: 'labels',
-    material: 'foilmat',
-    finish: 'foil',
-    image: 'https://images.unsplash.com/photo-1572945281869-9fb178824b74?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1572945281869-9fb178824b74?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 6,
-    title: 'Standup Zip-Lock Food Pouch',
-    price: 'From ₹15 / pouch',
-    description: 'Food-grade laminated standup pouches with resealable zip lock and transparent window for snacks and spices.',
-    type: 'food',
-    material: 'foilmat',
-    finish: 'matte',
-    image: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 7,
-    title: 'Custom Printed Wrapping Tissue',
-    price: 'From ₹499 / roll',
-    description: 'Delicate 18gsm translucent wrapping tissue paper with repeating logo patterns for unboxing experiences.',
-    type: 'bags',
-    material: 'sbs',
-    finish: 'matte',
-    image: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 8,
-    title: 'Heavy Industrial Carton Box',
-    price: 'From ₹65 / box',
-    description: 'Heavy-duty 7-ply master shipper cartons engineered for export transportation and heavy industrial equipment.',
-    type: 'boxes',
-    material: 'kraft',
-    finish: 'matte',
-    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80'
-  }
-]
 
 export default function PackagingLabelingPage() {
   const [filters, setFilters] = useState({
@@ -151,7 +58,8 @@ export default function PackagingLabelingPage() {
 
   return (
     <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 bg-white min-h-screen">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .brand-gradient-bg {
           background: linear-gradient(90deg, #ff520a 0%, #ff0585 100%);
         }
@@ -196,7 +104,7 @@ export default function PackagingLabelingPage() {
 
       <section className="mb-12 relative overflow-hidden rounded-2xl bg-[#f8f9fa] p-6 sm:p-10 md:p-12 border border-slate-200/80 ambient-shadow flex flex-col md:flex-row items-center justify-between gap-8">
         <div className="absolute inset-0 opacity-10 brand-gradient-bg pointer-events-none" />
-        
+
         <div className="z-10 max-w-2xl">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-4 leading-tight">
             Custom <span className="brand-gradient-text">Packaging & Labels</span>.
@@ -349,7 +257,7 @@ export default function PackagingLabelingPage() {
         <div className="flex-grow">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <p className="text-sm text-slate-600 font-medium">Showing {filteredProducts.length} results</p>
-            
+
             <div className="flex items-center gap-2 self-end sm:self-auto">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sort by:</span>
               <select className="bg-white border border-slate-300 rounded-xl text-sm py-2 pl-3 pr-8 font-semibold text-slate-700 focus:ring-2 focus:ring-[#ff520a] focus:border-[#ff520a] outline-none shadow-xs">

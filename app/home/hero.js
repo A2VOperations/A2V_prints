@@ -246,7 +246,7 @@ export default function Hero() {
           <div className="lg:col-span-7 z-10 flex flex-col items-start text-left pt-4 sm:pt-0">
             {/* Top Pill / Badge */}
             <div ref={badgeRef} className="inline-flex items-center gap-2 sm:gap-3 px-4 py-2 rounded-full bg-white/90 border border-[#e5e7eb] shadow-sm mb-6 sm:mb-8 backdrop-blur-md transition-all hover:shadow-md">
-              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[linear-gradient(90deg,hsla(20,100%,52%,1)_0%,hsla(328,100%,51%,1)_100%)] text-white text-xs font-bold shadow-2xs">✓</span>
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[linear-gradient(90deg,#F06800_0%,hsla(328,100%,51%,1)_100%)] text-white text-xs font-bold shadow-2xs">✓</span>
               <span className="text-[#5348e2] font-bold text-xs sm:text-sm tracking-wide">Print Beyond Limits</span>
               <span className="h-3.5 w-[1px] bg-gray-300 mx-1" />
               <span className="text-gray-500 font-medium text-xs sm:text-sm">Trusted By 50K+ Clients</span>
@@ -259,7 +259,7 @@ export default function Hero() {
                 <span className="relative inline-flex items-center px-1">
                   <span
                     ref={typeRef}
-                    className="text-transparent bg-clip-text bg-[linear-gradient(90deg,hsla(20,100%,52%,1)_0%,hsla(328,100%,51%,1)_100%)] font-black inline-block"
+                    className="text-transparent bg-clip-text bg-[linear-gradient(90deg,#F06800_0%,hsla(328,100%,51%,1)_100%)] font-black inline-block"
                   >
                     Modern
                   </span>
@@ -267,7 +267,7 @@ export default function Hero() {
                     ref={cursorRef}
                     className="inline-block w-1 sm:w-1.5 h-[0.85em] bg-[linear-gradient(180deg,hsla(20,100%,52%,1)_0%,hsla(328,100%,51%,1)_100%)] ml-1 sm:ml-1.5 rounded-full"
                   />
-                  <span ref={underlineRef} className="absolute left-0 -bottom-1 w-full h-2 sm:h-3 bg-[linear-gradient(90deg,hsla(20,100%,52%,1)_0%,hsla(328,100%,51%,1)_100%)] rounded-full -z-10 opacity-80" />
+                  <span ref={underlineRef} className="absolute left-0 -bottom-1 w-full h-2 sm:h-3 bg-[linear-gradient(90deg,#F06800_0%,hsla(328,100%,51%,1)_100%)] rounded-full -z-10 opacity-80" />
                 </span>
                 <span>Printing</span>
               </div>
@@ -275,7 +275,7 @@ export default function Hero() {
               <div className="flex flex-wrap items-center justify-start gap-x-3 sm:gap-x-4 gap-y-3">
                 {/* Left Pill with + and avatars */}
                 <span ref={avatarsPillRef} className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-full border-2 border-[#ff387a]/40 bg-white/95 shadow-sm align-middle">
-                  <span className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-[linear-gradient(90deg,hsla(20,100%,52%,1)_0%,hsla(328,100%,51%,1)_100%)] leading-none">+</span>
+                  <span className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-[linear-gradient(90deg,#F06800_0%,hsla(328,100%,51%,1)_100%)] leading-none">+</span>
                   <div className="flex -space-x-2.5 overflow-hidden">
                     <img className="inline-block h-6 w-6 sm:h-8 sm:w-8 rounded-full ring-2 ring-white object-cover" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Client 1" />
                     <img className="inline-block h-6 w-6 sm:h-8 sm:w-8 rounded-full ring-2 ring-white object-cover" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80" alt="Client 2" />
@@ -287,7 +287,7 @@ export default function Hero() {
 
                 {/* Right Overlapping Circles */}
                 <span ref={circlesRef} className="inline-flex items-center ml-1 align-middle">
-                  <span className="relative flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[linear-gradient(90deg,hsla(20,100%,52%,1)_0%,hsla(328,100%,51%,1)_100%)] text-white shadow-md z-10">
+                  <span className="relative flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[linear-gradient(90deg,#F06800_0%,hsla(328,100%,51%,1)_100%)] text-white shadow-md z-10">
                     <span className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-white flex items-center justify-center">
                       <span className="w-1.5 h-1.5 bg-white rounded-full" />
                     </span>

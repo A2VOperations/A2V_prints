@@ -28,7 +28,7 @@ export default function Topbar() {
   }, [])
 
   return (
-    <div className="w-full bg-[linear-gradient(90deg,_hsla(20,100%,52%,1)_0%,_hsla(328,100%,51%,1)_100%)] text-white text-xs sm:text-sm font-medium py-2.5 px-4 sm:px-6 lg:px-8 shadow-sm select-none">
+    <div className="w-full bg-[linear-gradient(90deg,#F06800_0%,hsla(328,100%,51%,1)_100%)] text-white text-xs sm:text-sm font-medium py-2.5 px-4 sm:px-6 lg:px-8 shadow-sm select-none">
       <div className="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
         {/* Left Section: Contact Info */}
         <div className="flex items-center gap-6">
@@ -173,9 +173,8 @@ export default function Topbar() {
             >
               <span>{selectedCurrency.label}</span>
               <svg
-                className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                  isOpen ? 'rotate-180' : ''
-                }`}
+                className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''
+                  }`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -202,11 +201,10 @@ export default function Topbar() {
                         setSelectedCurrency(currency)
                         setIsOpen(false)
                       }}
-                      className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between transition-colors cursor-pointer ${
-                        isSelected
+                      className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between transition-colors cursor-pointer ${isSelected
                           ? 'bg-[#1976d2] text-white font-medium'
                           : 'text-gray-700 hover:bg-blue-500 hover:text-white'
-                      }`}
+                        }`}
                     >
                       <span>{currency.label}</span>
                     </button>

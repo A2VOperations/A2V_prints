@@ -2,101 +2,8 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-
-const products = [
-  {
-    id: 1,
-    title: 'Heavy-Duty Vinyl Banner',
-    price: 'From ₹499',
-    badge: 'Popular',
-    description: 'Weatherproof 330gsm vinyl banner with reinforced welded hems and brass grommets for outdoor display.',
-    material: 'vinyl',
-    size: '3x6',
-    mounting: 'eyelets',
-    image: 'https://images.unsplash.com/photo-1542744094-3a3e2203538c?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1542744094-3a3e2203538c?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 2,
-    title: 'Retractable Roll-Up Stand',
-    price: 'From ₹1,899',
-    badge: 'Best Seller',
-    description: 'Portable luxury aluminum base stand with pre-installed high-res star flex banner. Erects in seconds.',
-    material: 'starflex',
-    size: '2x3',
-    mounting: 'stand',
-    image: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 3,
-    title: 'High-Gloss Promo Poster A1',
-    price: 'From ₹199',
-    description: 'Vibrant 240gsm photo paper poster with UV protective gloss finish. Ideal for retail window promotions.',
-    material: 'paper',
-    size: 'a1a2',
-    mounting: 'frame',
-    image: 'https://images.unsplash.com/photo-1572945281869-9fb178824b74?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1572945281869-9fb178824b74?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 4,
-    title: 'Backlit Star Flex Banner',
-    price: 'From ₹899',
-    description: 'Translucent 400gsm seamless flex engineered specifically for LED light boxes and glowing shop signboards.',
-    material: 'starflex',
-    size: '4x8',
-    mounting: 'frame',
-    image: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 5,
-    title: 'Fabric Satin Event Banner',
-    price: 'From ₹699',
-    badge: 'Premium',
-    description: 'Wrinkle-resistant polyester satin cloth with rich dye-sublimation printing for indoor exhibitions and seminars.',
-    material: 'satin',
-    size: '3x6',
-    mounting: 'eyelets',
-    image: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 6,
-    title: 'Matte Finish Poster A2',
-    price: 'From ₹149',
-    description: 'Non-reflective matte archival paper perfect for indoor art prints, office branding, and academic displays.',
-    material: 'paper',
-    size: 'a1a2',
-    mounting: 'frame',
-    image: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 7,
-    title: 'Windproof Mesh Banner',
-    price: 'From ₹799',
-    description: 'Perforated vinyl mesh banner allows wind to pass through without tearing. Designed for construction fences.',
-    material: 'vinyl',
-    size: '4x8',
-    mounting: 'eyelets',
-    image: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 8,
-    title: 'Step & Repeat Photo Backdrop',
-    price: 'From ₹2,499',
-    badge: 'Event',
-    description: 'Large 8x8 ft non-glare matte backdrop banner with telescopic metal frame stand for red carpet media events.',
-    material: 'satin',
-    size: '4x8',
-    mounting: 'stand',
-    image: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=600&q=80'
-  }
-]
+import productsData from "./products.json"
+const products = productsData.products
 
 export default function BannerPosterPage() {
   const [filters, setFilters] = useState({
@@ -151,7 +58,8 @@ export default function BannerPosterPage() {
 
   return (
     <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 bg-white min-h-screen">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .brand-gradient-bg {
           background: linear-gradient(90deg, #ff520a 0%, #ff0585 100%);
         }
@@ -196,7 +104,7 @@ export default function BannerPosterPage() {
 
       <section className="mb-12 relative overflow-hidden rounded-2xl bg-[#f8f9fa] p-6 sm:p-10 md:p-12 border border-slate-200/80 ambient-shadow flex flex-col md:flex-row items-center justify-between gap-8">
         <div className="absolute inset-0 opacity-10 brand-gradient-bg pointer-events-none" />
-        
+
         <div className="z-10 max-w-2xl">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-4 leading-tight">
             Eye-Catching <span className="brand-gradient-text">Banners & Posters</span>.
@@ -349,7 +257,7 @@ export default function BannerPosterPage() {
         <div className="flex-grow">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <p className="text-sm text-slate-600 font-medium">Showing {filteredProducts.length} results</p>
-            
+
             <div className="flex items-center gap-2 self-end sm:self-auto">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sort by:</span>
               <select className="bg-white border border-slate-300 rounded-xl text-sm py-2 pl-3 pr-8 font-semibold text-slate-700 focus:ring-2 focus:ring-[#ff520a] focus:border-[#ff520a] outline-none shadow-xs">

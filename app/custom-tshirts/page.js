@@ -2,102 +2,9 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import productsData from "./products.json"
+const products = productsData.products
 
-const products = [
-  {
-    id: 1,
-    title: 'Classic 180gsm Cotton Crew',
-    price: 'From ₹299',
-    badge: 'Popular',
-    description: '100% super combed bio-washed cotton with vibrant DTG print capabilities. Ultra-soft everyday comfort.',
-    fabric: 'cotton',
-    style: 'roundneck',
-    print: 'dtg',
-    image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 2,
-    title: 'Premium Corporate Polo Tee',
-    price: 'From ₹499',
-    badge: 'Best Seller',
-    description: 'Rich pique cotton polo collar t-shirt with ribbed cuffs. Perfect for formal company branding and staff uniforms.',
-    fabric: 'polo',
-    style: 'polocollar',
-    print: 'screen',
-    image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 3,
-    title: 'Heavyweight Streetwear Oversized',
-    price: 'From ₹599',
-    badge: 'New',
-    description: '240gsm thick terry cotton with drop shoulders and a relaxed baggy fit for modern streetwear brand collections.',
-    fabric: 'oversized',
-    style: 'oversizedfit',
-    print: 'screen',
-    image: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 4,
-    title: 'Athletic Dry-Fit Sports Jersey',
-    price: 'From ₹249',
-    description: 'Moisture-wicking micro-polyester mesh fabric designed for marathons, gym workouts, and sports tournaments.',
-    fabric: 'dryfit',
-    style: 'roundneck',
-    print: 'sublimation',
-    image: 'https://images.unsplash.com/photo-1562157873-818bc0726f68?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1562157873-818bc0726f68?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 5,
-    title: 'Embroidered Logo Polo Shirt',
-    price: 'From ₹649',
-    badge: 'Premium',
-    description: 'High-density custom thread embroidery on 220gsm double-knit pique cotton for an executive look.',
-    fabric: 'polo',
-    style: 'polocollar',
-    print: 'embroidery',
-    image: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 6,
-    title: 'Full Sleeve Bio-Washed Cotton',
-    price: 'From ₹399',
-    description: 'Classic long-sleeve tee with elasticated rib wrists and smooth finish for cooler weather and casual outings.',
-    fabric: 'cotton',
-    style: 'fullsleeve',
-    print: 'dtg',
-    image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 7,
-    title: 'Eco-Friendly Organic Blank Tee',
-    price: 'From ₹349',
-    description: 'GOTS-certified sustainable organic cotton crafted without harmful chemicals. Gentle on skin and nature.',
-    fabric: 'cotton',
-    style: 'roundneck',
-    print: 'screen',
-    image: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 8,
-    title: 'Custom Tie-Dye Festival Shirt',
-    price: 'From ₹549',
-    badge: 'Limited',
-    description: 'Hand-dyed spiral and pastel tie-dye patterns on heavyweight cotton. Stand out at concerts and college fests.',
-    fabric: 'oversized',
-    style: 'oversizedfit',
-    print: 'dtg',
-    image: 'https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?auto=format&fit=crop&w=600&q=80'
-  }
-]
 
 export default function CustomTshirtsPage() {
   const [filters, setFilters] = useState({
@@ -153,7 +60,8 @@ export default function CustomTshirtsPage() {
 
   return (
     <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 bg-white min-h-screen">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .brand-gradient-bg {
           background: linear-gradient(90deg, #ff520a 0%, #ff0585 100%);
         }
@@ -198,7 +106,7 @@ export default function CustomTshirtsPage() {
 
       <section className="mb-12 relative overflow-hidden rounded-2xl bg-[#f8f9fa] p-6 sm:p-10 md:p-12 border border-slate-200/80 ambient-shadow flex flex-col md:flex-row items-center justify-between gap-8">
         <div className="absolute inset-0 opacity-10 brand-gradient-bg pointer-events-none" />
-        
+
         <div className="z-10 max-w-2xl">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-4 leading-tight">
             Premium <span className="brand-gradient-text">Custom T-Shirts</span>.
@@ -351,7 +259,7 @@ export default function CustomTshirtsPage() {
         <div className="flex-grow">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <p className="text-sm text-slate-600 font-medium">Showing {filteredProducts.length} results</p>
-            
+
             <div className="flex items-center gap-2 self-end sm:self-auto">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sort by:</span>
               <select className="bg-white border border-slate-300 rounded-xl text-sm py-2 pl-3 pr-8 font-semibold text-slate-700 focus:ring-2 focus:ring-[#ff520a] focus:border-[#ff520a] outline-none shadow-xs">

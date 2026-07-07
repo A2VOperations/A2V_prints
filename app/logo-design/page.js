@@ -2,101 +2,8 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-
-const products = [
-  {
-    id: 1,
-    title: 'Minimalist Modern Logo',
-    price: 'From ₹1,499',
-    badge: 'Popular',
-    description: 'Clean, geometric, and timeless minimalist logo concepts ideal for tech startups and modern brands.',
-    style: 'minimalist',
-    industry: 'tech',
-    delivery: 'standard',
-    image: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 2,
-    title: 'Custom 3D Mascot Logo',
-    price: 'From ₹3,499',
-    description: 'Vibrant, custom-illustrated character or mascot designed to give your brand an unforgettable personality.',
-    style: 'mascot',
-    industry: 'food',
-    delivery: 'premium',
-    image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 3,
-    title: 'Luxury Monogram & Lettermark',
-    price: 'From ₹1,999',
-    badge: 'Best Seller',
-    description: 'Elegant interlocking initials and bespoke typography perfect for fashion boutiques and luxury studios.',
-    style: 'typography',
-    industry: 'fashion',
-    delivery: 'standard',
-    image: 'https://images.unsplash.com/photo-1558655146-d09347e92766?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1558655146-d09347e92766?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 4,
-    title: 'Vintage & Retro Emblem',
-    price: 'From ₹2,499',
-    description: 'Hand-crafted badge and crest style logos with a nostalgic, authentic rustic feel for cafes and artisans.',
-    style: 'vintage',
-    industry: 'food',
-    delivery: 'standard',
-    image: 'https://images.unsplash.com/photo-1572945281869-9fb178824b74?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1572945281869-9fb178824b74?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 5,
-    title: '24-Hour Express Starter Logo',
-    price: 'From ₹999',
-    badge: 'Express',
-    description: 'Fast-turnaround professional logo concepts delivered with high-res PNG and vector files within 24 hours.',
-    style: 'minimalist',
-    industry: 'tech',
-    delivery: 'express',
-    image: 'https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 6,
-    title: 'Corporate Brand Identity Pack',
-    price: 'From ₹4,999',
-    badge: 'All-in-One',
-    description: 'Complete logo suite with primary logo, secondary variations, color palette, social media kit, and guidelines.',
-    style: 'typography',
-    industry: 'tech',
-    delivery: 'premium',
-    image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 7,
-    title: 'Organic & Wellness Iconography',
-    price: 'From ₹1,799',
-    description: 'Natural, botanical, and zen-inspired logo marks crafted for spas, yoga studios, and wellness clinics.',
-    style: 'minimalist',
-    industry: 'health',
-    delivery: 'standard',
-    image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 8,
-    title: 'Apparel & Streetwear Branding',
-    price: 'From ₹2,999',
-    description: 'Bold, edgy graphic logos and striking typography tailored specifically for clothing brands and merchandise.',
-    style: 'vintage',
-    industry: 'fashion',
-    delivery: 'premium',
-    image: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80'
-  }
-]
+import productsData from "./products.json"
+const products = productsData.products
 
 export default function LogoDesignPage() {
   const [filters, setFilters] = useState({
@@ -151,7 +58,8 @@ export default function LogoDesignPage() {
   return (
     <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 bg-white min-h-screen">
       {/* Custom Styles replicating exact user design specifications */}
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .brand-gradient-bg {
           background: linear-gradient(90deg, #ff520a 0%, #ff0585 100%);
         }
@@ -198,7 +106,7 @@ export default function LogoDesignPage() {
       {/* Category Header */}
       <section className="mb-12 relative overflow-hidden rounded-2xl bg-[#f8f9fa] p-6 sm:p-10 md:p-12 border border-slate-200/80 ambient-shadow flex flex-col md:flex-row items-center justify-between gap-8">
         <div className="absolute inset-0 opacity-10 brand-gradient-bg pointer-events-none" />
-        
+
         <div className="z-10 max-w-2xl">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-4 leading-tight">
             Craft Your Brand <span className="brand-gradient-text">Identity</span>.
@@ -459,7 +367,7 @@ export default function LogoDesignPage() {
         <div className="flex-grow">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <p className="text-sm text-slate-600 font-medium">Showing {filteredProducts.length} results</p>
-            
+
             <div className="flex items-center gap-2 self-end sm:self-auto">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sort by:</span>
               <select className="bg-white border border-slate-300 rounded-xl text-sm py-2 pl-3 pr-8 font-semibold text-slate-700 focus:ring-2 focus:ring-[#ff520a] focus:border-[#ff520a] outline-none shadow-xs">
