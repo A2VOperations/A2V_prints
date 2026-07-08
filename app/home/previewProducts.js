@@ -183,11 +183,6 @@ export default function PreviewProducts({
                     alt={item.title}
                     className="w-full h-full object-contain mix-blend-darken transform group-hover:scale-108 transition-transform duration-500 drop-shadow-sm group-hover:drop-shadow-md relative z-10"
                     loading="lazy"
-                    onError={(e) => {
-                      if (item.fallback && e.target.src !== item.fallback) {
-                        e.target.src = item.fallback
-                      }
-                    }}
                   />
                 </div>
 

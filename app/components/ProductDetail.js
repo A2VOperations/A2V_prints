@@ -268,7 +268,6 @@ function ProductDetailInner({ category: propCategory, id: propId }) {
     price: 'From ₹249',
     description: 'Make a lasting impression with premium quality cards. Printed on high-grade cardstock with crisp color fidelity.',
     image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80',
-    fallback: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80'
   }
 
   const [selectedQty, setSelectedQty] = useState(catInfo.defaultQtyOptions[0])
@@ -277,10 +276,45 @@ function ProductDetailInner({ category: propCategory, id: propId }) {
   const [activeTab, setActiveTab] = useState('Description')
   const [openFaqIndex, setOpenFaqIndex] = useState(0)
   const [isMounted, setIsMounted] = useState(false)
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const [isWishlisted, setIsWishlisted] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
   }, [])
+
+  useEffect(() => {
+    setActiveImageIndex(0)
+    setIsWishlisted(false)
+  }, [productId])
+
+  const getProductGallery = (prod) => {
+    if (prod.images && Array.isArray(prod.images) && prod.images.length > 0) {
+      return prod.images
+    }
+    const mainImg = prod.image || 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80'
+    
+    // Curated high-resolution product showcase images for gallery
+    const extraImages = [
+      mainImg,
+      'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1594980596870-8aa52a78d8cd?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80'
+    ]
+    return Array.from(new Set(extraImages)).slice(0, 5)
+  }
+
+  const galleryImages = getProductGallery(product)
+  const currentImage = galleryImages[activeImageIndex] || product.image
+
+  const handlePrevImage = () => {
+    setActiveImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length)
+  }
+
+  const handleNextImage = () => {
+    setActiveImageIndex((prev) => (prev + 1) % galleryImages.length)
+  }
 
   const displayPrice = product.price
     ? product.price.replace(/^(From|from)\s*/i, 'Starting at ')
@@ -319,9 +353,10 @@ function ProductDetailInner({ category: propCategory, id: propId }) {
 
         {/* Top Section: 2 Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-start mb-16">
-          {/* Left Column: Image Card */}
-          <div className="lg:col-span-6 w-full">
-            <div className="relative aspect-square sm:aspect-4/3 w-full rounded-3xl bg-[#f8f9fa] border border-slate-200/80 flex items-center justify-center overflow-hidden shadow-xs group">
+          {/* Left Column: Image Gallery Carousel */}
+          <div className="lg:col-span-6 w-full flex flex-col select-none">
+            {/* Main Display Box */}
+            <div className="relative aspect-4/3 w-full rounded-2xl sm:rounded-3xl bg-[#f8f9fa] border border-slate-200/80 flex items-center justify-center overflow-hidden shadow-sm group">
               {/* Optional Badge */}
               {product.badge && (
                 <span className="absolute top-4 left-4 z-20 px-3 py-1 rounded-lg bg-[linear-gradient(90deg,#F06800_0%,hsla(328,100%,51%,1)_100%)] text-white text-xs font-extrabold tracking-wider uppercase shadow-xs">
@@ -329,19 +364,82 @@ function ProductDetailInner({ category: propCategory, id: propId }) {
                 </span>
               )}
 
+              {/* Wishlist / Heart Button */}
+              <button
+                type="button"
+                onClick={() => setIsWishlisted(!isWishlisted)}
+                aria-label="Add to wishlist"
+                className="absolute top-4 right-4 z-20 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white shadow-md hover:shadow-lg flex items-center justify-center text-gray-700 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 transition-colors" viewBox="0 0 24 24" fill={isWishlisted ? '#e53e3e' : 'none'} stroke={isWishlisted ? '#e53e3e' : 'currentColor'} strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </button>
+
+              {/* Left Navigation Arrow */}
+              {galleryImages.length > 1 && (
+                <button
+                  type="button"
+                  onClick={handlePrevImage}
+                  aria-label="Previous image"
+                  className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-11 sm:h-11 bg-white rounded-xl shadow-md hover:shadow-lg flex items-center justify-center text-gray-700 hover:text-gray-950 hover:scale-105 active:scale-95 transition-all cursor-pointer opacity-90 hover:opacity-100"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              )}
+
               {/* Product Image */}
               <img
-                src={product.image}
-                alt={product.title}
-                className="w-full h-full object-contain mix-blend-darken transform group-hover:scale-105 transition-transform duration-500 drop-shadow-md relative z-10"
+                key={currentImage}
+                src={currentImage}
+                alt={`${product.title} - View ${activeImageIndex + 1}`}
+                className="w-full h-full object-cover sm:object-contain mix-blend-darken transform transition-all duration-300 drop-shadow-md relative z-10 animate-in fade-in zoom-in-95"
                 loading="lazy"
-                onError={(e) => {
-                  if (product.fallback && e.target.src !== product.fallback) {
-                    e.target.src = product.fallback
-                  }
-                }}
               />
+
+              {/* Right Navigation Arrow */}
+              {galleryImages.length > 1 && (
+                <button
+                  type="button"
+                  onClick={handleNextImage}
+                  aria-label="Next image"
+                  className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-11 sm:h-11 bg-white rounded-xl shadow-md hover:shadow-lg flex items-center justify-center text-gray-700 hover:text-gray-950 hover:scale-105 active:scale-95 transition-all cursor-pointer opacity-90 hover:opacity-100"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              )}
             </div>
+
+            {/* Thumbnail Navigation Row */}
+            {galleryImages.length > 1 && (
+              <div className="flex items-center gap-2.5 sm:gap-3 mt-3.5 sm:mt-4 overflow-x-auto no-scrollbar py-1">
+                {galleryImages.map((imgUrl, idx) => {
+                  const isActiveImg = activeImageIndex === idx
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={`w-14 h-14 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl overflow-hidden cursor-pointer shrink-0 transition-all p-0.5 bg-gray-100 flex items-center justify-center relative ${
+                        isActiveImg
+                          ? 'border-2 border-[#1976d2] shadow-sm ring-2 ring-[#1976d2]/20 scale-[1.02]'
+                          : 'border border-gray-200 hover:border-gray-400 opacity-75 hover:opacity-100'
+                      }`}
+                    >
+                      <img
+                        src={imgUrl}
+                        alt={`${product.title} thumbnail ${idx + 1}`}
+                        className="w-full h-full object-cover rounded-md mix-blend-darken"
+                      />
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* Right Column: Title, Subtitle, Price & Form */}

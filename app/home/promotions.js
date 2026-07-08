@@ -12,7 +12,6 @@ const promotions = [
     bgColor: 'bg-[linear-gradient(135deg,_#6600f5_0%,_#7e18ff_100%)]',
     hoverText: 'group-hover:text-[#6600f5]',
     image: '/categories/categories (4).jpg',
-    fallbackImage: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80',
     imageClassName: 'w-[85%] sm:w-[90%] h-auto max-h-[220px] sm:max-h-[280px] md:max-h-[320px] object-contain transform translate-x-2 sm:translate-x-4 group-hover:scale-105 group-hover:-rotate-2 transition-all duration-500 drop-shadow-[0_20px_25px_rgba(0,0,0,0.3)]'
   },
   {
@@ -24,7 +23,6 @@ const promotions = [
     bgColor: 'bg-[linear-gradient(135deg,_#2878ff_0%,_#458aff_100%)]',
     hoverText: 'group-hover:text-[#2878ff]',
     image: '/categories/categories (5).webp',
-    fallbackImage: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80',
     imageClassName: 'w-[85%] sm:w-[90%] h-auto max-h-[220px] sm:max-h-[280px] md:max-h-[320px] object-contain transform translate-x-2 sm:translate-x-4 group-hover:scale-105 group-hover:rotate-2 transition-all duration-500 drop-shadow-[0_20px_25px_rgba(0,0,0,0.3)]'
   }
 ]
@@ -87,11 +85,6 @@ export default function Promotions() {
                   alt={promo.title.replace('\n', ' ')}
                   className={promo.imageClassName}
                   loading="lazy"
-                  onError={(e) => {
-                    if (e.target.src !== promo.fallbackImage) {
-                      e.target.src = promo.fallbackImage
-                    }
-                  }}
                 />
               </div>
             </a>
