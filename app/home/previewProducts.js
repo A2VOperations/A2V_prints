@@ -2,7 +2,6 @@
 
 import React, { useRef } from 'react'
 import visitingCardsData from '../visiting-cards/products.json'
-import logoDesignData from '../logo-design/products.json'
 import bannerPosterData from '../banner-poster/products.json'
 import customTshirtsData from '../custom-tshirts/products.json'
 import flexBoardData from '../flex-board/products.json'
@@ -17,13 +16,6 @@ const productDataMap = {
     link: '/visiting-cards',
     linkText: 'View All Visiting Cards',
     products: visitingCardsData?.products || [],
-  },
-  'logo-design': {
-    title: 'Custom Logo Design Packages',
-    subtitle: 'Unique, brand-defining logos crafted by professional designers',
-    link: '/logo-design',
-    linkText: 'Explore Logo Packages',
-    products: logoDesignData?.products || [],
   },
   'banner-poster': {
     title: 'Banners & Posters',

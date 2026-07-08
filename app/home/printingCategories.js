@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useRef } from 'react'
+import Link from 'next/link'
+import React, { useRef, useState } from 'react'
 
 const categories = [
     {
@@ -8,19 +9,14 @@ const categories = [
         name: 'Visiting Cards',
         image: '/categories/categories (3).webp',
         badge: 'Popular',
+        group: 'corporate',
         link: '/visiting-cards'
-    },
-    {
-        id: 2,
-        name: 'Logo Design',
-        image: '/categories/categories (1).jpg',
-        badge: 'Best Seller',
-        link: '/logo-design'
     },
     {
         id: 3,
         name: 'Banner and Poster',
         image: '/categories/categories (8).jpg',
+        group: 'marketing',
         link: '/banner-poster'
     },
     {
@@ -28,36 +24,46 @@ const categories = [
         name: 'Custom T-shirts',
         image: '/categories/categories (6).jpg',
         badge: 'New',
+        group: 'apparel',
         link: '/custom-tshirts'
     },
     {
         id: 5,
         name: 'Flex Board',
         image: '/categories/categories (2).png',
+        group: 'marketing',
         link: '/flex-board'
     },
     {
         id: 6,
         name: 'Packaging & labeling',
         image: '/categories/categories (9).webp',
+        group: 'packaging',
         link: '/packaging-labeling'
     },
     {
         id: 7,
         name: 'Custom Mugs & Drinkware',
         image: '/categories/categories (7).webp',
+        group: 'packaging',
         link: '/mugs-drinkware'
     },
     {
         id: 8,
         name: 'Custom Hoodies & Jackets',
         image: '/categories/categories (10).png',
+        group: 'apparel',
         link: '/hoodies-jackets'
     },
 ]
 
+
+
 export default function Categories() {
     const scrollRef = useRef(null)
+    const [activeFilter, setActiveFilter] = useState('all')
+
+    const filteredCategories = categories.filter(cat => activeFilter === 'all' || cat.group === activeFilter)
 
     const scroll = (direction) => {
         if (scrollRef.current) {
@@ -70,10 +76,10 @@ export default function Categories() {
         <section className="pt-12 sm:pt-16 bg-white relative overflow-hidden border-b border-slate-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 group/section relative">
                 {/* Header Row */}
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 sm:mb-8">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
                     <div>
                         <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-                            Explore all categories
+                            Printing Service Categories
                         </h2>
                         <p className="text-slate-500 text-sm sm:text-base mt-1.5 font-normal">
                             Discover customized print products tailored for your business and personal needs
@@ -81,13 +87,13 @@ export default function Categories() {
                     </div>
 
                     <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
-                        <a
-                            href="#all-categories"
+                        <Link
+                            href="/printing-categories"
                             className="inline-flex items-center gap-1.5 text-sm font-bold text-[#5348e2] hover:text-[#ff5722] transition-colors mr-2"
                         >
                             <span>View All Catalog</span>
                             <span className="font-black">→</span>
-                        </a>
+                        </Link>
                     </div>
                 </div>
 
@@ -118,7 +124,7 @@ export default function Categories() {
                         ref={scrollRef}
                         className="flex items-start gap-4 sm:gap-6 overflow-x-auto scroll-smooth pb-6 pt-2 px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                     >
-                        {categories.map((cat) => (
+                        {filteredCategories.map((cat) => (
                             <a
                                 key={cat.id}
                                 href={cat.link}

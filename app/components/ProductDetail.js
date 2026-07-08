@@ -5,13 +5,13 @@ import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 import visitingCardsData from '../visiting-cards/products.json'
-import logoDesignData from '../logo-design/products.json'
 import bannerPosterData from '../banner-poster/products.json'
 import customTshirtsData from '../custom-tshirts/products.json'
 import flexBoardData from '../flex-board/products.json'
 import packagingLabelingData from '../packaging-labeling/products.json'
 import mugsDrinkwareData from '../mugs-drinkware/products.json'
 import hoodiesJacketsData from '../hoodies-jackets/products.json'
+import { graphicServicesList } from '../lib/graphicServicesData'
 
 const categoryMap = {
   'visiting-cards': {
@@ -58,28 +58,6 @@ const categoryMap = {
       { label: 'Print Technology', value: 'Direct to Garment (DTG) & High-density Screen Printing' },
       { label: 'Wash Care', value: 'Machine wash cold, inside out. Do not iron directly on print.' },
       { label: 'Available Sizes', value: 'S, M, L, XL, XXL, 3XL (Standard Indian & US fits)' }
-    ]
-  },
-  'logo-design': {
-    name: 'Logo Design',
-    link: '/logo-design',
-    products: logoDesignData?.products || [],
-    qualityLabel: 'Package Tier',
-    styleLabel: 'Design Style',
-    defaultQtyOptions: ['3 Initial Concepts', '5 Initial Concepts', '8 Premium Concepts'],
-    defaultQualityOptions: [
-      { id: 'standard', title: 'Standard Package', subtitle: 'High-Res PNG & JPEG files' },
-      { id: 'vector', title: 'Vector Source Files', subtitle: 'AI, EPS, SVG & PDF included' }
-    ],
-    defaultStyleOptions: [
-      { id: 'minimalist', title: 'Minimalist Modern', subtitle: 'Clean geometric design' },
-      { id: '3d', title: '3D & Emblem', subtitle: 'Rich depth and textures' }
-    ],
-    defaultSpecs: [
-      { label: 'Deliverables', value: 'Full vector source files (AI, EPS, SVG, PDF) + High-Res PNG/JPG' },
-      { label: 'Revisions', value: 'Unlimited revisions until 100% brand satisfaction' },
-      { label: 'Turnaround Time', value: 'First draft concepts delivered within 48 to 72 hours' },
-      { label: 'Copyright', value: '100% full commercial copyright ownership transferred to client' }
     ]
   },
   'banner-poster': {
@@ -258,17 +236,58 @@ function ProductDetailInner({ category: propCategory, id: propId }) {
   const searchParams = useSearchParams()
 
   const categoryKey = propCategory || params?.category || 'visiting-cards'
-  const productId = propId || params?.id || searchParams?.get('product') || '1'
+  const productId = propId || params?.id || searchParams?.get('product') || categoryKey || '1'
 
-  const catInfo = categoryMap[categoryKey] || categoryMap['visiting-cards']
+  const matchedGraphicService = graphicServicesList.find(
+    (s) =>
+      String(s.id).toLowerCase() === String(productId).toLowerCase() ||
+      String(s.id).toLowerCase() === String(categoryKey).toLowerCase()
+  )
+
+  const dynamicCatInfo = matchedGraphicService
+    ? {
+        name: matchedGraphicService.categoryName,
+        link: `/${matchedGraphicService.categorySlug}`,
+        qualityLabel: 'Package Tier',
+        styleLabel: 'Delivery Speed',
+        defaultQtyOptions: ['1 Custom Concept', '2 Concepts Bundle', 'Complete Suite'],
+        defaultQualityOptions: [
+          { id: 'standard', title: 'Standard Package', subtitle: 'High-Res PNG, JPG & PDF files' },
+          { id: 'premium', title: 'Premium + Vector Files', subtitle: 'AI, EPS, SVG source files included' }
+        ],
+        defaultStyleOptions: [
+          { id: 'normal', title: 'Standard Delivery', subtitle: matchedGraphicService.turnaround },
+          { id: 'express', title: 'Express 24 Hr Rush', subtitle: 'VIP Priority Delivery' }
+        ],
+        defaultSpecs: [
+          { label: 'Service Category', value: matchedGraphicService.categoryName },
+          { label: 'Included Deliverables', value: matchedGraphicService.deliverables ? matchedGraphicService.deliverables.join(', ') : 'Vector AI, EPS, PDF & High-Res PNG' },
+          { label: 'Turnaround Time', value: matchedGraphicService.turnaround },
+          { label: 'Customer Reviews', value: `${matchedGraphicService.rating} ★ (${matchedGraphicService.reviews} Verified Reviews)` },
+          { label: 'Revisions', value: 'Unlimited Revisions on Standard & Premium Tiers' },
+          { label: 'Copyright Ownership', value: '100% Commercial Copyright Ownership Transferred' }
+        ]
+      }
+    : null
+
+  const catInfo = dynamicCatInfo || categoryMap[categoryKey] || categoryMap['visiting-cards']
   const productList = catInfo.products || []
-  const product = productList.find((p) => String(p.id) === String(productId)) || productList[0] || {
-    id: 1,
-    title: 'Standard Visiting Cards',
-    price: 'From ₹249',
-    description: 'Make a lasting impression with premium quality cards. Printed on high-grade cardstock with crisp color fidelity.',
-    image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80',
-  }
+  const product = matchedGraphicService
+    ? {
+        id: matchedGraphicService.id,
+        title: matchedGraphicService.name,
+        price: matchedGraphicService.price,
+        description: matchedGraphicService.desc,
+        image: matchedGraphicService.image,
+        badge: matchedGraphicService.badge || 'Popular'
+      }
+    : productList.find((p) => String(p.id) === String(productId)) || productList[0] || {
+        id: 1,
+        title: 'Standard Visiting Cards',
+        price: 'From ₹249',
+        description: 'Make a lasting impression with premium quality cards. Printed on high-grade cardstock with crisp color fidelity.',
+        image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80',
+      }
 
   const [selectedQty, setSelectedQty] = useState(catInfo.defaultQtyOptions[0])
   const [selectedQuality, setSelectedQuality] = useState(catInfo.defaultQualityOptions[0].id)

@@ -1,411 +1,294 @@
 'use client'
 
 import React, { useState, useRef, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 const categoriesData = [
     {
         id: 'visiting-cards',
         name: 'Visiting Cards',
-        menuType: 'single',
-        columns: [
-            {
-                title: null,
-                items: [
-                    'Classic Visiting Cards',
-                    'Non Tearable Visiting Cards',
-                    'PVC Visiting Cards',
-                    'Rounded Corner Visiting Cards',
-                    'Square Visiting Cards',
-                    'Standard Visiting Cards',
-                    'Textured Paper Visiting Cards',
-                ],
-            },
-        ],
-    },
-    {
-        id: 'notebooks-diaries',
-        name: 'Note Book & Diaries',
-        menuType: 'multi',
-        columns: [
-            {
-                title: null,
-                items: [
-                    'Business Diary with Card Pocket',
-                    'Classic Diary',
-                    'Cork Cover Diary',
-                    'Corporate Diary',
-                    'Custom Leather Diary',
-                    'Custom Leather Journal',
-                    'Customizable Personal Diary',
-                    'Diary with Magnetic Lock',
-                    'Diary with Wooden Cover',
-                    'Elite Work Planner',
-                ],
-            },
-            {
-                title: null,
-                items: [
-                    'Executive Diary',
-                    'Hardcover Diary',
-                    'Magnetic Strap Diary',
-                    'Notepad',
-                    'Pearl White Planner Pro',
-                    'Personalized Journal',
-                    'Premium Corporate Diary',
-                    'Premium Office Diary',
-                    'Prestige Journal',
-                    'Project Planner diary',
-                ],
-            },
-            {
-                title: null,
-                items: [
-                    'Signature Diary',
-                    'Spiral Binding Notebook',
-                    'Staple Binding Notebook',
-                    'Travel Journal',
-                    'Urban Cork Pro Diary',
-                    'Wooden Finish Diary',
-                ],
-            },
-        ],
-    },
-    {
-        id: 'office-stationery',
-        name: 'Office Stationary',
+        href: '/visiting-cards',
         menuType: 'mega',
         columns: [
             {
-                title: 'Office Stationary',
+                title: 'Standard & Classic Cards',
+                href: '/visiting-cards',
                 items: [
-                    'Acrylic Medals',
-                    'Bookmarks',
-                    'Button Badges',
-                    'Certificate',
-                    'Door Hangers',
-                    'Door Name Plates',
-                    'Envelope',
-                    'Greeting Cards',
-                    'Invitation Card',
-                    'Keychains',
-                    'Letterhead Printing',
-                    'Menu Card',
-                    'Mouse Pad',
-                    'Name Badge Magnet',
-                    'Pendrives',
-                    'Presentation Folders',
-                    'Rubber Stamps',
-                    'Self Ink Stamp',
-                    'Tent Card',
-                    'Thank You card',
+                    { name: 'Standard Visiting Cards', href: '/visiting-cards/1' },
+                    { name: 'Rounded Corner Cards', href: '/visiting-cards/2' },
+                    { name: 'Square Cards', href: '/visiting-cards/3' },
+                    { name: 'Gloss Coated Cards', href: '/visiting-cards/7' },
                 ],
             },
             {
-                title: 'Desk Organizers',
+                title: 'Premium & Luxury Cards',
+                href: '/visiting-cards',
                 items: [
-                    'Gold Plated Mobile & Stationary Holder with Clock & Calendar',
-                    'Wooden Mobile & Stationary Holder with Analog clock & Calendar',
-                    'Wooden Pen Stand with Clock',
-                    'Wooden Phone & Card Holder with Pen Stand & Clock',
-                    'Wooden Phone & Pen Holder With Calendar & Clock',
-                    'Wooden Phone & Pen Holder with Calendar Blocks',
-                ],
-            },
-            {
-                title: 'ID cards & Accessories',
-                items: [
-                    'ID Card Holders',
-                    'Lanyards',
-                    'PVC Id Card Printing',
-                    'Retractable Card Holder',
-                ],
-            },
-            {
-                title: 'Pens',
-                items: [
-                    'AeroWhite Pen',
-                    'Arrow Signature Pen',
-                    'BizNote Pen',
-                    'BlackEdge Pen',
-                    'BlackFusion Executive Pen',
-                    'Blackmist Pen',
-                    'BlueNova Pen',
-                    'CedarTouch Executive Pen',
-                    'CorkCraft Pen',
-                    'Corporate Heritage Ballpoint pen',
-                    'Creamline Classic Pen',
-                    'Darkedge Glossy Pen',
-                    'Show all',
-                ],
-            },
-            {
-                title: 'Printed Bags',
-                items: [
-                    'CarryLite Bag',
-                    'Custom Backpack',
-                    'Custom Paper Bags',
-                    'FleXplore Backpack',
-                    'Gridlock Backpack',
-                    'Laptop Bags',
-                    'Odyssey Backpack',
-                    'ShieldPro Anti-Theft Laptop Bag',
-                    'TinyTrove Pouch Bag',
-                    'Tote bags',
-                    'Wayfarer Backpack',
-                    'Zenith Backpack',
-                ],
-            },
-            {
-                title: 'Welcome Kit',
-                items: [
-                    '3 in 1 Drinkware Combo',
-                    '5 in 1 Premium Corporate Gift Set',
-                    'Corporate Welcome Box',
-                    'Diary Pen Combo',
-                    'Executive Combo Box',
-                    'Fusion Combo',
-                    'Luxury Diary and Pen Set',
-                    'New Hire Starter Kit',
-                    'New Hire Swag Box',
-                    'New Joinee Kit',
-                    'Office Welcome Kit',
-                    'Signature Series Combo',
-                    'Summit Selection Combo',
-                    'Superior Combo Box',
+                    { name: 'Spot UV Cards', href: '/visiting-cards/4' },
+                    { name: 'Metallic Foil Cards', href: '/visiting-cards/5' },
+                    { name: 'Ultra-Thick Painted Edge', href: '/visiting-cards/6' },
                 ],
             },
         ],
     },
     {
-        id: 'mugs-bottles',
-        name: 'Mugs, Water bottles & Tumblers',
+        id: 'banner-poster',
+        name: 'Banner & Poster',
+        href: '/banner-poster',
         menuType: 'mega',
         columns: [
             {
-                title: 'Custom Mugs',
+                title: 'Outdoor & Flex Banners',
+                href: '/banner-poster',
                 items: [
-                    'Bamboo Mug',
-                    'Black Coffee Mugs',
-                    'Cork Base Mug',
-                    'Crystal Flip Coffee Mug',
-                    'Double Colour Mugs',
-                    'Edge Grip Stainless Steel Mug',
-                    'Insulated Coffee Mug',
-                    'Magic Mugs',
-                    'Nature Sip Rice Husk Mug',
-                    'Photo Cup',
+                    { name: 'Heavy-Duty Vinyl Banner', href: '/banner-poster/1' },
+                    { name: 'Backlit Star Flex Banner', href: '/banner-poster/4' },
+                    { name: 'Windproof Mesh Banner', href: '/banner-poster/7' },
                 ],
             },
             {
-                title: null,
+                title: 'Stands & Backdrops',
+                href: '/banner-poster',
                 items: [
-                    'Silicone Coffee mug',
-                    'SmartTemp LED Coffee Mug',
-                    'Stainless Steel Coffee mug',
-                    'Travel Mug',
-                    'Urban Sip Handleless Mug',
-                    'Urban Steel Mug',
+                    { name: 'Retractable Roll-Up Stand', href: '/banner-poster/2' },
+                    { name: 'Fabric Satin Event Banner', href: '/banner-poster/5' },
+                    { name: 'Step & Repeat Photo Backdrop', href: '/banner-poster/8' },
                 ],
             },
             {
-                title: 'Custom Tumblers',
+                title: 'Posters & Art Prints',
+                href: '/banner-poster',
                 items: [
-                    'CoolSphere water tumbler',
-                    'DualTone steel insulated tumbler',
-                    'Hot and Cold Water Tumbler',
-                    'PrimeGrip Water Tumbler',
-                    'ThermoNova Water Tumbler',
-                    'UrbanCore water Tumbler',
-                ],
-            },
-            {
-                title: 'Custom Water Bottles',
-                items: [
-                    'Aero Steel water bottle',
-                    'Aqua Luxe Water Bottle',
-                    'Bamboo Flask Water Bottle',
-                    'BlackEdge Steel Water Bottle',
-                    'BlackFit Hydration water Bottle',
-                    'Boho Hot & Cold Sports Bottle',
-                    'Cap Based Lid Water Bottles',
-                    'Carabiner Water Bottles',
-                    'Cola Curve Flask',
-                    'DualTemp thermal Bottle',
-                    'Earthy Cool Sports Water Bottle',
-                    'Echo Stainless Steel Sports Bottle',
-                    'Finix Stainless Steel Sports Bottle',
-                    'FlowCore Straight Water Bottle',
-                    'Grip Flow Water Bottle',
-                    'H2Oasis Custom Vacuum Water Bottle',
-                    'Heat Lock Signature Flask',
-                    'Show all',
+                    { name: 'High-Gloss Promo Poster A1', href: '/banner-poster/3' },
+                    { name: 'Matte Finish Poster A2', href: '/banner-poster/6' },
                 ],
             },
         ],
     },
     {
-        id: 'tshirts-hoodies',
-        name: 'T-shirts, Caps & Hoodies',
+        id: 'flex-board',
+        name: 'Flex Board & Signage',
+        href: '/flex-board',
         menuType: 'mega',
         columns: [
             {
-                title: 'Caps',
+                title: 'Glow Signs & Storefronts',
+                href: '/flex-board',
                 items: [
-                    'Custom Caps',
-                    'Panama Hats',
-                    'Paper Birthday caps',
-                    'Paper Caps',
+                    { name: 'Standard Shop Frontlit Flex', href: '/flex-board/1' },
+                    { name: 'LED Backlit Glow Sign Board', href: '/flex-board/2' },
+                    { name: 'Heavy Iron Box Frame Hoarding', href: '/flex-board/3' },
+                    { name: '3D Acrylic Letter LED Board', href: '/flex-board/4' },
                 ],
             },
             {
-                title: 'Custom-T Shirts',
+                title: 'Boards & Panels',
+                href: '/flex-board',
                 items: [
-                    'Base Polo T-Shirt',
-                    'Drift Polo T-Shirt',
-                    'Duo Stripe Polo T-Shirt',
-                    'Luxe Polo T-Shirt',
-                    'Mono Crew Tee',
-                    'Neo Polo T-Shirt',
-                    'Polo T-Shirts',
-                    'Premium Polo T-Shirts',
-                ],
-            },
-            {
-                title: null,
-                items: [
-                    'Round Neck T-Shirts',
-                    'Sports T-Shirts',
-                    'Twin Edge Polo T-Shirt',
-                ],
-            },
-            {
-                title: 'Winter Wear',
-                items: [
-                    'Custom Hoodies',
-                    'Custom Jackets',
-                    'I Dry Jacket',
-                    'JSLV-Jacket',
+                    { name: 'Vinyl Printed Sunboard Sign', href: '/flex-board/5' },
+                    { name: 'Reflective Night-Glow Highway', href: '/flex-board/6' },
+                    { name: 'Double-Sided Pole Mount Flex', href: '/flex-board/7' },
+                    { name: 'Wooden Framed Exhibition Panel', href: '/flex-board/8' },
                 ],
             },
         ],
     },
     {
-        id: 'signs-posters',
-        name: 'Signs, Posters & Marketing Materials',
+        id: 'packaging-labeling',
+        name: 'Packaging & Labeling',
+        href: '/packaging-labeling',
+        menuType: 'mega',
+        columns: [
+            {
+                title: 'Custom Boxes & Pouches',
+                href: '/packaging-labeling',
+                items: [
+                    { name: 'Corrugated Shipping Box', href: '/packaging-labeling/1' },
+                    { name: 'Luxury Rigid Gift Box', href: '/packaging-labeling/4' },
+                    { name: 'Standup Zip-Lock Food Pouch', href: '/packaging-labeling/6' },
+                    { name: 'Heavy Industrial Carton Box', href: '/packaging-labeling/8' },
+                ],
+            },
+            {
+                title: 'Bags, Labels & Stickers',
+                href: '/packaging-labeling',
+                items: [
+                    { name: 'Waterproof Vinyl Bottle Labels', href: '/packaging-labeling/2' },
+                    { name: 'Kraft Paper Shopping Bags', href: '/packaging-labeling/3' },
+                    { name: 'Holographic Foil Stickers', href: '/packaging-labeling/5' },
+                    { name: 'Custom Printed Wrapping Tissue', href: '/packaging-labeling/7' },
+                ],
+            },
+        ],
+    },
+    {
+        id: 'logo-identity-design',
+        name: 'Logo & Identity',
+        href: '/logo-identity-design',
+        menuType: 'mega',
+        columns: [
+            {
+                title: 'Brand Identity & Logos',
+                href: '/logo-identity-design',
+                items: [
+                    { name: 'Logo Design Suite', href: '/logo-identity-design' },
+                    { name: 'Brand Identity & Strategy', href: '/logo-identity-design' },
+                    { name: 'Brand Guidelines & Stylebook', href: '/logo-identity-design' },
+                    { name: 'Rebranding & Logo Upgrade', href: '/logo-identity-design' },
+                ],
+            },
+            {
+                title: 'Corporate Stationery',
+                href: '/logo-identity-design',
+                items: [
+                    { name: 'Professional Business Cards', href: '/logo-identity-design' },
+                    { name: 'Official Corporate Letterhead', href: '/logo-identity-design' },
+                    { name: 'Envelopes & Presentation Folders', href: '/logo-identity-design' },
+                    { name: 'Corporate ID Cards & Badges', href: '/logo-identity-design' },
+                ],
+            },
+        ],
+    },
+    {
+        id: 'graphic-design',
+        name: 'Graphic Design',
+        href: '/graphic-design',
+        menuType: 'mega',
+        columns: [
+            {
+                title: 'Vector & Digital Artwork',
+                href: '/graphic-design',
+                items: [
+                    { name: 'Vector Tracing & Redraw', href: '/graphic-design' },
+                    { name: 'Custom Infographics Layout', href: '/graphic-design' },
+                    { name: 'Custom Icon Packs', href: '/graphic-design' },
+                    { name: 'Social Media Branding Kit', href: '/graphic-design' },
+                ],
+            },
+            {
+                title: 'Visual & 3D Design',
+                href: '/graphic-design',
+                items: [
+                    { name: 'Presentation & Pitch Deck', href: '/graphic-design' },
+                    { name: 'Podcast Cover Artwork', href: '/graphic-design' },
+                    { name: '3D Product Modeling & Rendering', href: '/graphic-design' },
+                    { name: 'Photo Manipulation & Editing', href: '/graphic-design' },
+                ],
+            },
+        ],
+    },
+    {
+        id: 'web-design',
+        name: 'Web Design',
+        href: '/web-design',
+        menuType: 'mega',
+        columns: [
+            {
+                title: 'UI/UX & Web Interfaces',
+                href: '/web-design',
+                items: [
+                    { name: 'Custom Website UI/UX Design', href: '/web-design' },
+                    { name: 'Mobile App UI/UX Layout', href: '/web-design' },
+                    { name: 'High-Converting Landing Pages', href: '/web-design' },
+                    { name: 'E-Commerce Storefront Design', href: '/web-design' },
+                ],
+            },
+            {
+                title: 'Digital Templates',
+                href: '/web-design',
+                items: [
+                    { name: 'Responsive Email Newsletter UI', href: '/web-design' },
+                    { name: 'Admin Dashboard & Web App UI', href: '/web-design' },
+                    { name: 'Interactive Wireframing & Prototyping', href: '/web-design' },
+                ],
+            },
+        ],
+    },
+    {
+        id: 'print-design',
+        name: 'Print Design',
+        href: '/print-design',
+        menuType: 'mega',
+        columns: [
+            {
+                title: 'Marketing Collateral',
+                href: '/print-design',
+                items: [
+                    { name: 'Flyers & Promotional Leaflets', href: '/print-design' },
+                    { name: 'Bi-Fold & Tri-Fold Brochures', href: '/print-design' },
+                    { name: 'Restaurant Menu & Table Cards', href: '/print-design' },
+                ],
+            },
+            {
+                title: 'Corporate & Editorial',
+                href: '/print-design',
+                items: [
+                    { name: 'Multi-Page Product Catalogs', href: '/print-design' },
+                    { name: 'Corporate Annual Reports', href: '/print-design' },
+                    { name: 'Custom Invitations & Greeting Cards', href: '/print-design' },
+                ],
+            },
+        ],
+    },
 
-        menuType: 'single',
-        columns: [
-            {
-                title: null,
-                items: [
-                    'Banners',
-                    'Booklet',
-                    'Custom Posters',
-                    'Dangler',
-                    'Flyers',
-                    'Standee',
-                ],
-            },
-        ],
-    },
     {
-        id: 'labels-stickers',
-        name: 'Labels, Stickers & Packaging',
-        menuType: 'single',
-        columns: [
-            {
-                title: null,
-                items: [
-                    'Glass Sticker',
-                    'Labels',
-                    'Name Stickers',
-                ],
-            },
-        ],
-    },
-    {
-        id: 'all-custom',
-        name: 'All Custom Products',
+        id: 'Art-Illustration',
+        name: 'Art & Illustration',
+        href: '/Art-Illustration',
         menuType: 'mega',
         columns: [
             {
-                title: null,
+                title: 'Custom Illustrations',
+                href: '/Art-Illustration',
                 items: [
-                    '3 in 1 Drinkware Combo',
-                    '5 in 1 Premium Corporate Gift Set',
-                    'Acrylic Clocks',
-                    'Acrylic Medals',
-                    'Acrylic Photo Frames',
-                    'Aero Steel water bottle',
-                    'AeroWhite Pen',
-                    'Aqua Luxe Water Bottle',
-                    'Arrow Signature Pen',
-                    'Bamboo Flask Water Bottle',
-                    'Bamboo Mug',
+                    { name: 'Bespoke Vector Illustration', href: '/Art-Illustration' },
+                    { name: 'Brand Mascot & Characters', href: '/Art-Illustration' },
+                    { name: 'Custom Digital Concept Art', href: '/Art-Illustration' },
                 ],
             },
             {
-                title: null,
+                title: 'Editorial & Artistic Artwork',
+                href: '/Art-Illustration',
                 items: [
-                    'Banners',
-                    'Base Polo T-Shirt',
-                    'BizNote Pen',
-                    'Black Coffee Mugs',
-                    'BlackEdge Pen',
-                    'BlackEdge Steel Water Bottle',
-                    'BlackFit Hydration water Bottle',
-                    'BlackFusion Executive Pen',
-                    'Blackmist Pen',
-                    'BlueNova Pen',
-                    'Boho Hot & Cold Sports Bottle',
+                    { name: 'Book & Magazine Cover Art', href: '/Art-Illustration' },
+                    { name: 'Custom Tattoo & Creative Artwork', href: '/Art-Illustration' },
+                    { name: 'Storyboard & Comic Illustrations', href: '/Art-Illustration' },
+                ],
+            },
+        ],
+    },
+    {
+        id: 'graphics-categories',
+        name: 'All Categories',
+        href: '/graphics-categories',
+        menuType: 'mega',
+        columns: [
+            {
+                title: 'Print Product Catalog',
+                href: '/graphics-categories',
+                items: [
+                    { name: 'Visiting Cards Catalog', href: '/visiting-cards' },
+                    { name: 'Banner & Poster Printing', href: '/banner-poster' },
+                    { name: 'Custom T-shirts & Apparel', href: '/custom-tshirts' },
+                    { name: 'Flex Boards & Glow Signage', href: '/flex-board' },
+                    { name: 'Packaging, Boxes & Labels', href: '/packaging-labeling' },
+                    { name: 'Custom Mugs & Drinkware', href: '/mugs-drinkware' },
+                    { name: 'Hoodies & Winter Jackets', href: '/hoodies-jackets' },
                 ],
             },
             {
-                title: null,
+                title: 'Creative & Graphic Services',
+                href: '/graphics-categories',
                 items: [
-                    'Booklet',
-                    'Bookmarks',
-                    'Business Diary with Card Pocket',
-                    'Button Badges',
-                    'Canvas Photo Frame',
-                    'Cap Based Lid Water Bottles',
-                    'Carabiner Water Bottles',
-                    'CarryLite Bag',
-                    'CedarTouch Executive Pen',
-                    'Certificate',
-                    'Classic Diary',
-                ],
-            },
-            {
-                title: null,
-                items: [
-                    'Classic Visiting Cards',
-                    'Coasters',
-                    'Cola Curve Flask',
-                    'CoolSphere water tumbler',
-                    'Cork Base Mug',
-                    'Cork Cover Diary',
-                    'CorkCraft Pen',
-                    'Corporate Diary',
-                    'Corporate Heritage Ballpoint pen',
-                    'Corporate Welcome Box',
-                    'Creamline Classic Pen',
-                ],
-            },
-            {
-                title: null,
-                items: [
-                    'Crystal Flip Coffee Mug',
-                    'Custom Backpack',
-                    'Custom Caps',
-                    'Custom Fridge Magnets',
-                    'Custom Hoodies',
-                    'Custom Jackets',
-                    'Custom Leather Diary',
-                    'Custom Leather Journal',
-                    'Custom Paper Bags',
-                    'Custom Posters',
-                    'Show all',
+                    { name: 'Logo & Brand Identity', href: '/logo-identity-design' },
+                    { name: 'Graphic Design Artwork', href: '/graphic-design' },
+                    { name: 'Web & UI/UX Design', href: '/web-design' },
+                    { name: 'Digital Marketing Creatives', href: '/digital-marketing' },
+                    { name: 'Outdoor & Retail Signage', href: '/outdoor-signage' },
+                    { name: 'Print Layout & Brochures', href: '/print-design' },
+                    { name: 'Product Merchandize Design', href: '/Product-Merchandize' },
+                    { name: 'Art & Custom Illustration', href: '/Art-Illustration' },
                 ],
             },
         ],
@@ -419,6 +302,7 @@ export default function Megabar() {
     const [canScrollRight, setCanScrollRight] = useState(false)
     const [isDesktop, setIsDesktop] = useState(true)
 
+    const router = useRouter()
     const navRef = useRef(null)
     const scrollContainerRef = useRef(null)
 
@@ -435,6 +319,7 @@ export default function Megabar() {
                 for (let i = 0; i < col.items.length; i += itemsPerChunk) {
                     processed.push({
                         title: i === 0 ? col.title : null,
+                        href: col.href,
                         isSplitContinuation: i > 0,
                         items: col.items.slice(i, i + itemsPerChunk),
                     })
@@ -467,10 +352,10 @@ export default function Megabar() {
         const cols = getProcessedColumns(catObj?.columns, 14)
         const count = cols.length
 
-        let width = 280
-        if (count === 2) width = 460
-        else if (count === 3) width = 680
-        else if (count === 4) width = 880
+        let width = 320
+        if (count === 2) width = 540
+        else if (count === 3) width = 760
+        else if (count === 4) width = 960
         else if (count >= 5) width = Math.min(1100, navRect.width - 32)
 
         let left = btnRect.left - navRect.left
@@ -549,20 +434,24 @@ export default function Megabar() {
         ? getProcessedColumns(activeData.columns, isDesktop ? 14 : 100)
         : []
 
-    const handleCategoryInteraction = (catId, isClick = false, e = null) => {
+    const handleCategoryInteraction = (cat, isClick = false, e = null) => {
         // On touch devices/mobile (< 1024px), ignore hover events so click manages toggle reliably
         if (!isClick && !isDesktop) {
             return
         }
-        if (isClick && activeCategory === catId) {
+        if (isClick && activeCategory === cat.id) {
+            // If already open or clicked on desktop, navigate directly to category page
+            if (cat.href) {
+                router.push(cat.href)
+            }
             setActiveCategory(null)
             return
         }
         if (isClick && e && e.currentTarget && scrollContainerRef.current) {
             e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
         }
-        setActiveCategory(catId)
-        updateDropdownPosition(catId, isDesktop)
+        setActiveCategory(cat.id)
+        updateDropdownPosition(cat.id, isDesktop)
     }
 
     // Helper to determine dropdown grid columns dynamically based on screen size
@@ -571,11 +460,8 @@ export default function Megabar() {
         if (columnsCount === 2) return 'grid-cols-1 sm:grid-cols-2'
         if (columnsCount === 3) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3'
         if (columnsCount === 4) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-        if (columnsCount === 5) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5'
-        if (columnsCount === 6) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6'
-        if (columnsCount === 7) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7'
-        if (columnsCount === 8) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8'
-        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-8'
+        if (columnsCount >= 5) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5'
+        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3'
     }
 
     return (
@@ -585,7 +471,7 @@ export default function Megabar() {
             onMouseLeave={() => isDesktop && setActiveCategory(null)}
         >
             {/* Categories Horizontal Bar */}
-            <div className="w-full  mx-auto  relative group/bar">
+            <div className="w-full mx-auto relative group/bar">
                 {/* Left Scroll Arrow */}
                 {canScrollLeft && (
                     <div className="absolute left-0 top-0 bottom-0 flex items-center pl-1 pr-4 bg-gradient-to-r from-white via-white/90 to-transparent z-10 pointer-events-auto">
@@ -614,9 +500,9 @@ export default function Megabar() {
                                 key={cat.id}
                                 data-category-id={cat.id}
                                 type="button"
-                                onMouseEnter={(e) => handleCategoryInteraction(cat.id, false, e)}
-                                onClick={(e) => handleCategoryInteraction(cat.id, true, e)}
-                                className={`flex flex-col items-center justify-between px-2 sm:px-2 py-2 rounded-t-xl transition-all cursor-pointer shrink-0 min-w-max group relative border-b-2 ${isActive
+                                onMouseEnter={(e) => handleCategoryInteraction(cat, false, e)}
+                                onClick={(e) => handleCategoryInteraction(cat, true, e)}
+                                className={`flex flex-col items-center justify-between px-2.5 sm:px-2 py-2 rounded-t-xl transition-all cursor-pointer shrink-0 min-w-max group relative border-b-2 ${isActive
                                         ? 'border-[#e53e3e] text-gray-950 font-bold bg-gradient-to-b from-red-50/60 to-red-50/20 shadow-xs'
                                         : 'border-transparent text-gray-700 hover:text-gray-950 hover:border-gray-300 hover:bg-gray-50/60 font-medium'
                                     }`}
@@ -652,26 +538,40 @@ export default function Megabar() {
                     style={dropdownStyle}
                     className="absolute top-full left-0 right-0 lg:left-auto lg:right-auto bg-white/98 backdrop-blur-md shadow-2xl border-t border-gray-100 z-50 animate-in fade-in slide-in-from-top-2 duration-200 border-b border-gray-200/80 rounded-b-2xl max-h-[75vh] lg:max-h-[80vh] overflow-y-auto lg:overflow-visible no-scrollbar"
                 >
-                    <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-7">
-                        {/* Mobile / Tablet Header inside Dropdown */}
-                        <div className="flex items-center justify-between pb-3.5 mb-5 border-b border-gray-100 lg:hidden">
+                    <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+                        {/* Header bar inside Dropdown for all screen sizes */}
+                        <div className="flex items-center justify-between pb-3.5 mb-5 border-b border-gray-100">
                             <div className="flex items-center gap-2">
                                 <span className="w-1.5 h-4 bg-[#e53e3e] rounded-full inline-block"></span>
-                                <h3 className="font-bold text-gray-900 text-sm sm:text-base tracking-tight">
+                                <h3 className="font-extrabold text-gray-900 text-sm sm:text-base tracking-tight">
                                     {activeData.name}
                                 </h3>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setActiveCategory(null)}
-                                className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-gray-950 bg-gray-100 hover:bg-gray-200/80 px-3 py-1.5 rounded-full transition-all cursor-pointer active:scale-95"
-                                aria-label="Close menu"
-                            >
-                                <span>Close</span>
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+                            <div className="flex items-center gap-3">
+                                {activeData.href && (
+                                    <Link
+                                        href={activeData.href}
+                                        onClick={() => setActiveCategory(null)}
+                                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#e53e3e] hover:text-[#c53030] bg-red-50 hover:bg-red-100/80 px-3.5 py-1.5 rounded-full transition-all cursor-pointer shadow-2xs"
+                                    >
+                                        <span>Explore Full Category</span>
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </Link>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveCategory(null)}
+                                    className="flex items-center gap-1 text-xs font-semibold text-gray-600 hover:text-gray-950 bg-gray-100 hover:bg-gray-200/80 px-3 py-1.5 rounded-full transition-all cursor-pointer active:scale-95 lg:hidden"
+                                    aria-label="Close menu"
+                                >
+                                    <span>Close</span>
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
 
                         {/* Grid of Columns/Sections */}
@@ -679,12 +579,24 @@ export default function Megabar() {
                             {processedColumns.map((col, idx) => (
                                 <div key={idx} className="flex flex-col">
                                     {col.title ? (
-                                        <h4 className="font-bold text-[#1a1f36] text-xs sm:text-[13px] uppercase tracking-wider mb-2.5 sm:mb-3 pb-1.5 border-b border-gray-100 line-clamp-1 flex items-center justify-between">
-                                            <span>{col.title}</span>
+                                        <div className="mb-2.5 sm:mb-3 pb-1.5 border-b border-gray-100 flex items-center justify-between">
+                                            {col.href ? (
+                                                <Link
+                                                    href={col.href}
+                                                    onClick={() => setActiveCategory(null)}
+                                                    className="font-bold text-[#1a1f36] hover:text-[#e53e3e] text-xs sm:text-[13px] uppercase tracking-wider line-clamp-1 transition-colors"
+                                                >
+                                                    {col.title}
+                                                </Link>
+                                            ) : (
+                                                <h4 className="font-bold text-[#1a1f36] text-xs sm:text-[13px] uppercase tracking-wider line-clamp-1">
+                                                    {col.title}
+                                                </h4>
+                                            )}
                                             <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-normal lg:hidden">
                                                 {col.items.length}
                                             </span>
-                                        </h4>
+                                        </div>
                                     ) : col.isSplitContinuation ? (
                                         <h4 className="font-bold text-transparent text-xs sm:text-[13px] tracking-normal mb-2.5 sm:mb-3 pb-1.5 border-b border-transparent select-none pointer-events-none line-clamp-1 hidden lg:block" aria-hidden="true">
                                             &nbsp;
@@ -692,24 +604,17 @@ export default function Megabar() {
                                     ) : null}
                                     <ul className="space-y-1 sm:space-y-1.5">
                                         {col.items.map((item, itemIdx) => {
-                                            const isShowAll = item.toLowerCase() === 'show all'
+                                            const itemText = typeof item === 'object' ? item.name : item
+                                            const itemHref = typeof item === 'object' ? item.href : '#'
                                             return (
                                                 <li key={itemIdx}>
-                                                    <a
-                                                        href="#"
+                                                    <Link
+                                                        href={itemHref}
                                                         onClick={() => setActiveCategory(null)}
-                                                        className={`block text-xs sm:text-[13px] transition-all duration-150 py-1 sm:py-0.5 px-1.5 -mx-1.5 rounded-lg ${isShowAll
-                                                                ? 'text-[#1976d2] font-semibold hover:underline pt-1.5 flex items-center gap-1'
-                                                                : 'text-[#4a5568] hover:text-[#e53e3e] hover:bg-red-50/40 hover:translate-x-1 font-normal'
-                                                            }`}
+                                                        className="block text-xs sm:text-[13px] transition-all duration-150 py-1 sm:py-0.5 px-1.5 -mx-1.5 rounded-lg text-[#4a5568] hover:text-[#e53e3e] hover:bg-red-50/40 hover:translate-x-1 font-normal"
                                                     >
-                                                        <span>{item}</span>
-                                                        {isShowAll && (
-                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                                            </svg>
-                                                        )}
-                                                    </a>
+                                                        <span>{itemText}</span>
+                                                    </Link>
                                                 </li>
                                             )
                                         })}
@@ -723,3 +628,4 @@ export default function Megabar() {
         </div>
     )
 }
+
