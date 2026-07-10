@@ -1,67 +1,59 @@
 'use client'
 
 import React, { useRef } from 'react'
-import {
-  visitingCardsList,
-  bannerPosterList,
-  customTshirtsList,
-  flexBoardList,
-  packagingLabelingList,
-  mugsDrinkwareList,
-  hoodiesJacketsList,
-} from '../lib/printingServicesData'
-
 const productDataMap = {
   'visiting-cards': {
     title: 'Featured Visiting Cards',
     subtitle: 'Professional, custom-designed business cards for every industry',
     link: '/visiting-cards',
     linkText: 'View All Visiting Cards',
-    products: visitingCardsList,
+    products: [],
   },
   'banner-poster': {
     title: 'Banners & Posters',
     subtitle: 'High-impact marketing displays and promotional print materials',
     link: '/banner-poster',
     linkText: 'View All Banners',
-    products: bannerPosterList,
+    products: [],
   },
   'custom-tshirts': {
     title: 'Custom T-Shirts & Apparel',
     subtitle: 'Premium personalized t-shirts for businesses, events, and everyday wear',
     link: '/custom-tshirts',
     linkText: 'View All T-Shirts',
-    products: customTshirtsList,
+    products: [],
   },
   'flex-board': {
     title: 'Flex Boards & Signages',
     subtitle: 'Durable, weather-resistant outdoor and indoor advertising boards',
     link: '/flex-board',
     linkText: 'View Flex Boards',
-    products: flexBoardList,
+    products: [],
   },
   'packaging-labeling': {
     title: 'Packaging & Labeling Solutions',
     subtitle: 'Custom boxes, stickers, labels, and packaging to elevate your brand',
     link: '/packaging-labeling',
     linkText: 'Explore Packaging',
-    products: packagingLabelingList,
+    products: [],
   },
   'mugs-drinkware': {
     title: 'Custom Mugs & Drinkware',
     subtitle: 'Personalized ceramic mugs, bottles, and drinkware for gifting and branding',
     link: '/mugs-drinkware',
     linkText: 'View All Drinkware',
-    products: mugsDrinkwareList,
+    products: [],
   },
   'hoodies-jackets': {
     title: 'Custom Hoodies & Winterwear',
     subtitle: 'Cozy, high-quality custom hoodies, sweatshirts, and corporate jackets',
     link: '/hoodies-jackets',
     linkText: 'Explore Winterwear',
-    products: hoodiesJacketsList,
+    products: [],
   },
 }
+
+import { useDatabaseData } from '../lib/useDatabaseData'
 
 export default function PreviewProducts({
   slug = 'visiting-cards',
@@ -73,11 +65,13 @@ export default function PreviewProducts({
   bgClassName = 'bg-slate-50/60',
 }) {
   const scrollRef = useRef(null)
+  const { printingServicesList } = useDatabaseData()
 
   const defaultData = productDataMap[slug] || productDataMap['visiting-cards']
   const title = propTitle || defaultData.title
   const subtitle = propSubtitle || defaultData.subtitle
-  const products = propProducts || defaultData.products || []
+  const dbCategoryProducts = printingServicesList.filter((p) => p.categorySlug === slug)
+  const products = propProducts || (dbCategoryProducts.length > 0 ? dbCategoryProducts : defaultData.products || [])
   const link = propLink || defaultData.link || '#'
   const linkText = propLinkText || defaultData.linkText || 'View All Catalog'
 

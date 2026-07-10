@@ -3,19 +3,15 @@
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { graphicCategories, graphicServicesList } from '../lib/graphicServicesData';
-
-const allCatalogServices = [
-  ...graphicServicesList,
-];
-
-const allCatalogCategories = [
-  ...graphicCategories,
-];
+import { useDatabaseData } from '../lib/useDatabaseData';
 
 function AllCategoriesContent() {
   const searchParams = useSearchParams();
   const initialCategory = searchParams ? searchParams.get('category') : null;
+  const { graphicCategories, graphicServicesList } = useDatabaseData();
+
+  const allCatalogServices = useMemo(() => [...graphicServicesList], [graphicServicesList]);
+  const allCatalogCategories = useMemo(() => [...graphicCategories], [graphicCategories]);
 
   const [selectedCategory, setSelectedCategory] = useState(initialCategory || 'all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,11 +52,11 @@ function AllCategoriesContent() {
     });
   };
 
-  useEffect(() => {
-    if (initialCategory) {
-      setSelectedCategory(initialCategory);
-    }
-  }, [initialCategory]);
+  const [prevInitialCategory, setPrevInitialCategory] = useState(initialCategory);
+  if (initialCategory !== prevInitialCategory) {
+    setPrevInitialCategory(initialCategory);
+    setSelectedCategory(initialCategory || 'all');
+  }
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -83,7 +79,7 @@ function AllCategoriesContent() {
 
       return matchesCategory && matchesSearch;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, searchQuery, allCatalogServices]);
 
   const matchesTurnaround = (item, key) => {
     const t = (item.turnaround || '').toLowerCase();

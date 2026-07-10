@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import React, { useRef } from 'react'
 
 const categories = [
@@ -84,13 +85,13 @@ export default function Categories() {
                     </div>
 
                     <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
-                        <a
+                        <Link
                             href="/graphics-categories"
                             className="inline-flex items-center gap-1.5 text-sm font-bold text-[#5348e2] hover:text-[#ff5722] transition-colors mr-2"
                         >
                             <span>View All Catalog</span>
                             <span className="font-black">→</span>
-                        </a>
+                        </Link>
                     </div>
                 </div>
 

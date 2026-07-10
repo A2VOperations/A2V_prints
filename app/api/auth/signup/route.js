@@ -33,7 +33,7 @@ export async function POST(request) {
       path: "/",
     });
 
-    return Response.json({ id: user._id, name: user.name, email: user.email }, { status: 201 });
+    return Response.json({ id: user._id, name: user.name, email: user.email, role: user.role || "user" }, { status: 201 });
   } catch (error) {
     console.error("Signup error:", error);
     return Response.json(

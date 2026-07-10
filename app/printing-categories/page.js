@@ -3,20 +3,18 @@
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { printingCategories, printingServicesList } from '../lib/printingServicesData';
-
-const allCatalogServices = [
-    ...printingServicesList,
-];
-
-const allCatalogCategories = [
-    ...printingCategories,
-    { id: 'logo-design', name: 'Logo & Identity', slug: 'logo-design' },
-];
+import { useDatabaseData } from '../lib/useDatabaseData';
 
 function AllCategoriesContent() {
     const searchParams = useSearchParams();
     const initialCategory = searchParams ? searchParams.get('category') : null;
+    const { printingCategories, printingServicesList } = useDatabaseData();
+
+    const allCatalogServices = useMemo(() => [...printingServicesList], [printingServicesList]);
+    const allCatalogCategories = useMemo(() => [
+        ...printingCategories,
+        { id: 'logo-design', name: 'Logo & Identity', slug: 'logo-design' },
+    ], [printingCategories]);
 
     const [selectedCategory, setSelectedCategory] = useState(initialCategory || 'all');
     const [searchQuery, setSearchQuery] = useState('');
@@ -57,11 +55,11 @@ function AllCategoriesContent() {
         });
     };
 
-    useEffect(() => {
-        if (initialCategory) {
-            setSelectedCategory(initialCategory);
-        }
-    }, [initialCategory]);
+    const [prevInitialCategory, setPrevInitialCategory] = useState(initialCategory);
+    if (initialCategory !== prevInitialCategory) {
+        setPrevInitialCategory(initialCategory);
+        setSelectedCategory(initialCategory || 'all');
+    }
 
     const showToast = (msg) => {
         setToastMessage(msg);
@@ -84,7 +82,7 @@ function AllCategoriesContent() {
 
             return matchesCategory && matchesSearch;
         });
-    }, [selectedCategory, searchQuery]);
+    }, [selectedCategory, searchQuery, allCatalogServices]);
 
     const matchesTurnaround = (item, key) => {
         const t = (item.turnaround || '').toLowerCase();

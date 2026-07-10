@@ -94,9 +94,8 @@ export default function Navbar() {
                             >
                                 <span>{selectedCategory}</span>
                                 <svg
-                                    className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${
-                                        isCategoryOpen ? 'rotate-180' : ''
-                                    }`}
+                                    className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isCategoryOpen ? 'rotate-180' : ''
+                                        }`}
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -117,11 +116,10 @@ export default function Navbar() {
                                                 setSelectedCategory(cat)
                                                 setIsCategoryOpen(false)
                                             }}
-                                            className={`w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer flex items-center justify-between ${
-                                                selectedCategory === cat
+                                            className={`w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer flex items-center justify-between ${selectedCategory === cat
                                                     ? 'bg-purple-50 text-[#9842dc] font-semibold'
                                                     : 'hover:bg-gray-50 text-gray-700'
-                                            }`}
+                                                }`}
                                         >
                                             <span>{cat}</span>
                                         </button>

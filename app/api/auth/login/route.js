@@ -35,7 +35,7 @@ export async function POST(request) {
       path: "/",
     });
 
-    return Response.json({ id: user._id, name: user.name, email: user.email });
+    return Response.json({ id: user._id, name: user.name, email: user.email, role: user.role || "user" });
   } catch (error) {
     console.error("Login error:", error);
     return Response.json(
