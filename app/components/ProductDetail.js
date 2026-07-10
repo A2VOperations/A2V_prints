@@ -4,20 +4,22 @@ import React, { useState, useEffect, Suspense } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-import visitingCardsData from '../visiting-cards/products.json'
-import bannerPosterData from '../banner-poster/products.json'
-import customTshirtsData from '../custom-tshirts/products.json'
-import flexBoardData from '../flex-board/products.json'
-import packagingLabelingData from '../packaging-labeling/products.json'
-import mugsDrinkwareData from '../mugs-drinkware/products.json'
-import hoodiesJacketsData from '../hoodies-jackets/products.json'
+import {
+  visitingCardsList,
+  customTshirtsList,
+  flexBoardList,
+  bannerPosterList,
+  packagingLabelingList,
+  mugsDrinkwareList,
+  hoodiesJacketsList,
+} from '../lib/printingServicesData'
 import { graphicServicesList } from '../lib/graphicServicesData'
 
 const categoryMap = {
   'visiting-cards': {
     name: 'Visiting Cards',
     link: '/visiting-cards',
-    products: visitingCardsData?.products || [],
+    products: visitingCardsList,
     qualityLabel: 'Paper Quality',
     styleLabel: 'Corner Style',
     defaultQtyOptions: ['100 Cards', '250 Cards', '500 Cards', '1000 Cards'],
@@ -40,7 +42,7 @@ const categoryMap = {
   'custom-tshirts': {
     name: 'Custom T-Shirts',
     link: '/custom-tshirts',
-    products: customTshirtsData?.products || [],
+    products: customTshirtsList,
     qualityLabel: 'Fabric Material',
     styleLabel: 'Collar & Sleeve Style',
     defaultQtyOptions: ['1 Piece', '5 Pieces', '10 Pieces', '25 Pieces', '50 Pieces'],
@@ -63,7 +65,7 @@ const categoryMap = {
   'banner-poster': {
     name: 'Banner & Poster',
     link: '/banner-poster',
-    products: bannerPosterData?.products || [],
+    products: bannerPosterList,
     qualityLabel: 'Flex Material Grade',
     styleLabel: 'Mounting & Finishing',
     defaultQtyOptions: ['1 Banner', '2 Banners', '5 Banners', '10 Banners'],
@@ -85,7 +87,7 @@ const categoryMap = {
   'flex-board': {
     name: 'Flex Board',
     link: '/flex-board',
-    products: flexBoardData?.products || [],
+    products: flexBoardList,
     qualityLabel: 'Lighting Type',
     styleLabel: 'Frame Framing Structure',
     defaultQtyOptions: ['1 Board', '2 Boards', '5 Boards'],
@@ -107,7 +109,7 @@ const categoryMap = {
   'packaging-labeling': {
     name: 'Packaging & Labeling',
     link: '/packaging-labeling',
-    products: packagingLabelingData?.products || [],
+    products: packagingLabelingList,
     qualityLabel: 'Box / Board Material',
     styleLabel: 'Lamination & Finish',
     defaultQtyOptions: ['100 Units', '250 Units', '500 Units', '1000 Units'],
@@ -129,7 +131,7 @@ const categoryMap = {
   'mugs-drinkware': {
     name: 'Mugs & Drinkware',
     link: '/mugs-drinkware',
-    products: mugsDrinkwareData?.products || [],
+    products: mugsDrinkwareList,
     qualityLabel: 'Drinkware Material',
     styleLabel: 'Branding Method',
     defaultQtyOptions: ['1 Unit', '4 Units', '10 Units', '25 Units', '50 Units'],
@@ -151,7 +153,7 @@ const categoryMap = {
   'hoodies-jackets': {
     name: 'Hoodies & Winterwear',
     link: '/hoodies-jackets',
-    products: hoodiesJacketsData?.products || [],
+    products: hoodiesJacketsList,
     qualityLabel: 'Fleece Material Grade',
     styleLabel: 'Closure & Style Type',
     defaultQtyOptions: ['1 Piece', '5 Pieces', '10 Pieces', '25 Pieces'],
@@ -246,48 +248,48 @@ function ProductDetailInner({ category: propCategory, id: propId }) {
 
   const dynamicCatInfo = matchedGraphicService
     ? {
-        name: matchedGraphicService.categoryName,
-        link: `/${matchedGraphicService.categorySlug}`,
-        qualityLabel: 'Package Tier',
-        styleLabel: 'Delivery Speed',
-        defaultQtyOptions: ['1 Custom Concept', '2 Concepts Bundle', 'Complete Suite'],
-        defaultQualityOptions: [
-          { id: 'standard', title: 'Standard Package', subtitle: 'High-Res PNG, JPG & PDF files' },
-          { id: 'premium', title: 'Premium + Vector Files', subtitle: 'AI, EPS, SVG source files included' }
-        ],
-        defaultStyleOptions: [
-          { id: 'normal', title: 'Standard Delivery', subtitle: matchedGraphicService.turnaround },
-          { id: 'express', title: 'Express 24 Hr Rush', subtitle: 'VIP Priority Delivery' }
-        ],
-        defaultSpecs: [
-          { label: 'Service Category', value: matchedGraphicService.categoryName },
-          { label: 'Included Deliverables', value: matchedGraphicService.deliverables ? matchedGraphicService.deliverables.join(', ') : 'Vector AI, EPS, PDF & High-Res PNG' },
-          { label: 'Turnaround Time', value: matchedGraphicService.turnaround },
-          { label: 'Customer Reviews', value: `${matchedGraphicService.rating} ★ (${matchedGraphicService.reviews} Verified Reviews)` },
-          { label: 'Revisions', value: 'Unlimited Revisions on Standard & Premium Tiers' },
-          { label: 'Copyright Ownership', value: '100% Commercial Copyright Ownership Transferred' }
-        ]
-      }
+      name: matchedGraphicService.categoryName,
+      link: `/${matchedGraphicService.categorySlug}`,
+      qualityLabel: 'Package Tier',
+      styleLabel: 'Delivery Speed',
+      defaultQtyOptions: ['1 Custom Concept', '2 Concepts Bundle', 'Complete Suite'],
+      defaultQualityOptions: [
+        { id: 'standard', title: 'Standard Package', subtitle: 'High-Res PNG, JPG & PDF files' },
+        { id: 'premium', title: 'Premium + Vector Files', subtitle: 'AI, EPS, SVG source files included' }
+      ],
+      defaultStyleOptions: [
+        { id: 'normal', title: 'Standard Delivery', subtitle: matchedGraphicService.turnaround },
+        { id: 'express', title: 'Express 24 Hr Rush', subtitle: 'VIP Priority Delivery' }
+      ],
+      defaultSpecs: [
+        { label: 'Service Category', value: matchedGraphicService.categoryName },
+        { label: 'Included Deliverables', value: matchedGraphicService.deliverables ? matchedGraphicService.deliverables.join(', ') : 'Vector AI, EPS, PDF & High-Res PNG' },
+        { label: 'Turnaround Time', value: matchedGraphicService.turnaround },
+        { label: 'Customer Reviews', value: `${matchedGraphicService.rating} ★ (${matchedGraphicService.reviews} Verified Reviews)` },
+        { label: 'Revisions', value: 'Unlimited Revisions on Standard & Premium Tiers' },
+        { label: 'Copyright Ownership', value: '100% Commercial Copyright Ownership Transferred' }
+      ]
+    }
     : null
 
   const catInfo = dynamicCatInfo || categoryMap[categoryKey] || categoryMap['visiting-cards']
   const productList = catInfo.products || []
   const product = matchedGraphicService
     ? {
-        id: matchedGraphicService.id,
-        title: matchedGraphicService.name,
-        price: matchedGraphicService.price,
-        description: matchedGraphicService.desc,
-        image: matchedGraphicService.image,
-        badge: matchedGraphicService.badge || 'Popular'
-      }
-    : productList.find((p) => String(p.id) === String(productId)) || productList[0] || {
-        id: 1,
-        title: 'Standard Visiting Cards',
-        price: 'From ₹249',
-        description: 'Make a lasting impression with premium quality cards. Printed on high-grade cardstock with crisp color fidelity.',
-        image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80',
-      }
+      id: matchedGraphicService.id,
+      title: matchedGraphicService.name,
+      price: matchedGraphicService.price,
+      description: matchedGraphicService.desc,
+      image: matchedGraphicService.image,
+      badge: matchedGraphicService.badge || 'Popular'
+    }
+    : productList.find((p) => String(p.id) === String(productId) || String(p.numericId) === String(productId)) || productList[0] || {
+      id: 1,
+      title: 'Standard Visiting Cards',
+      price: 'From ₹249',
+      description: 'Make a lasting impression with premium quality cards. Printed on high-grade cardstock with crisp color fidelity.',
+      image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80',
+    }
 
   const [selectedQty, setSelectedQty] = useState(catInfo.defaultQtyOptions[0])
   const [selectedQuality, setSelectedQuality] = useState(catInfo.defaultQualityOptions[0].id)
@@ -312,7 +314,7 @@ function ProductDetailInner({ category: propCategory, id: propId }) {
       return prod.images
     }
     const mainImg = prod.image || 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80'
-    
+
     // Curated high-resolution product showcase images for gallery
     const extraImages = [
       mainImg,
@@ -443,11 +445,10 @@ function ProductDetailInner({ category: propCategory, id: propId }) {
                       key={idx}
                       type="button"
                       onClick={() => setActiveImageIndex(idx)}
-                      className={`w-14 h-14 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl overflow-hidden cursor-pointer shrink-0 transition-all p-0.5 bg-gray-100 flex items-center justify-center relative ${
-                        isActiveImg
+                      className={`w-14 h-14 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl overflow-hidden cursor-pointer shrink-0 transition-all p-0.5 bg-gray-100 flex items-center justify-center relative ${isActiveImg
                           ? 'border-2 border-[#1976d2] shadow-sm ring-2 ring-[#1976d2]/20 scale-[1.02]'
                           : 'border border-gray-200 hover:border-gray-400 opacity-75 hover:opacity-100'
-                      }`}
+                        }`}
                     >
                       <img
                         src={imgUrl}
@@ -509,11 +510,10 @@ function ProductDetailInner({ category: propCategory, id: propId }) {
                       key={opt.id}
                       type="button"
                       onClick={() => setSelectedQuality(opt.id)}
-                      className={`p-3.5 rounded-xl text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center border-2 select-none ${
-                        isSelected
+                      className={`p-3.5 rounded-xl text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center border-2 select-none ${isSelected
                           ? 'bg-[#fff3ec] border-[#F06800] text-[#c84b00] shadow-xs font-bold'
                           : 'bg-slate-50/50 hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 font-medium'
-                      }`}
+                        }`}
                     >
                       <span className="text-sm block mb-0.5">{opt.title}</span>
                       <span className={`text-[11px] block font-normal ${isSelected ? 'text-[#c84b00]/80' : 'text-slate-500'}`}>
@@ -538,11 +538,10 @@ function ProductDetailInner({ category: propCategory, id: propId }) {
                       key={opt.id}
                       type="button"
                       onClick={() => setSelectedStyle(opt.id)}
-                      className={`p-3.5 rounded-xl text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center border-2 select-none ${
-                        isSelected
+                      className={`p-3.5 rounded-xl text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center border-2 select-none ${isSelected
                           ? 'bg-[#fff3ec] border-[#F06800] text-[#c84b00] shadow-xs font-bold'
                           : 'bg-slate-50/50 hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 font-medium'
-                      }`}
+                        }`}
                     >
                       <span className="text-sm block mb-0.5">{opt.title}</span>
                       <span className={`text-[11px] block font-normal ${isSelected ? 'text-[#c84b00]/80' : 'text-slate-500'}`}>
@@ -635,11 +634,10 @@ function ProductDetailInner({ category: propCategory, id: propId }) {
                   key={tab}
                   type="button"
                   onClick={() => setActiveTab(tab)}
-                  className={`text-sm sm:text-base pb-3 -mb-px transition-all whitespace-nowrap cursor-pointer select-none ${
-                    isActive
+                  className={`text-sm sm:text-base pb-3 -mb-px transition-all whitespace-nowrap cursor-pointer select-none ${isActive
                       ? 'font-extrabold text-[#c84b00] border-b-2 border-[#F06800]'
                       : 'font-bold text-slate-600 hover:text-slate-900 border-b-2 border-transparent'
-                  }`}
+                    }`}
                 >
                   {tab}
                 </button>
@@ -727,11 +725,10 @@ function ProductDetailInner({ category: propCategory, id: propId }) {
                       {faq.question}
                     </span>
                     <span
-                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold transition-all duration-300 ${
-                        isOpen
+                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold transition-all duration-300 ${isOpen
                           ? 'bg-[#F06800] text-white rotate-180 shadow-xs'
                           : 'bg-white text-slate-600 border border-slate-200 shadow-xs'
-                      }`}
+                        }`}
                     >
                       {isOpen ? '−' : '+'}
                     </span>

@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { graphicCategories, graphicServicesList } from '../lib/graphicServicesData';
+import { printingCategories, printingServicesList } from '../lib/printingServicesData';
 import ProductDetail from '../components/ProductDetail';
 
 export default function DynamicCategoryOrServicePage() {
@@ -49,8 +50,8 @@ export default function DynamicCategoryOrServicePage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Check if slug matches one of our 8 categories
-  const matchedCategory = useMemo(() => {
+  // Check if slug matches a graphic category
+  const matchedGraphicCategory = useMemo(() => {
     return graphicCategories.find(
       (c) =>
         c.slug.toLowerCase() === slug?.toLowerCase() ||
@@ -58,7 +59,19 @@ export default function DynamicCategoryOrServicePage() {
     );
   }, [slug]);
 
-  // Check if slug matches a specific service
+  // Check if slug matches a printing category
+  const matchedPrintingCategory = useMemo(() => {
+    return printingCategories.find(
+      (c) =>
+        c.slug.toLowerCase() === slug?.toLowerCase() ||
+        c.id.toLowerCase() === slug?.toLowerCase()
+    );
+  }, [slug]);
+
+  const matchedCategory = matchedGraphicCategory || matchedPrintingCategory;
+  const isPrintingCategory = !!matchedPrintingCategory && !matchedGraphicCategory;
+
+  // Check if slug matches a specific graphic service
   const matchedService = useMemo(() => {
     if (matchedCategory) return null;
     return graphicServicesList.find(
@@ -68,25 +81,40 @@ export default function DynamicCategoryOrServicePage() {
 
   // Get base services for this category
   const baseServices = useMemo(() => {
-    if (matchedCategory) {
-      return graphicServicesList.filter(
-        (s) =>
-          s.categorySlug === matchedCategory.slug ||
-          s.categoryName === matchedCategory.name
-      ).filter(
-        (s) =>
-          searchQuery.trim() === '' ||
-          s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          s.desc.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+    // Printing category → filter from printingServicesList
+    if (isPrintingCategory && matchedPrintingCategory) {
+      return printingServicesList
+        .filter((s) => s.categorySlug === matchedPrintingCategory.slug)
+        .filter(
+          (s) =>
+            searchQuery.trim() === '' ||
+            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.desc.toLowerCase().includes(searchQuery.toLowerCase())
+        );
     }
+    // Graphic category → filter from graphicServicesList
+    if (matchedGraphicCategory) {
+      return graphicServicesList
+        .filter(
+          (s) =>
+            s.categorySlug === matchedGraphicCategory.slug ||
+            s.categoryName === matchedGraphicCategory.name
+        )
+        .filter(
+          (s) =>
+            searchQuery.trim() === '' ||
+            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.desc.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }
+    // No category matched → show all graphic services
     return graphicServicesList.filter(
       (s) =>
         searchQuery.trim() === '' ||
         s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.desc.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [matchedCategory, searchQuery]);
+  }, [matchedGraphicCategory, matchedPrintingCategory, isPrintingCategory, searchQuery]);
 
   const matchesTurnaround = (item, key) => {
     const t = (item.turnaround || '').toLowerCase();
@@ -151,7 +179,6 @@ export default function DynamicCategoryOrServicePage() {
     return <ProductDetail category={matchedService.categorySlug} id={matchedService.id} />;
   }
 
-  // Helper for Hero text
   const heroHeadingMap = {
     'logo-identity-design': { main: 'Build a Powerful', accent: 'Brand Identity.' },
     'graphic-design': { main: 'Creative & Professional', accent: 'Graphic Design.' },
@@ -161,6 +188,14 @@ export default function DynamicCategoryOrServicePage() {
     'print-design': { main: 'Make a Lasting', accent: 'Impression.' },
     'Product-Merchandize': { main: 'Custom Branded', accent: 'Merchandise.' },
     'Art-Illustration': { main: 'Unique Creative', accent: 'Illustrations.' },
+    // Printing categories
+    'visiting-cards': { main: 'Make a Lasting', accent: 'First Impression.' },
+    'custom-tshirts': { main: 'Wear Your Brand,', accent: 'Own Your Style.' },
+    'flex-board': { main: 'High-Visibility', accent: 'Signage & Displays.' },
+    'banner-poster': { main: 'Bold, Beautiful', accent: 'Banners & Posters.' },
+    'packaging-labeling': { main: 'Package Your Brand', accent: 'Perfectly.' },
+    'mugs-drinkware': { main: 'Custom Mugs &', accent: 'Drinkware Gifts.' },
+    'hoodies-jackets': { main: 'Premium Custom', accent: 'Hoodies & Jackets.' },
   };
 
   const currentHero = heroHeadingMap[matchedCategory?.slug] || {
@@ -422,7 +457,7 @@ export default function DynamicCategoryOrServicePage() {
                   <div>
                     {/* Image block with badges */}
                     <Link
-                      href={`/${matchedCategory ? matchedCategory.slug : service.categorySlug}/${service.id}`}
+                      href={`/${matchedCategory ? matchedCategory.slug : service.categorySlug}/${service.numericId ?? service.id}`}
                       className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-slate-100 block mb-4"
                     >
                       <img
@@ -445,7 +480,7 @@ export default function DynamicCategoryOrServicePage() {
                     </Link>
 
                     {/* Title & Description */}
-                    <Link href={`/${matchedCategory ? matchedCategory.slug : service.categorySlug}/${service.id}`}>
+                    <Link href={`/${matchedCategory ? matchedCategory.slug : service.categorySlug}/${service.numericId ?? service.id}`}>
                       <h3 className="text-base font-extrabold text-slate-900 group-hover:text-[#CC3B10] transition-colors leading-snug mb-1.5">
                         {service.name}
                       </h3>
@@ -458,7 +493,7 @@ export default function DynamicCategoryOrServicePage() {
 
                   {/* Dark Navy CTA Button */}
                   <Link
-                    href={`/${matchedCategory ? matchedCategory.slug : service.categorySlug}/${service.id}`}
+                    href={`/${matchedCategory ? matchedCategory.slug : service.categorySlug}/${service.numericId ?? service.id}`}
                     className="w-full bg-[#031A30] hover:bg-[#0A2D4E] text-white font-bold py-3 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors shadow-xs"
                   >
                     <span>Start Designing</span>

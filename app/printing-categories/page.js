@@ -3,48 +3,14 @@
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import visitingCardsData from '../visiting-cards/products.json';
-import bannerPosterData from '../banner-poster/products.json';
-import customTshirtsData from '../custom-tshirts/products.json';
-import flexBoardData from '../flex-board/products.json';
-import packagingLabelingData from '../packaging-labeling/products.json';
-import mugsDrinkwareData from '../mugs-drinkware/products.json';
-import hoodiesJacketsData from '../hoodies-jackets/products.json';
-
-const mapPrintingProducts = (data, slug, catName) =>
-    (data?.products || []).map((p) => ({
-        id: p.id,
-        name: p.title || p.name,
-        price: p.price || 'From ₹249',
-        desc: p.description || p.desc || '',
-        image: p.image,
-        badge: p.badge || 'Popular',
-        categoryName: catName,
-        categorySlug: slug,
-        turnaround: p.turnaround || '2-3 Days Standard',
-        deliverables: ['Print-Ready High-Res PDF', 'Vector Source (AI / EPS)'],
-        rating: p.rating || 4.8,
-        reviews: p.reviews || 95,
-    }));
+import { printingCategories, printingServicesList } from '../lib/printingServicesData';
 
 const allCatalogServices = [
-    ...mapPrintingProducts(visitingCardsData, 'visiting-cards', 'Visiting Cards'),
-    ...mapPrintingProducts(bannerPosterData, 'banner-poster', 'Banner & Poster'),
-    ...mapPrintingProducts(customTshirtsData, 'custom-tshirts', 'Custom T-shirts'),
-    ...mapPrintingProducts(flexBoardData, 'flex-board', 'Flex Board & Signage'),
-    ...mapPrintingProducts(packagingLabelingData, 'packaging-labeling', 'Packaging & Labeling'),
-    ...mapPrintingProducts(mugsDrinkwareData, 'mugs-drinkware', 'Mugs & Drinkware'),
-    ...mapPrintingProducts(hoodiesJacketsData, 'hoodies-jackets', 'Hoodies & Jackets'),
+    ...printingServicesList,
 ];
 
 const allCatalogCategories = [
-    { id: 'visiting-cards', name: 'Visiting Cards', slug: 'visiting-cards' },
-    { id: 'banner-poster', name: 'Banner & Poster', slug: 'banner-poster' },
-    { id: 'custom-tshirts', name: 'Custom T-shirts', slug: 'custom-tshirts' },
-    { id: 'flex-board', name: 'Flex Board & Signage', slug: 'flex-board' },
-    { id: 'packaging-labeling', name: 'Packaging & Labeling', slug: 'packaging-labeling' },
-    { id: 'mugs-drinkware', name: 'Mugs & Drinkware', slug: 'mugs-drinkware' },
-    { id: 'hoodies-jackets', name: 'Hoodies & Jackets', slug: 'hoodies-jackets' },
+    ...printingCategories,
     { id: 'logo-design', name: 'Logo & Identity', slug: 'logo-design' },
 ];
 
@@ -108,7 +74,7 @@ function AllCategoriesContent() {
             const matchesCategory =
                 selectedCategory === 'all' ||
                 service.categorySlug === selectedCategory ||
-                service.categoryName.toLowerCase().replace(/\s+/g, '-') === selectedCategory;
+                service.categoryName.toLowerCase().replace(/&/g, '').replace(/\s+/g, '-').replace(/-+/g, '-') === selectedCategory;
 
             const matchesSearch =
                 searchQuery.trim() === '' ||
@@ -475,7 +441,7 @@ function AllCategoriesContent() {
                                     <div>
                                         {/* Image block with badges */}
                                         <Link
-                                            href={`/${service.categorySlug}/${service.id}`}
+                                            href={`/${service.categorySlug}/${service.numericId ?? service.id}`}
                                             className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-slate-100 block mb-4"
                                         >
                                             <img
@@ -498,7 +464,7 @@ function AllCategoriesContent() {
                                         </Link>
 
                                         {/* Title & Description */}
-                                        <Link href={`/${service.categorySlug}/${service.id}`}>
+                                        <Link href={`/${service.categorySlug}/${service.numericId ?? service.id}`}>
                                             <h3 className="text-base font-extrabold text-slate-900 group-hover:text-[#CC3B10] transition-colors leading-snug mb-1.5">
                                                 {service.name}
                                             </h3>
@@ -511,7 +477,7 @@ function AllCategoriesContent() {
 
                                     {/* Dark Navy CTA Button */}
                                     <Link
-                                        href={`/${service.categorySlug}/${service.id}`}
+                                        href={`/${service.categorySlug}/${service.numericId ?? service.id}`}
                                         className="w-full bg-[#031A30] hover:bg-[#0A2D4E] text-white font-bold py-3 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors shadow-xs"
                                     >
                                         <span>Start Designing</span>

@@ -1,13 +1,15 @@
 'use client'
 
 import React, { useRef } from 'react'
-import visitingCardsData from '../visiting-cards/products.json'
-import bannerPosterData from '../banner-poster/products.json'
-import customTshirtsData from '../custom-tshirts/products.json'
-import flexBoardData from '../flex-board/products.json'
-import packagingLabelingData from '../packaging-labeling/products.json'
-import mugsDrinkwareData from '../mugs-drinkware/products.json'
-import hoodiesJacketsData from '../hoodies-jackets/products.json'
+import {
+  visitingCardsList,
+  bannerPosterList,
+  customTshirtsList,
+  flexBoardList,
+  packagingLabelingList,
+  mugsDrinkwareList,
+  hoodiesJacketsList,
+} from '../lib/printingServicesData'
 
 const productDataMap = {
   'visiting-cards': {
@@ -15,49 +17,49 @@ const productDataMap = {
     subtitle: 'Professional, custom-designed business cards for every industry',
     link: '/visiting-cards',
     linkText: 'View All Visiting Cards',
-    products: visitingCardsData?.products || [],
+    products: visitingCardsList,
   },
   'banner-poster': {
     title: 'Banners & Posters',
     subtitle: 'High-impact marketing displays and promotional print materials',
     link: '/banner-poster',
     linkText: 'View All Banners',
-    products: bannerPosterData?.products || [],
+    products: bannerPosterList,
   },
   'custom-tshirts': {
     title: 'Custom T-Shirts & Apparel',
     subtitle: 'Premium personalized t-shirts for businesses, events, and everyday wear',
     link: '/custom-tshirts',
     linkText: 'View All T-Shirts',
-    products: customTshirtsData?.products || [],
+    products: customTshirtsList,
   },
   'flex-board': {
     title: 'Flex Boards & Signages',
     subtitle: 'Durable, weather-resistant outdoor and indoor advertising boards',
     link: '/flex-board',
     linkText: 'View Flex Boards',
-    products: flexBoardData?.products || [],
+    products: flexBoardList,
   },
   'packaging-labeling': {
     title: 'Packaging & Labeling Solutions',
     subtitle: 'Custom boxes, stickers, labels, and packaging to elevate your brand',
     link: '/packaging-labeling',
     linkText: 'Explore Packaging',
-    products: packagingLabelingData?.products || [],
+    products: packagingLabelingList,
   },
   'mugs-drinkware': {
     title: 'Custom Mugs & Drinkware',
     subtitle: 'Personalized ceramic mugs, bottles, and drinkware for gifting and branding',
     link: '/mugs-drinkware',
     linkText: 'View All Drinkware',
-    products: mugsDrinkwareData?.products || [],
+    products: mugsDrinkwareList,
   },
   'hoodies-jackets': {
     title: 'Custom Hoodies & Winterwear',
     subtitle: 'Cozy, high-quality custom hoodies, sweatshirts, and corporate jackets',
     link: '/hoodies-jackets',
     linkText: 'Explore Winterwear',
-    products: hoodiesJacketsData?.products || [],
+    products: hoodiesJacketsList,
   },
 }
 
@@ -150,7 +152,7 @@ export default function PreviewProducts({
             {products.map((item) => (
               <a
                 key={item.id}
-                href={`${link}/${item.id}`}
+                href={`${link}/${item.numericId ?? item.id}`}
                 className="group flex flex-col justify-between shrink-0 w-[260px] sm:w-[290px] md:w-[320px] bg-white rounded-2xl border border-slate-200/80 hover:border-[#5348e2]/40 shadow-xs hover:shadow-xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1.5 select-none"
               >
                 {/* Top Image Section */}
