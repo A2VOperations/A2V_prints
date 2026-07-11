@@ -4,7 +4,7 @@ import User from "@/models/User";
 
 export async function GET(request) {
   await connectDB();
-  const users = await User.find().lean();
+  const users = await User.find().select("-password").sort({ createdAt: -1 }).lean();
   return Response.json(users);
 }
 

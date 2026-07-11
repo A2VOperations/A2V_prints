@@ -1,8 +1,25 @@
 // app/api/products/[id]/route.js
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { verifyToken } from "@/app/lib/auth";
 import mongoose from "mongoose";
 import { connectDB } from "@/app/lib/mongodb";
 import Product from "@/app/models/Product";
+import User from "@/models/User";
+
+async function requireAdmin() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  if (!token) return false;
+  const payload = await verifyToken(token);
+  if (!payload) return false;
+  const userId = payload.userId || payload.id;
+  if (!userId) return false;
+  await connectDB();
+  const user = await User.findById(userId);
+  return user && user.role === "admin";
+}
+
 
 async function findProductByIdOrSlug(idOrSlug, categorySlug) {
   if (mongoose.Types.ObjectId.isValid(idOrSlug)) {
@@ -56,6 +73,12 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
+    if (!(await requireAdmin())) {
+      return NextResponse.json(
+        { success: false, error: "Access denied: Only administrators can modify products" },
+        { status: 403 }
+      );
+    }
     await connectDB();
     const { id } = await params;
     const body = await request.json();
@@ -102,6 +125,12 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
+    if (!(await requireAdmin())) {
+      return NextResponse.json(
+        { success: false, error: "Access denied: Only administrators can delete products" },
+        { status: 403 }
+      );
+    }
     await connectDB();
     const { id } = await params;
 

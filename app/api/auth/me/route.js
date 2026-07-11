@@ -15,12 +15,13 @@ export async function GET() {
     }
 
     const payload = await verifyToken(token);
-    if (!payload || !payload.userId || !mongoose.Types.ObjectId.isValid(payload.userId)) {
+    const userId = payload?.userId || payload?.id;
+    if (!payload || !userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return Response.json({ user: null }, { status: 200 });
     }
 
     await connectDB();
-    const user = await User.findById(payload.userId).select("-password");
+    const user = await User.findById(userId).select("-password");
     if (!user) {
       return Response.json({ user: null }, { status: 200 });
     }

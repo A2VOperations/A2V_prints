@@ -36,8 +36,7 @@ export default function LoginPage() {
 
       // Dispatch storage or trigger event so navbar can refresh if needed
       window.dispatchEvent(new Event("auth-change"));
-      router.push("/");
-      router.refresh();
+      window.location.href = "/dashboard";
     } catch (err) {
       setLoading(false);
       setError("Unable to connect to server. Please try again.");

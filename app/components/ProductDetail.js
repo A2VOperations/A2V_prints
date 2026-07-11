@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense, useMemo } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useDatabaseData } from '../lib/useDatabaseData'
+import { addToCart, addToWishlist } from '../lib/cartWishlist'
 
 const defaultGeneralFaqs = [
   { question: 'How do I submit my custom design or artwork?', answer: 'You can either upload your ready-to-print file (PDF, AI, PSD, PNG, JPG) using the "Upload Design" button or create a design from scratch using our online template studio.' },
@@ -221,6 +222,63 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
     ? product.price.replace(/^(From|from)\s*/i, 'Starting at ')
     : 'Starting at ₹249'
 
+  const [currentUser, setCurrentUser] = useState(null)
+  const [toastMessage, setToastMessage] = useState('')
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => setCurrentUser(d.user || null))
+      .catch(() => setCurrentUser(null))
+  }, [])
+
+  const showProductToast = (msg) => {
+    setToastMessage(msg)
+    setTimeout(() => setToastMessage(''), 2500)
+  }
+
+  const handleAddToCart = () => {
+    if (!currentUser) {
+      alert('Please log in to add items to your Shopping Cart.')
+      return
+    }
+    const qualityObj = catInfo.defaultQualityOptions.find((q) => q.id === selectedQuality)
+    const styleObj = catInfo.defaultStyleOptions.find((s) => s.id === selectedStyle)
+    addToCart(currentUser.id, {
+      productId: product.id || product.numericId || '1',
+      title: product.title,
+      price: product.price,
+      image: product.image,
+      category: categoryKey,
+      qtyOption: selectedQty,
+      quality: qualityObj ? qualityObj.title : selectedQuality,
+      style: styleObj ? styleObj.title : selectedStyle,
+      quantity: 1,
+    })
+    showProductToast('Added to Cart!')
+  }
+
+  const handleAddToWishlistAction = () => {
+    if (!currentUser) {
+      alert('Please log in to save items to your Wishlist.')
+      return
+    }
+    const qualityObj = catInfo.defaultQualityOptions.find((q) => q.id === selectedQuality)
+    const styleObj = catInfo.defaultStyleOptions.find((s) => s.id === selectedStyle)
+    addToWishlist(currentUser.id, {
+      productId: product.id || product.numericId || '1',
+      title: product.title,
+      price: product.price,
+      image: product.image,
+      category: categoryKey,
+      qtyOption: selectedQty,
+      quality: qualityObj ? qualityObj.title : selectedQuality,
+      style: styleObj ? styleObj.title : selectedStyle,
+    })
+    setIsWishlisted(true)
+    showProductToast('Saved to Wishlist!')
+  }
+
   const handleUpload = () => {
     alert(`Opening File Uploader for "${product.title}"...\nSelected Quantity: ${selectedQty}\nQuality ID: ${selectedQuality}\nStyle ID: ${selectedStyle}`)
   }
@@ -268,7 +326,7 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
               {/* Wishlist / Heart Button */}
               <button
                 type="button"
-                onClick={() => setIsWishlisted(!isWishlisted)}
+                onClick={handleAddToWishlistAction}
                 aria-label="Add to wishlist"
                 className="absolute top-4 right-4 z-20 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white shadow-md hover:shadow-lg flex items-center justify-center text-gray-700 hover:scale-105 active:scale-95 transition-all cursor-pointer"
               >
@@ -432,22 +490,53 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
                 })}
               </div>
             </div>
-            <div className="flex flex-col justify-center items-center gap-2">
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
+              <button
+                type="button"
+                onClick={handleAddToCart}
+                className="bg-gradient-to-r from-[#F06800] via-[#f54278] to-[#9842dc] hover:opacity-95 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-95 text-sm cursor-pointer w-full sm:flex-1 flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Add to Cart
+              </button>
+              <button
+                type="button"
+                onClick={handleAddToWishlistAction}
+                className="bg-purple-50 hover:bg-purple-100 text-[#9842dc] border border-purple-200 font-extrabold py-3.5 px-5 rounded-2xl transition-all transform hover:scale-[1.02] active:scale-95 text-sm cursor-pointer w-full sm:w-auto flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                Save to Wishlist
+              </button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-2 mt-2">
               <button
                 type="button"
                 onClick={handleUpload}
-                className="bg-[linear-gradient(90deg,#ff520a_0%,#ff0a6c_100%)] hover:opacity-95 text-white font-bold py-3.5 px-8 rounded-full shadow-md hover:shadow-lg transition-all transform hover:scale-105 active:scale-95 text-sm cursor-pointer w-full sm:w-auto min-w-full"
+                className="bg-[linear-gradient(90deg,#ff520a_0%,#ff0a6c_100%)] hover:opacity-95 text-white font-bold py-3 px-6 rounded-xl shadow-xs transition-all transform hover:scale-[1.01] active:scale-95 text-xs cursor-pointer w-full sm:flex-1"
               >
-                Upload Design
+                Upload Custom Design
               </button>
               <button
                 type="button"
                 onClick={handleOnlineEditor}
-                className="bg-[#221712] hover:bg-black text-white font-bold py-3.5 px-8 rounded-full shadow-md hover:shadow-lg transition-all transform hover:scale-105 active:scale-95 text-sm cursor-pointer w-full sm:w-auto min-w-full"
+                className="bg-[#221712] hover:bg-black text-white font-bold py-3 px-6 rounded-xl shadow-xs transition-all transform hover:scale-[1.01] active:scale-95 text-xs cursor-pointer w-full sm:flex-1"
               >
-                Browse Templates
+                Browse Studio Templates
               </button>
             </div>
+
+            {/* Product Toast */}
+            {toastMessage && (
+              <div className="fixed bottom-6 right-6 z-50 bg-gray-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-gray-700 flex items-center gap-2.5 animate-in slide-in-from-bottom-5 duration-200">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="text-sm font-semibold">{toastMessage}</span>
+              </div>
+            )}
           </div>
         </div>
 

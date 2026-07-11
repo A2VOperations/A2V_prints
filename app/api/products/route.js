@@ -1,7 +1,24 @@
 // app/api/products/route.js
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { verifyToken } from "@/app/lib/auth";
 import { connectDB } from "@/app/lib/mongodb";
 import Product from "@/app/models/Product";
+import User from "@/models/User";
+
+async function requireAdmin() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  if (!token) return false;
+  const payload = await verifyToken(token);
+  if (!payload) return false;
+  const userId = payload.userId || payload.id;
+  if (!userId) return false;
+  await connectDB();
+  const user = await User.findById(userId);
+  return user && user.role === "admin";
+}
+
 
 export async function GET(request) {
   try {
@@ -91,6 +108,12 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    if (!(await requireAdmin())) {
+      return NextResponse.json(
+        { success: false, error: "Access denied: Only administrators can create products" },
+        { status: 403 }
+      );
+    }
     await connectDB();
     const body = await request.json();
 
