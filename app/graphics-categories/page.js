@@ -171,7 +171,7 @@ function AllCategoriesContent() {
 
       {/* Pastel Hero Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
-        <div className="rounded-3xl bg-gradient-to-r from-[#FEEFEF] via-[#FCECEE] to-[#F8E7F5] p-6 sm:p-10 lg:p-12 border border-pink-100/60 shadow-xs">
+        <div className="rounded-3xl bg-linear-to-r from-[#FEEFEF] via-[#FCECEE] to-[#F8E7F5] p-6 sm:p-10 lg:p-12 border border-pink-100/60 shadow-xs">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             {/* Left Copy */}
             <div className="lg:col-span-7 space-y-5">
@@ -185,7 +185,7 @@ function AllCategoriesContent() {
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Link
                   href="#catalog-grid"
-                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#FF551D] to-[#FF0055] hover:opacity-95 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all"
+                  className="px-6 py-3 rounded-xl bg-linear-to-r from-[#FF551D] to-[#FF0055] hover:opacity-95 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all"
                 >
                   Explore Templates
                 </Link>

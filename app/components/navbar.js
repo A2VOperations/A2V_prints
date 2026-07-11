@@ -151,7 +151,7 @@ export default function Navbar() {
                         </div>
 
                         {/* Vertical Divider */}
-                        <div className="h-5 w-[1px] bg-gray-200 mx-3 shrink-0" />
+                        <div className="h-5 w-px bg-gray-200 mx-3 shrink-0" />
 
                         {/* Input */}
                         <input
@@ -259,7 +259,7 @@ export default function Navbar() {
                                 className="p-1 text-gray-700 hover:text-[#f54278] transition-colors cursor-pointer focus:outline-none group flex items-center gap-1.5"
                             >
                                 {user ? (
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#F06800] to-[#f54278] text-white font-bold text-xs flex items-center justify-center shadow-sm">
+                                    <div className="w-8 h-8 rounded-full bg-linear-to-tr from-[#F06800] to-[#f54278] text-white font-bold text-xs flex items-center justify-center shadow-sm">
                                         {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                                     </div>
                                 ) : (
@@ -316,7 +316,7 @@ export default function Navbar() {
                                                 <Link
                                                     href="/login"
                                                     onClick={() => setIsUserMenuOpen(false)}
-                                                    className="block w-full text-center py-2 px-4 rounded-xl bg-gradient-to-r from-[#F06800] via-[#f54278] to-[#9842dc] text-white font-bold text-sm shadow-sm hover:opacity-95 transition-all"
+                                                    className="block w-full text-center py-2 px-4 rounded-xl bg-linear-to-r from-[#F06800] via-[#f54278] to-[#9842dc] text-white font-bold text-sm shadow-sm hover:opacity-95 transition-all"
                                                 >
                                                     Log In
                                                 </Link>
@@ -350,7 +350,7 @@ export default function Navbar() {
                         />
                         <button
                             type="submit"
-                            className="bg-gradient-to-r from-[#f54278] via-[#a838cf] to-[#6b42dc] text-white text-sm font-medium px-5 py-1.5 rounded-full shadow-sm"
+                            className="bg-linear-to-r from-[#f54278] via-[#a838cf] to-[#6b42dc] text-white text-sm font-medium px-5 py-1.5 rounded-full shadow-sm"
                         >
                             Search
                         </button>

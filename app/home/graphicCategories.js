@@ -120,7 +120,7 @@ export default function Categories() {
                     {/* Scrollable Track */}
                     <div
                         ref={scrollRef}
-                        className="flex items-start gap-4 sm:gap-6 overflow-x-auto scroll-smooth pb-6 pt-2 px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                        className="flex items-start gap-4 sm:gap-6 overflow-x-auto scroll-smooth pb-6 pt-2 px-1 scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                     >
                         {categories.map((cat) => (
                             <a

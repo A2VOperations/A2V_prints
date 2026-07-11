@@ -474,7 +474,7 @@ export default function Megabar() {
             <div className="w-full mx-auto relative group/bar">
                 {/* Left Scroll Arrow */}
                 {canScrollLeft && (
-                    <div className="absolute left-0 top-0 bottom-0 flex items-center pl-1 pr-4 bg-gradient-to-r from-white via-white/90 to-transparent z-10 pointer-events-auto">
+                    <div className="absolute left-0 top-0 bottom-0 flex items-center pl-1 pr-4 bg-linear-to-r from-white via-white/90 to-transparent z-10 pointer-events-auto">
                         <button
                             type="button"
                             onClick={() => scrollCategories('left')}
@@ -503,7 +503,7 @@ export default function Megabar() {
                                 onMouseEnter={(e) => handleCategoryInteraction(cat, false, e)}
                                 onClick={(e) => handleCategoryInteraction(cat, true, e)}
                                 className={`flex flex-col items-center justify-between px-2.5 sm:px-2 py-2 rounded-t-xl transition-all cursor-pointer shrink-0 min-w-max group relative border-b-2 ${isActive
-                                        ? 'border-[#e53e3e] text-gray-950 font-bold bg-gradient-to-b from-red-50/60 to-red-50/20 shadow-xs'
+                                        ? 'border-[#e53e3e] text-gray-950 font-bold bg-linear-to-b from-red-50/60 to-red-50/20 shadow-xs'
                                         : 'border-transparent text-gray-700 hover:text-gray-950 hover:border-gray-300 hover:bg-gray-50/60 font-medium'
                                     }`}
                             >
@@ -517,7 +517,7 @@ export default function Megabar() {
 
                 {/* Right Scroll Arrow */}
                 {canScrollRight && (
-                    <div className="absolute right-0 top-0 bottom-0 flex items-center justify-end pr-1 pl-4 bg-gradient-to-l from-white via-white/90 to-transparent z-10 pointer-events-auto">
+                    <div className="absolute right-0 top-0 bottom-0 flex items-center justify-end pr-1 pl-4 bg-linear-to-l from-white via-white/90 to-transparent z-10 pointer-events-auto">
                         <button
                             type="button"
                             onClick={() => scrollCategories('right')}
@@ -536,7 +536,7 @@ export default function Megabar() {
             {activeData && (
                 <div
                     style={dropdownStyle}
-                    className="absolute top-full left-0 right-0 lg:left-auto lg:right-auto bg-white/98 backdrop-blur-md shadow-2xl border-t border-gray-100 z-50 animate-in fade-in slide-in-from-top-2 duration-200 border-b border-gray-200/80 rounded-b-2xl max-h-[75vh] lg:max-h-[80vh] overflow-y-auto lg:overflow-visible no-scrollbar"
+                    className="absolute top-full left-0 right-0 lg:left-auto lg:right-auto bg-white/98 backdrop-blur-md shadow-2xl border-t border-gray-100 z-50 animate-in fade-in slide-in-from-top-2 duration-200 border-b rounded-b-2xl max-h-[75vh] lg:max-h-[80vh] overflow-y-auto lg:overflow-visible no-scrollbar"
                 >
                     <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
                         {/* Header bar inside Dropdown for all screen sizes */}
