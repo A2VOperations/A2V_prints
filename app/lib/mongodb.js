@@ -1,7 +1,7 @@
 // lib/mongodb.js
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/A2V_Prints";
+const MONGODB_URI = process.env.MONGODB_URI;
 
 let cached = global.mongoose;
 if (!cached) {
