@@ -90,8 +90,8 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
       (s) =>
         String(s.categorySlug || '').toLowerCase() === String(categoryKey).toLowerCase() &&
         (String(s.id).toLowerCase() === String(productId).toLowerCase() ||
-         String(s.numericId) === String(productId) ||
-         String(s.slug || '').toLowerCase() === String(productId).toLowerCase())
+          String(s.numericId) === String(productId) ||
+          String(s.slug || '').toLowerCase() === String(productId).toLowerCase())
     ) ||
     (!categoryKey ? allList.find(
       (s) =>
@@ -130,7 +130,7 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
   const allCategories = [...(printingCategories || []), ...(graphicCategories || [])]
   const dbCategory = initialCategory || allCategories.find(
     (c) => String(c.slug || '').toLowerCase() === String(categoryKey).toLowerCase() ||
-           String(c.id || '').toLowerCase() === String(categoryKey).toLowerCase()
+      String(c.id || '').toLowerCase() === String(categoryKey).toLowerCase()
   )
 
   const catInfo = dynamicCatInfo || (dbCategory && dbCategory.defaultQualityOptions && dbCategory.defaultQualityOptions.length > 0 ? {
@@ -501,30 +501,20 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
                 </svg>
                 Add to Cart
               </button>
-              <button
-                type="button"
-                onClick={handleAddToWishlistAction}
-                className="bg-purple-50 hover:bg-purple-100 text-[#9842dc] border border-purple-200 font-extrabold py-3.5 px-5 rounded-2xl transition-all transform hover:scale-[1.02] active:scale-95 text-sm cursor-pointer w-full sm:w-auto flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-                Save to Wishlist
-              </button>
             </div>
 
             <div className="flex flex-col sm:flex-row justify-center items-center gap-2 mt-2">
               <button
                 type="button"
                 onClick={handleUpload}
-                className="bg-[linear-gradient(90deg,#ff520a_0%,#ff0a6c_100%)] hover:opacity-95 text-white font-bold py-3 px-6 rounded-xl shadow-xs transition-all transform hover:scale-[1.01] active:scale-95 text-xs cursor-pointer w-full sm:flex-1"
+                className="bg-[linear-gradient(90deg,#ff520a_0%,#ff0a6c_100%)] hover:opacity-95 text-white font-extrabold  py-3.5 px-6 rounded-2xl shadow-md transition-all transform hover:scale-[1.01] active:scale-95 text-sm cursor-pointer w-full sm:flex-1"
               >
                 Upload Custom Design
               </button>
               <button
                 type="button"
                 onClick={handleOnlineEditor}
-                className="bg-[#221712] hover:bg-black text-white font-bold py-3 px-6 rounded-xl shadow-xs transition-all transform hover:scale-[1.01] active:scale-95 text-xs cursor-pointer w-full sm:flex-1"
+                className="bg-[#221712] hover:bg-black text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-md transition-all transform hover:scale-[1.01] active:scale-95 text-sm cursor-pointer w-full sm:flex-1"
               >
                 Browse Studio Templates
               </button>
@@ -543,7 +533,7 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
         {/* Bottom Section: Tabs (Description, Paper & Specs, Shipping Info) */}
         <div className="mt-16 pt-8 border-t border-slate-200/80 max-w-5xl">
           {/* Tab Headers */}
-          <div className="flex items-center gap-8 border-b border-slate-200 mb-8 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex items-center gap-8 border-b border-slate-200 mb-8 overflow-x-auto scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {['Description', 'Paper & Specs', 'Shipping Info'].map((tab) => {
               const isActive = activeTab === tab
               return (
@@ -620,7 +610,7 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
         <div className="mt-20 pt-16 border-t border-slate-200/80 max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
             <div>
-             
+
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 Recommended {catInfo.name || 'Products'}
               </h2>

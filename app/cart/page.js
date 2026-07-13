@@ -121,8 +121,28 @@ export default function CartPage() {
     showToast('Saved to your wishlist!')
   }
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) return
+    try {
+      await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer: {
+            name: user?.name || 'Customer',
+            email: user?.email || 'customer@example.com',
+          },
+          items: cart,
+          itemsSummary: cart.map((i) => `${i.quantity || 1}x ${i.name || i.title || 'Custom Print Product'}`).join(', '),
+          total: grandTotal,
+          status: 'Processing',
+          paymentStatus: 'Pending',
+          paymentMethod: 'Gateway Future Ready',
+        }),
+      })
+    } catch (err) {
+      console.error('Failed creating order in DB:', err)
+    }
     setOrderSuccessModal(true)
     clearCart(user.id)
     setCart([])
@@ -378,7 +398,7 @@ export default function CartPage() {
                       value={promoCode}
                       onChange={(e) => setPromoCode(e.target.value)}
                       placeholder="Try A2V10 or PRINT20"
-                      className="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-purple-500 uppercase font-semibold"
+                      className="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-200 text-blackd text-xs text-gray-500 focus:outline-none focus:border-purple-500 uppercase font-semibold placeholder:text-gray-300 placeholder:text-xs"
                     />
                     <button
                       type="submit"
@@ -389,9 +409,8 @@ export default function CartPage() {
                   </div>
                   {promoMessage && (
                     <p
-                      className={`text-xs mt-2 font-medium ${
-                        appliedDiscount > 0 ? 'text-emerald-600' : 'text-red-500'
-                      }`}
+                      className={`text-xs mt-2 font-medium ${appliedDiscount > 0 ? 'text-emerald-600' : 'text-red-500'
+                        }`}
                     >
                       {promoMessage}
                     </p>
@@ -405,22 +424,20 @@ export default function CartPage() {
                   </label>
                   <div
                     onClick={() => setShippingType('standard')}
-                    className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between text-sm transition-all ${
-                      shippingType === 'standard'
+                    className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between text-sm transition-all ${shippingType === 'standard'
                         ? 'border-[#F06800] bg-orange-50/50 font-bold text-gray-900'
                         : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     <span>Standard Production (2-3 days)</span>
                     <span className="text-emerald-600 font-bold">FREE</span>
                   </div>
                   <div
                     onClick={() => setShippingType('express')}
-                    className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between text-sm transition-all ${
-                      shippingType === 'express'
+                    className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between text-sm transition-all ${shippingType === 'express'
                         ? 'border-[#F06800] bg-orange-50/50 font-bold text-gray-900'
                         : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     <span>Express Priority Dispatch</span>
                     <span>₹149</span>

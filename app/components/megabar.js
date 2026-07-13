@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 
 const categoriesData = [
     {
@@ -303,6 +303,7 @@ export default function Megabar() {
     const [isDesktop, setIsDesktop] = useState(true)
 
     const router = useRouter()
+    const pathname = usePathname()
     const navRef = useRef(null)
     const scrollContainerRef = useRef(null)
 
@@ -463,6 +464,8 @@ export default function Megabar() {
         if (columnsCount >= 5) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5'
         return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3'
     }
+
+    if (pathname && pathname.startsWith('/admin')) return null;
 
     return (
         <div

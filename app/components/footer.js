@@ -2,8 +2,10 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 export default function Footer() {
+  const pathname = usePathname()
   const [email, setEmail] = useState('')
   const [subscribed, setSubscribed] = useState(false)
 
@@ -49,6 +51,8 @@ export default function Footer() {
     { name: 'Terms & Conditions of Service', href: '#' },
     { name: 'Privacy & Data Security Policy', href: '#' },
   ]
+
+  if (pathname && pathname.startsWith('/admin')) return null;
 
   return (
     <footer className="w-full bg-[#0a0f1d] text-slate-300 pt-12 border-t border-slate-800/80 relative overflow-hidden select-none">

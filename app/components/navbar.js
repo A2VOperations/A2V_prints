@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import React, { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { getCart, getWishlist } from '../lib/cartWishlist'
 
 const categories = [
@@ -18,6 +18,7 @@ const categories = [
 
 export default function Navbar() {
     const router = useRouter()
+    const pathname = usePathname()
     const [selectedCategory, setSelectedCategory] = useState(categories[0])
     const [isCategoryOpen, setIsCategoryOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
@@ -55,13 +56,18 @@ export default function Navbar() {
     useEffect(() => {
         fetchUser()
         const handleAuthChange = () => fetchUser()
+        window.addEventListener('auth-change', handleAuthChange)
+        return () => {
+            window.removeEventListener('auth-change', handleAuthChange)
+        }
+    }, [])
+
+    useEffect(() => {
         const handleCartWishlistChange = () => {
             if (user) refreshCounts(user)
         }
-        window.addEventListener('auth-change', handleAuthChange)
         window.addEventListener('cart-wishlist-change', handleCartWishlistChange)
         return () => {
-            window.removeEventListener('auth-change', handleAuthChange)
             window.removeEventListener('cart-wishlist-change', handleCartWishlistChange)
         }
     }, [user])
@@ -95,6 +101,8 @@ export default function Navbar() {
             console.error('Logout error:', error)
         }
     }
+
+    if (pathname && pathname.startsWith('/admin')) return null;
 
     return (
         <nav className="w-full bg-[#f5f6fb] border-b border-gray-200/60 py-4 px-4 sm:px-6 lg:px-8 select-none sticky top-0 z-40 shadow-xs">

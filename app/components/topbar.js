@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 
 const currencies = [
   { code: 'USD', symbol: '$', label: 'USD ($)' },
@@ -13,6 +14,7 @@ const currencies = [
 ]
 
 export default function Topbar() {
+  const pathname = usePathname()
   const [selectedCurrency, setSelectedCurrency] = useState(currencies[4]) // Default to INR (₹)
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef(null)
@@ -26,6 +28,8 @@ export default function Topbar() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  if (pathname && pathname.startsWith('/admin')) return null;
 
   return (
     <div className="w-full bg-[linear-gradient(90deg,#F06800_0%,hsla(328,100%,51%,1)_100%)] text-white text-xs sm:text-sm font-medium py-2.5 px-4 sm:px-6 lg:px-8 shadow-sm select-none">

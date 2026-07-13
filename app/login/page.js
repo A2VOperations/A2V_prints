@@ -36,7 +36,11 @@ export default function LoginPage() {
 
       // Dispatch storage or trigger event so navbar can refresh if needed
       window.dispatchEvent(new Event("auth-change"));
-      window.location.href = "/dashboard";
+      if (data.user && data.user.role === "admin") {
+        window.location.href = "/admin";
+      } else {
+        window.location.href = "/dashboard";
+      }
     } catch (err) {
       setLoading(false);
       setError("Unable to connect to server. Please try again.");
