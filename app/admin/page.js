@@ -12,7 +12,6 @@ export default function AdminDashboardPage() {
     email: "admin@a2vprints.com",
     role: "admin"
   });
-  const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
 
   // Dynamic DB Data states
@@ -97,9 +96,7 @@ export default function AdminDashboardPage() {
       }
     } catch (err) {
       console.error("Failed loading dynamic admin data:", err);
-    } finally {
-      setLoading(false);
-    }
+    } 
   };
 
   useEffect(() => {
