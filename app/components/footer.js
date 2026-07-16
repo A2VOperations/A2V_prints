@@ -52,7 +52,7 @@ export default function Footer() {
     { name: 'Privacy & Data Security Policy', href: '#' },
   ]
 
-  if (pathname && pathname.startsWith('/admin')) return null;
+  if (pathname && (pathname.startsWith('/admin') || pathname.startsWith('/Editer'))) return null;
 
   return (
     <footer className="w-full bg-[#0a0f1d] text-slate-300 pt-12 border-t border-slate-800/80 relative overflow-hidden select-none">

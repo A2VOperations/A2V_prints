@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 
 const currencies = [
   { code: 'USD', symbol: '$', label: 'USD ($)' },
@@ -29,7 +30,7 @@ export default function Topbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  if (pathname && pathname.startsWith('/admin')) return null;
+  if (pathname && (pathname.startsWith('/admin') || pathname.startsWith('/Editer'))) return null;
 
   return (
     <div className="w-full bg-[linear-gradient(90deg,#F06800_0%,hsla(328,100%,51%,1)_100%)] text-white text-xs sm:text-sm font-medium py-2.5 px-4 sm:px-6 lg:px-8 shadow-sm select-none">
@@ -141,6 +142,15 @@ export default function Topbar() {
               </a>
             </div>
           </div>
+
+          {/* Design Templates */}
+          <Link
+            href="/template"
+            className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full font-bold text-yellow-200 hover:text-white transition-all cursor-pointer shadow-2xs"
+          >
+            <span>🎨</span>
+            <span>Design Templates</span>
+          </Link>
 
           {/* Order Tracking */}
           <a

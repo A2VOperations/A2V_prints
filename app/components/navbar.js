@@ -31,13 +31,9 @@ export default function Navbar() {
     const userMenuRef = useRef(null)
 
     const refreshCounts = (u) => {
-        if (!u) {
-            setWishlistCount(0)
-            setCartCount(0)
-            return
-        }
-        setWishlistCount(getWishlist(u.id).length)
-        setCartCount(getCart(u.id).reduce((s, i) => s + (i.quantity || 1), 0))
+        const uid = u ? u.id : null
+        setWishlistCount(getWishlist(uid).length)
+        setCartCount(getCart(uid).reduce((s, i) => s + (i.quantity || 1), 0))
     }
 
     const fetchUser = async () => {
@@ -64,7 +60,7 @@ export default function Navbar() {
 
     useEffect(() => {
         const handleCartWishlistChange = () => {
-            if (user) refreshCounts(user)
+            refreshCounts(user)
         }
         window.addEventListener('cart-wishlist-change', handleCartWishlistChange)
         return () => {
@@ -102,7 +98,7 @@ export default function Navbar() {
         }
     }
 
-    if (pathname && pathname.startsWith('/admin')) return null;
+    if (pathname && (pathname.startsWith('/admin') || pathname.startsWith('/Editer'))) return null;
 
     return (
         <nav className="w-full bg-[#f5f6fb] border-b border-gray-200/60 py-4 px-4 sm:px-6 lg:px-8 select-none sticky top-0 z-40 shadow-xs">

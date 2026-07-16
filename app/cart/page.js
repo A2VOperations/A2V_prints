@@ -31,12 +31,21 @@ export default function CartPage() {
       try {
         const res = await fetch('/api/auth/me')
         const data = await res.json()
-        setUser(data?.user || null)
-        if (data?.user) {
-          setCart(getCart(data.user.id))
+        const loggedUser = data?.user || null
+        setUser(loggedUser)
+        const guestItems = getCart(null)
+        if (loggedUser) {
+          if (guestItems && guestItems.length > 0) {
+            guestItems.forEach(item => addToCart(loggedUser.id, item))
+            clearCart(null)
+          }
+          setCart(getCart(loggedUser.id))
+        } else {
+          setCart(guestItems)
         }
       } catch (err) {
         setUser(null)
+        setCart(getCart(null))
       } finally {
         setLoadingAuth(false)
       }
@@ -45,8 +54,7 @@ export default function CartPage() {
   }, [])
 
   useEffect(() => {
-    if (!user) return
-    const updateCart = () => setCart(getCart(user.id))
+    const updateCart = () => setCart(getCart(user ? user.id : null))
     window.addEventListener('cart-wishlist-change', updateCart)
     return () => window.removeEventListener('cart-wishlist-change', updateCart)
   }, [user])
@@ -98,31 +106,37 @@ export default function CartPage() {
   }
 
   const handleQtyChange = (id, delta) => {
-    if (!user) return
+    const uid = user ? user.id : null
     const item = cart.find((i) => i.id === id)
     if (!item) return
     const newQty = Math.max(1, (item.quantity || 1) + delta)
-    const updated = updateCartQty(user.id, id, newQty)
+    const updated = updateCartQty(uid, id, newQty)
     setCart(updated)
   }
 
   const handleRemove = (id) => {
-    if (!user) return
-    const updated = removeFromCart(user.id, id)
+    const uid = user ? user.id : null
+    const updated = removeFromCart(uid, id)
     setCart(updated)
     showToast('Item removed from cart')
   }
 
   const handleSaveForLater = (item) => {
-    if (!user) return
-    addToWishlist(user.id, item)
-    const updated = removeFromCart(user.id, item.id)
+    const uid = user ? user.id : null
+    addToWishlist(uid, item)
+    const updated = removeFromCart(uid, item.id)
     setCart(updated)
     showToast('Saved to your wishlist!')
   }
 
   const handleCheckout = async () => {
     if (cart.length === 0) return
+    if (!user) {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login?redirect=/cart'
+      }
+      return
+    }
     try {
       await fetch('/api/orders', {
         method: 'POST',
@@ -144,7 +158,7 @@ export default function CartPage() {
       console.error('Failed creating order in DB:', err)
     }
     setOrderSuccessModal(true)
-    clearCart(user.id)
+    clearCart(user ? user.id : null)
     setCart([])
   }
 
@@ -154,46 +168,6 @@ export default function CartPage() {
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-[#F06800] border-t-transparent rounded-full animate-spin" />
           <p className="text-sm font-semibold text-gray-500 animate-pulse">Loading your Cart...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Logged-out state
-  if (!user) {
-    return (
-      <div className="min-h-[80vh] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-100/60 via-white to-gray-50 flex items-center justify-center p-4 sm:p-6">
-        <div className="max-w-md w-full bg-white/90 backdrop-blur-xl rounded-3xl border border-purple-100 shadow-2xl p-8 sm:p-10 text-center relative overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-          <div className="absolute -top-16 -right-16 w-40 h-40 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-16 -left-16 w-40 h-40 bg-pink-500/10 rounded-full blur-2xl pointer-events-none" />
-
-          <div className="w-20 h-20 bg-gradient-to-tr from-[#F06800] to-[#f54278] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-orange-500/25">
-            <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          </div>
-
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-            Sign In to Access Your Cart
-          </h1>
-          <p className="text-gray-500 text-sm sm:text-base mt-3 leading-relaxed">
-            Please log in to review your cart items, select custom shipping options, and complete checkout.
-          </p>
-
-          <div className="mt-8 space-y-3">
-            <Link
-              href="/login"
-              className="block w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#F06800] via-[#f54278] to-[#9842dc] text-white font-bold text-sm shadow-md shadow-purple-500/20 hover:opacity-95 hover:scale-[1.01] active:scale-[0.99] transition-all"
-            >
-              Log In to My Account
-            </Link>
-            <Link
-              href="/signup"
-              className="block w-full py-3.5 px-6 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-sm transition-all"
-            >
-              Create New Account
-            </Link>
-          </div>
         </div>
       </div>
     )
@@ -314,10 +288,27 @@ export default function CartPage() {
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-gray-900 text-base sm:text-lg">
-                          {item.title}
-                        </h3>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <h3 className="font-bold text-gray-900 text-base sm:text-lg">
+                            {item.title}
+                          </h3>
+                          {item.customDesign && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (typeof window !== 'undefined') {
+                                  sessionStorage.setItem('a2v_editor_session', JSON.stringify(item.customDesign));
+                                  window.location.href = '/Editer';
+                                }
+                              }}
+                              className="text-xs font-bold px-3 py-1.5 rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200/80 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+                            >
+                              <span>✏️</span>
+                              <span>Edit in Studio</span>
+                            </button>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-500 mt-1">
                           {item.qtyOption ? `${item.qtyOption} • ` : ''}
                           {item.quality || 'Standard Quality'}
@@ -325,6 +316,171 @@ export default function CartPage() {
                         <p className="text-xs text-gray-400 mt-0.5">
                           {item.style || 'Regular Cut'}
                         </p>
+
+                        {/* Full Custom Studio Design Specifications & Visual Previews */}
+                        {item.customDesign && (
+                          <div className="mt-4 pt-4 border-t border-gray-200/70 bg-slate-50/90 rounded-2xl p-4 space-y-4 shadow-2xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="text-sm">✨</span> Custom Design & Card Specifications
+                              </span>
+                              <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                                ✓ Print Ready 300 DPI
+                              </span>
+                            </div>
+
+                            {/* 4 Specification Badges */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                              <div className="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Paper Stock</span>
+                                <span className="font-extrabold text-slate-800 text-xs leading-tight block mt-0.5">
+                                  {item.customDesign.productOptions?.stock || item.quality?.split(' • ')[0] || 'Standard Matte (300 gsm)'}
+                                </span>
+                              </div>
+                              <div className="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Corner Style</span>
+                                <span className="font-extrabold text-slate-800 text-xs leading-tight block mt-0.5">
+                                  {item.customDesign.corners || item.customDesign.productOptions?.corners || 'Standard Square Corners'}
+                                </span>
+                              </div>
+                              <div className="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Side Print</span>
+                                <span className="font-extrabold text-slate-800 text-xs leading-tight block mt-0.5">
+                                  {item.customDesign.isBackCustomized ? 'Double Sided (Front + Back)' : 'Single Sided (Front Only)'}
+                                </span>
+                              </div>
+                              <div className="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Orientation</span>
+                                <span className="font-extrabold text-slate-800 text-xs leading-tight block mt-0.5">
+                                  {item.customDesign.productOptions?.orientation || 'Horizontal (85mm x 55mm)'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Live Miniature Front & Back Previews & Printed Content Summary */}
+                            <div className="pt-1 flex flex-col sm:flex-row items-start gap-4">
+                              <div className="flex items-center gap-3 shrink-0">
+                                {/* Front Mini Card */}
+                                <div className="flex flex-col items-center gap-1">
+                                  <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider bg-white px-2 py-0.5 rounded-full border border-slate-200 shadow-2xs">
+                                    Front Side
+                                  </span>
+                                  <div
+                                    style={{
+                                      backgroundColor: item.customDesign.frontBackground && item.customDesign.frontBackground !== 'transparent' ? item.customDesign.frontBackground : '#ffffff',
+                                      width: '150px',
+                                      height: '86px',
+                                      borderRadius: (item.customDesign.corners || item.customDesign.productOptions?.corners || '').includes('Rounded') ? '10px' : '0px'
+                                    }}
+                                    className={`relative overflow-hidden border border-slate-300 shadow-sm flex items-center justify-center bg-white shrink-0 ${(item.customDesign.corners || item.customDesign.productOptions?.corners || '').includes('Rounded') ? 'rounded-xl' : 'rounded-none'}`}
+                                  >
+                                    {(!item.customDesign.frontElements || item.customDesign.frontElements.length === 0) ? (
+                                      <span className="text-[9px] font-bold text-slate-400">Empty Front</span>
+                                    ) : (
+                                      item.customDesign.frontElements.map((el, idx) => (
+                                        <div
+                                          key={`cart-front-${el.id || idx}`}
+                                          style={{
+                                            position: 'absolute',
+                                            left: `${(el.x || 0) * 0.22}px`,
+                                            top: `${(el.y || 0) * 0.22}px`,
+                                            width: el.width ? `${el.width * 0.22}px` : 'auto',
+                                            fontSize: el.fontSize ? `${Math.max(7, el.fontSize * 0.22)}px` : '8px',
+                                            fontFamily: el.fontFamily || 'Fira Sans',
+                                            color: el.color || '#0f172a',
+                                            fontWeight: el.bold ? 'bold' : 'normal',
+                                            fontStyle: el.italic ? 'italic' : 'normal',
+                                            textDecoration: el.underline ? 'underline' : 'none',
+                                            textAlign: el.align || 'left',
+                                            textTransform: el.textCase || 'none'
+                                          }}
+                                          className="pointer-events-none break-words leading-tight"
+                                        >
+                                          {el.type === 'text' ? el.text : el.type === 'image' ? (
+                                            <img src={el.url} alt="Logo" className="max-w-full max-h-full object-contain" />
+                                          ) : null}
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Back Mini Card */}
+                                <div className="flex flex-col items-center gap-1">
+                                  <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider bg-white px-2 py-0.5 rounded-full border border-slate-200 shadow-2xs">
+                                    Back Side
+                                  </span>
+                                  <div
+                                    style={{
+                                      backgroundColor: item.customDesign.backBackground && item.customDesign.backBackground !== 'transparent' ? item.customDesign.backBackground : '#ffffff',
+                                      width: '150px',
+                                      height: '86px',
+                                      borderRadius: (item.customDesign.corners || item.customDesign.productOptions?.corners || '').includes('Rounded') ? '10px' : '0px'
+                                    }}
+                                    className={`relative overflow-hidden border border-slate-300 shadow-sm flex items-center justify-center bg-white shrink-0 ${(item.customDesign.corners || item.customDesign.productOptions?.corners || '').includes('Rounded') ? 'rounded-xl' : 'rounded-none'}`}
+                                  >
+                                    {(!item.customDesign.backElements || item.customDesign.backElements.length === 0) ? (
+                                      <span className="text-[9px] font-bold text-slate-400">Empty Back</span>
+                                    ) : (
+                                      item.customDesign.backElements.map((el, idx) => (
+                                        <div
+                                          key={`cart-back-${el.id || idx}`}
+                                          style={{
+                                            position: 'absolute',
+                                            left: `${(el.x || 0) * 0.22}px`,
+                                            top: `${(el.y || 0) * 0.22}px`,
+                                            width: el.width ? `${el.width * 0.22}px` : 'auto',
+                                            fontSize: el.fontSize ? `${Math.max(7, el.fontSize * 0.22)}px` : '8px',
+                                            fontFamily: el.fontFamily || 'Fira Sans',
+                                            color: el.color || '#0f172a',
+                                            fontWeight: el.bold ? 'bold' : 'normal',
+                                            fontStyle: el.italic ? 'italic' : 'normal',
+                                            textDecoration: el.underline ? 'underline' : 'none',
+                                            textAlign: el.align || 'left',
+                                            textTransform: el.textCase || 'none'
+                                          }}
+                                          className="pointer-events-none break-words leading-tight"
+                                        >
+                                          {el.type === 'text' ? el.text : el.type === 'image' ? (
+                                            <img src={el.url} alt="Logo" className="max-w-full max-h-full object-contain" />
+                                          ) : null}
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Printed Content Summary Box */}
+                              <div className="flex-1 w-full bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs text-xs">
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">
+                                  Printed Content Summary ({((item.customDesign.frontElements?.length || 0) + (item.customDesign.backElements?.length || 0))} elements)
+                                </span>
+                                <div className="space-y-1 text-slate-700 max-h-24 overflow-y-auto font-medium">
+                                  {item.customDesign.frontElements?.filter(e => e.type === 'text').map((e, idx) => (
+                                    <div key={`txt-f-${idx}`} className="truncate text-xs">
+                                      <span className="font-extrabold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded mr-1.5">Front Text:</span>
+                                      <span>"{e.text}"</span>
+                                    </div>
+                                  ))}
+                                  {item.customDesign.backElements?.filter(e => e.type === 'text').map((e, idx) => (
+                                    <div key={`txt-b-${idx}`} className="truncate text-xs">
+                                      <span className="font-extrabold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded mr-1.5">Back Text:</span>
+                                      <span>"{e.text}"</span>
+                                    </div>
+                                  ))}
+                                  {((item.customDesign.frontElements || []).concat(item.customDesign.backElements || []).filter(e => e.type === 'image').length > 0) && (
+                                    <div className="text-emerald-700 font-bold flex items-center gap-1.5 pt-1">
+                                      <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                                      <span>Custom Logo / Graphic Image Attached</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="mt-3 flex items-center gap-4 text-xs font-semibold">
                           <button
                             type="button"

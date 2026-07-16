@@ -271,6 +271,31 @@ export default function CategoryClientView({ category, slug, initialProducts = [
         </div>
       </section>
 
+      {/* Featured Templates Quick Banner */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
+        <div className="bg-gradient-to-r from-[#031A30] via-[#0A2D4E] to-[#1E3A8A] rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-700/50 relative overflow-hidden">
+          <div className="absolute -right-10 -bottom-10 w-48 h-48 rounded-full bg-[#CC3B10]/20 blur-3xl pointer-events-none" />
+          <div className="space-y-2 max-w-2xl relative z-10">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-orange-300 text-[11px] font-extrabold uppercase tracking-wider border border-white/10">
+              🎨 Design Studio & Template Gallery
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+              Looking for pre-designed {title} templates?
+            </h2>
+            <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+              Explore hundreds of customizable {title.toLowerCase()} templates. Filter by color, orientation, and industry, or upload your own artwork right away.
+            </p>
+          </div>
+          <Link
+            href={`/template/${category?.slug || slug}`}
+            className="shrink-0 bg-[#CC3B10] hover:bg-[#E55B2B] text-white font-extrabold px-6 py-3.5 rounded-2xl text-xs sm:text-sm transition-all shadow-lg flex items-center gap-2 group relative z-10"
+          >
+            <span>Browse {title} Templates</span>
+            <span className="transform group-hover:translate-x-1 transition-transform">→</span>
+          </Link>
+        </div>
+      </section>
+
       {/* Main Content Area: Sidebar Filters & Product Grid */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">

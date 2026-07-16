@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, Suspense, useMemo } from 'react'
-import { useParams, useSearchParams } from 'next/navigation'
+import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useDatabaseData } from '../lib/useDatabaseData'
 import { addToCart, addToWishlist } from '../lib/cartWishlist'
@@ -42,6 +42,7 @@ const inFlightSingleProduct = new Map()
 function ProductDetailInner({ category: propCategory, id: propId, initialCategory = null, initialProduct = null, initialRecommendations = [] }) {
   const params = useParams()
   const searchParams = useSearchParams()
+  const router = useRouter()
   const { graphicServicesList, printingServicesList, printingCategories, graphicCategories } = useDatabaseData()
 
   const categoryKey = propCategory || params?.category || 'visiting-cards'
@@ -284,7 +285,7 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
   }
 
   const handleOnlineEditor = () => {
-    alert(`Launching Online Editor & Templates for "${product.title}"...\nSelected Quantity: ${selectedQty}\nQuality ID: ${selectedQuality}\nStyle ID: ${selectedStyle}`)
+    router.push(`/template/${categoryKey || 'visiting-cards'}`)
   }
 
   if (!isMounted) {
