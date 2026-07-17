@@ -506,8 +506,8 @@ export default function Megabar() {
                                 onMouseEnter={(e) => handleCategoryInteraction(cat, false, e)}
                                 onClick={(e) => handleCategoryInteraction(cat, true, e)}
                                 className={`flex flex-col items-center justify-between px-2.5 sm:px-2 py-2 rounded-t-xl transition-all cursor-pointer shrink-0 min-w-max group relative border-b-2 ${isActive
-                                        ? 'border-[#e53e3e] text-gray-950 font-bold bg-linear-to-b from-red-50/60 to-red-50/20 shadow-xs'
-                                        : 'border-transparent text-gray-700 hover:text-gray-950 hover:border-gray-300 hover:bg-gray-50/60 font-medium'
+                                    ? 'border-[#e53e3e] text-gray-950 font-bold bg-linear-to-b from-red-50/60 to-red-50/20 shadow-xs'
+                                    : 'border-transparent text-gray-700 hover:text-gray-950 hover:border-gray-300 hover:bg-gray-50/60 font-medium'
                                     }`}
                             >
                                 <span className="text-xs sm:text-[13px] text-center leading-tight whitespace-nowrap">

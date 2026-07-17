@@ -316,6 +316,16 @@ export default function CartPage() {
                         <p className="text-xs text-gray-400 mt-0.5">
                           {item.style || 'Regular Cut'}
                         </p>
+                        {item.customSelections && Array.isArray(item.customSelections) && item.customSelections.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {item.customSelections.map((cs, cidx) => (
+                              <span key={cidx} className="inline-flex items-center gap-1 text-[11px] font-semibold bg-orange-50 text-[#c84b00] border border-orange-200 px-2.5 py-0.5 rounded-lg shadow-2xs">
+                                <span className="text-gray-500 font-medium">{cs.name}:</span>
+                                <span className="font-extrabold">{cs.choice}</span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
 
                         {/* Full Custom Studio Design Specifications & Visual Previews */}
                         {item.customDesign && (

@@ -54,4 +54,13 @@ const categorySchema = new mongoose.Schema(
   }
 );
 
+if (process.env.NODE_ENV !== "production") {
+  if (mongoose.models.Category) {
+    delete mongoose.models.Category;
+  }
+  if (mongoose.connection?.models?.Category) {
+    delete mongoose.connection.models.Category;
+  }
+}
+
 export default mongoose.models.Category || mongoose.model("Category", categorySchema);

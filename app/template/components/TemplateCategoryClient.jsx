@@ -3,7 +3,40 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { categoryTemplateMap, getAllTemplates } from '../../lib/templatesData';
+import { categoryTemplateMap, getAllTemplates, getCategoryTemplates } from '../../lib/templatesData';
+
+const parseAspectRatio = (sizeStr) => {
+  if (!sizeStr) return "1.75 / 1";
+  const matches = sizeStr.match(/(\d+(?:\.\d+)?)\s*(?:mm)?\s*(?:[xX×*])\s*(\d+(?:\.\d+)?)\s*(?:mm)?/i);
+  if (matches && matches[1] && matches[2]) {
+    const w = parseFloat(matches[1]);
+    const h = parseFloat(matches[2]);
+    if (w > 0 && h > 0) {
+      return `${w} / ${h}`;
+    }
+  }
+  return "1.75 / 1";
+};
+
+const getEditerParams = (templateObj, formState = {}, fallbackCategory = 'visiting-cards') => {
+  if (!templateObj) return '';
+  const params = new URLSearchParams({
+    templateId: templateObj.id || '',
+    templateTitle: templateObj.title || '',
+    bgImage: templateObj.frontImage || templateObj.image || '',
+    backBgImage: templateObj.backImage || templateObj.frontImage || templateObj.image || '',
+    size: templateObj.size || '85mm x 55mm',
+    orientation: templateObj.orientation || 'Standard',
+    category: templateObj.categoryName || templateObj.categorySlug || fallbackCategory,
+    price: templateObj.price || '₹200.00',
+    unitPrice: templateObj.unitPrice || '₹2.00 each / 100 units',
+    customCompany: formState.companyName || templateObj.companyName || '',
+    customPerson: formState.personName || templateObj.personName || '',
+    customTitle: formState.jobTitle || templateObj.jobTitle || '',
+    selectedColor: formState.selectedColor || templateObj.colors?.[0] || '#2563EB'
+  });
+  return params.toString();
+};
 
 export default function TemplateCategoryClient({ categoryId, initialData }) {
   const router = useRouter();
@@ -11,13 +44,28 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
   const [sortBy, setSortBy] = useState('Recommended');
   const [showOnlyFavourites, setShowOnlyFavourites] = useState(false);
   const [favourites, setFavourites] = useState({});
+  const [dbTemplates, setDbTemplates] = useState([]);
+
+  React.useEffect(() => {
+    const fetchDbTemplates = async () => {
+      try {
+        const res = await fetch('/api/templates?limit=500');
+        if (res.ok) {
+          const data = await res.json();
+          setDbTemplates(data.data || []);
+        }
+      } catch (err) {
+        console.error('Failed fetching live templates:', err);
+      }
+    };
+    fetchDbTemplates();
+  }, []);
 
   // "Make it yours" Brand Kit State
   const [makeItYoursActive, setMakeItYoursActive] = useState(false);
-  const [brandKitOpenSection, setBrandKitOpenSection] = useState('Text'); // 'Images' | 'Text' | null
+
   const [brandNameInput, setBrandNameInput] = useState('');
   const [brandTaglineInput, setBrandTaglineInput] = useState('');
-  const [uploadedBrandLogo, setUploadedBrandLogo] = useState(null);
 
   // Filter state
   const [activeFilters, setActiveFilters] = useState({
@@ -76,11 +124,10 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
   };
 
   const allCategoryTemplates = useMemo(() => {
-    if (categorySlug === 'all' || !categoryTemplateMap[categorySlug]) {
-      return getAllTemplates();
-    }
-    return categoryInfo.templates || [];
-  }, [categorySlug, categoryInfo]);
+    const fallbackList = getCategoryTemplates(categorySlug);
+    const matchingDb = dbTemplates.filter(t => categorySlug === 'all' || t.categorySlug === categorySlug);
+    return [...matchingDb, ...fallbackList];
+  }, [categorySlug, dbTemplates]);
 
   const toggleFilter = (section, value) => {
     setActiveFilters(prev => {
@@ -160,8 +207,8 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
       // Active facet filters
       if (activeFilters.color.length > 0) {
         // Simple color substring checking or attribute checking
-        const matchColor = activeFilters.color.some(c => 
-          (t.title || '').toLowerCase().includes(c.toLowerCase()) || 
+        const matchColor = activeFilters.color.some(c =>
+          (t.title || '').toLowerCase().includes(c.toLowerCase()) ||
           (t.colors && t.colors.length > 0)
         );
         if (!matchColor) return false;
@@ -264,11 +311,10 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
 
             <button
               onClick={() => setShowOnlyFavourites(!showOnlyFavourites)}
-              className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${
-                showOnlyFavourites
+              className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${showOnlyFavourites
                   ? 'bg-rose-500 text-white border-rose-600 shadow-md'
                   : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-              }`}
+                }`}
             >
               <span className="text-base leading-none">{showOnlyFavourites ? '♥' : '♡'}</span>
               <span>Favourites ({Object.values(favourites).filter(Boolean).length})</span>
@@ -280,105 +326,9 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
       {/* Main Container: Left Sidebar & Right Grid */}
       <div className="mx-auto px-10 sm:px-12 lg:px-20 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          
+
           {/* Left Sidebar Filters */}
           <aside className="lg:col-span-1 space-y-6">
-            
-            {/* "Make it yours" Brand Kit Box */}
-            <div className="bg-sky-50/80 border border-sky-100 rounded-3xl p-5 shadow-xs">
-              <div className="flex items-center justify-between pb-3 border-b border-sky-100/80">
-                <div>
-                  <h3 className="text-sm font-black text-slate-900">Make it yours</h3>
-                  <p className="text-[11px] text-slate-600 mt-0.5">Add your text & images or Brand Kit</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={makeItYoursActive}
-                    onChange={(e) => setMakeItYoursActive(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0284C7]"></div>
-                </label>
-              </div>
-
-              {makeItYoursActive && (
-                <div className="mt-4 space-y-3 animate-in fade-in duration-200">
-                  {/* Images Section Accordion */}
-                  <div className="border border-sky-200/60 rounded-2xl bg-white overflow-hidden shadow-2xs">
-                    <button
-                      onClick={() => setBrandKitOpenSection(brandKitOpenSection === 'Images' ? null : 'Images')}
-                      className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-slate-800 hover:bg-slate-50 transition-colors"
-                    >
-                      <span>Images / Brand Logo</span>
-                      <span className="text-slate-400">{brandKitOpenSection === 'Images' ? '▲' : '▼'}</span>
-                    </button>
-                    {brandKitOpenSection === 'Images' && (
-                      <div className="px-4 pb-4 pt-1 text-center">
-                        {uploadedBrandLogo ? (
-                          <div className="relative border border-slate-200 rounded-xl p-2 bg-slate-50 flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-700 truncate max-w-[140px]">✓ {uploadedBrandLogo.name}</span>
-                            <button onClick={() => setUploadedBrandLogo(null)} className="text-rose-500 text-xs font-bold hover:underline">Remove</button>
-                          </div>
-                        ) : (
-                          <label className="border-2 border-dashed border-sky-300 rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer hover:bg-sky-50/50 transition-colors">
-                            <span className="text-base text-sky-600 mb-1">+</span>
-                            <span className="text-xs font-extrabold text-sky-700">Add image / Logo</span>
-                            <span className="text-[10px] text-slate-400 mt-0.5">PNG, JPG or SVG</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                if (e.target.files?.[0]) setUploadedBrandLogo(e.target.files[0]);
-                              }}
-                              className="hidden"
-                            />
-                          </label>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Text Section Accordion */}
-                  <div className="border border-sky-200/60 rounded-2xl bg-white overflow-hidden shadow-2xs">
-                    <button
-                      onClick={() => setBrandKitOpenSection(brandKitOpenSection === 'Text' ? null : 'Text')}
-                      className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-slate-800 hover:bg-slate-50 transition-colors"
-                    >
-                      <span>Text (Brand Name & Slogan)</span>
-                      <span className="text-slate-400">{brandKitOpenSection === 'Text' ? '▲' : '▼'}</span>
-                    </button>
-                    {brandKitOpenSection === 'Text' && (
-                      <div className="px-4 pb-4 pt-1 space-y-2.5">
-                        <div>
-                          <label className="block text-[10px] font-extrabold text-slate-500 uppercase mb-1">Company / Brand Name</label>
-                          <input
-                            type="text"
-                            placeholder="e.g. Apex Studio"
-                            value={brandNameInput}
-                            onChange={(e) => setBrandNameInput(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-900 focus:outline-none focus:border-sky-500 focus:bg-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-extrabold text-slate-500 uppercase mb-1">Person Name or Tagline</label>
-                          <input
-                            type="text"
-                            placeholder="e.g. Liam Reynolds / Est. 2026"
-                            value={brandTaglineInput}
-                            onChange={(e) => setBrandTaglineInput(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-900 focus:outline-none focus:border-sky-500 focus:bg-white"
-                          />
-                        </div>
-                        <p className="text-[10px] text-sky-700 italic pt-1 font-medium">
-                          ⚡ Live updating all template previews!
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
 
             {/* Filter Accordions Main Box */}
             <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs">
@@ -453,7 +403,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
 
           {/* Right Column: Templates Grid & Results */}
           <div className="lg:col-span-3">
-            
+
             {/* Top Bar showing count and Sort By */}
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
               <div className="flex items-center gap-3">
@@ -487,7 +437,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
 
             {/* Templates Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              
+
               {/* Card 1: Upload your own design */}
               <div
                 onClick={() => setShowUploadModal(true)}
@@ -523,11 +473,14 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                   >
                     <div>
                       {/* Image Block with Heart & Swatches overlay */}
-                      <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-slate-100 mb-4">
+                      <div
+                        style={{ aspectRatio: parseAspectRatio(template.size) }}
+                        className="relative w-full rounded-2xl overflow-hidden bg-slate-100 mb-4 flex items-center justify-center max-h-[220px]"
+                      >
                         <img
-                          src={template.image}
+                          src={template.frontImage || template.image}
                           alt={template.title}
-                          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                          className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500"
                           loading="lazy"
                         />
 
@@ -580,18 +533,37 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                         {displayTitle}
                       </h3>
 
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 mb-4">
-                        <span>{template.price || categoryInfo.basePrice}</span>
-                        <span className="text-slate-400 font-normal text-[11px]">
-                          ({template.unitPrice || categoryInfo.unitPriceText})
-                        </span>
+                      <div className="flex flex-col gap-0.5 text-xs font-bold text-slate-800 mb-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500 font-semibold text-[11px]">Base Price:</span>
+                          <span className="font-black text-slate-900">{template.price || categoryInfo.basePrice || '₹200.00'}</span>
+                        </div>
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                          <span className="text-[#CC3B10] font-extrabold text-[11px]">Pricing As Per Unit:</span>
+                          <span className="text-[#CC3B10] font-black text-xs">
+                            {template.unitPrice || categoryInfo.unitPriceText || '₹2.00 each / 100 units'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] text-slate-500 font-medium">
+                          <span>Template Size:</span>
+                          <span className="font-extrabold text-slate-800 truncate max-w-[140px]">{template.size || '85mm x 55mm'}</span>
+                        </div>
                       </div>
                     </div>
 
                     {/* Customize Button */}
                     <button
                       type="button"
-                      onClick={() => handleOpenCustomizer(template)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const queryString = getEditerParams(template, {
+                          companyName: brandNameInput || '',
+                          personName: '',
+                          jobTitle: brandTaglineInput || '',
+                          selectedColor: template.colors?.[0] || '#2563EB'
+                        }, categoryInfo?.name || categorySlug);
+                        router.push(`/Editer?${queryString}`);
+                      }}
                       className="w-full bg-[#031A30] hover:bg-[#0A2D4E] text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
                     >
                       <span>Customize This Template</span>
@@ -613,7 +585,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                   <p className="text-xs text-slate-300 leading-relaxed mb-6">
                     Need a bespoke 1-on-1 custom design from scratch? Collaborate with our top graphic artists to bring your exact vision to life.
                   </p>
-                  
+
                   {/* Avatar group */}
                   <div className="flex items-center gap-2 mb-6">
                     <div className="flex -space-x-2">
@@ -621,7 +593,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                       <img className="w-8 h-8 rounded-full border-2 border-slate-800 object-cover" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80" alt="Designer 2" />
                       <img className="w-8 h-8 rounded-full border-2 border-slate-800 object-cover" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80" alt="Designer 3" />
                     </div>
-                    <span className="text-xs font-semibold text-slate-300">+ 12 Senior Designers Online</span>
+                    <span className="text-xs font-semibold text-slate-300">+ 12 Senior Designers</span>
                   </div>
                 </div>
 
@@ -630,7 +602,6 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                   className="w-full bg-[#CC3B10] hover:bg-[#E55B2B] text-white font-extrabold py-3 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-md"
                 >
                   <span>Get a Design From Scratch</span>
-                  <span>From ₹300.00 →</span>
                 </Link>
               </div>
 
@@ -657,7 +628,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
               </div>
               <p className="text-sm font-bold text-slate-800 mb-1">Drag & drop print artwork here</p>
               <p className="text-xs text-slate-500 mb-4">Support PDF, AI, PSD, PNG, JPG (High Resolution 300 DPI)</p>
-              
+
               <label className="inline-block bg-[#031A30] hover:bg-[#0A2D4E] text-white text-xs font-bold px-5 py-2.5 rounded-xl cursor-pointer shadow-sm transition-colors">
                 Select File from Computer
                 <input
@@ -690,9 +661,8 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                   router.push(`/${categorySlug}/1?uploaded=true&fileName=${encodeURIComponent(customUploadFile?.name || 'Custom Artwork')}`);
                 }}
                 disabled={!customUploadFile}
-                className={`flex-1 px-4 py-3 rounded-xl text-xs font-extrabold text-white transition-all shadow-md ${
-                  customUploadFile ? 'bg-[#CC3B10] hover:bg-[#E55B2B]' : 'bg-slate-300 cursor-not-allowed'
-                }`}
+                className={`flex-1 px-4 py-3 rounded-xl text-xs font-extrabold text-white transition-all shadow-md ${customUploadFile ? 'bg-[#CC3B10] hover:bg-[#E55B2B]' : 'bg-slate-300 cursor-not-allowed'
+                  }`}
               >
                 Proceed to Checkout →
               </button>
@@ -705,7 +675,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
       {selectedTemplate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-5xl w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col lg:flex-row min-h-[580px] relative my-6">
-            
+
             {/* Close Button Top Right */}
             <button
               onClick={() => setSelectedTemplate(null)}
@@ -715,22 +685,21 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
             </button>
 
             {/* Left Area: 3D Card Visual Studio & Front/Back Controls */}
-            <div className="lg:w-[62%] bg-[#F4F6F9] p-6 sm:p-10 flex flex-col justify-between items-center relative overflow-hidden border-b lg:border-b-0 lg:border-r border-slate-200/80">
-              
+            <div className="lg:w-[62%] bg-[#d4d2c0] p-6 sm:p-10 flex flex-col justify-between items-center relative overflow-hidden border-b lg:border-b-0 lg:border-r border-slate-200/80">
+
               {/* Top Bar of Left Preview */}
               <div className="w-full flex items-center justify-between z-10">
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 text-slate-800 text-xs font-black shadow-xs border border-slate-200/60">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    3D Preview Mode ({cardSide})
+                    {categorySlug === 'visiting-cards' || selectedTemplate.hasBackSide ? `3D Preview Mode (${cardSide})` : '3D Design Preview Mode'}
                   </span>
                   <button
                     onClick={() => setIs3dFloating(!is3dFloating)}
-                    className={`text-xs font-bold px-3 py-1 rounded-full transition-all border ${
-                      is3dFloating
+                    className={`text-xs font-bold px-3 py-1 rounded-full transition-all border ${is3dFloating
                         ? 'bg-[#031A30] text-white border-transparent shadow-xs'
                         : 'bg-white text-slate-600 border-slate-200/60 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     ✨ {is3dFloating ? '3D Floating Active' : 'Enable 3D Floating'}
                   </button>
@@ -755,155 +724,92 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                 }}
                 onMouseLeave={() => setCardRotate({ x: 0, y: 0 })}
               >
-                {/* The 3D Card Box with preserve-3d and flip transition */}
+                {/* The 3D Card Box with preserve-3d and dynamic aspect ratio based on mm size */}
                 <div
                   style={{
-                    transform: `rotateX(${cardRotate.x + (is3dFloating && cardSide === 'Front' ? Math.sin(Date.now() / 1000) * 3 : 0)}deg) rotateY(${cardRotate.y + (cardSide === 'Back' ? 180 : 0)}deg)`,
-                    transition: cardRotate.x === 0 && cardRotate.y === 0 ? 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'transform 0.1s ease-out'
+                    transform: `rotateX(${cardRotate.x + (is3dFloating && cardSide === 'Front' ? Math.sin(Date.now() / 1000) * 3 : 0)}deg) rotateY(${cardRotate.y + ((cardSide === 'Back' && (categorySlug === 'visiting-cards' || selectedTemplate.hasBackSide)) ? 180 : 0)}deg)`,
+                    transition: cardRotate.x === 0 && cardRotate.y === 0 ? 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'transform 0.1s ease-out',
+                    aspectRatio: parseAspectRatio(selectedTemplate.size)
                   }}
-                  className="w-full aspect-[1.75/1] relative [transform-style:preserve-3d] shadow-2xl rounded-2xl cursor-grab active:cursor-grabbing"
+                  className="w-full relative transform-3d shadow-2xl cursor-grab active:cursor-grabbing bg-white max-w-md mx-auto"
                 >
                   {/* FRONT SIDE */}
                   <div
                     style={{ borderColor: customizerForm.selectedColor || '#2563EB' }}
-                    className="absolute inset-0 w-full h-full rounded-2xl bg-white border-[6px] shadow-inner flex flex-col justify-between p-6 sm:p-8 [backface-visibility:hidden] overflow-hidden"
+                    className="absolute inset-0 w-full h-full shadow-inner flex flex-col justify-between backface-hidden overflow-hidden bg-white"
                   >
-                    {/* Subtle textured background / watermark */}
-                    <div className="absolute -right-12 -bottom-12 w-48 h-48 rounded-full opacity-10 pointer-events-none" style={{ backgroundColor: customizerForm.selectedColor || '#2563EB' }} />
                     <img
-                      src={selectedTemplate.image}
-                      alt={selectedTemplate.title}
-                      className="absolute inset-0 w-full h-full object-cover opacity-15 pointer-events-none mix-blend-multiply"
+                      src={selectedTemplate.frontImage || selectedTemplate.image}
+                      alt={`${selectedTemplate.title} - Front`}
+                      className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                     />
-
-                    {/* Logo & Company Name */}
-                    <div className="relative z-10 flex items-start justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        {uploadedBrandLogo ? (
-                          <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center p-1 overflow-hidden shadow-xs">
-                            <span className="text-[10px] font-bold text-slate-700 text-center truncate">{uploadedBrandLogo.name}</span>
-                          </div>
-                        ) : (
-                          <div 
-                            style={{ backgroundColor: customizerForm.selectedColor || '#2563EB' }}
-                            className="w-12 h-12 rounded-xl text-white font-black text-xl flex items-center justify-center shadow-md shrink-0"
-                          >
-                            {(customizerForm.companyName || 'C').charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <div>
-                          <h4 className="text-base sm:text-xl font-black text-slate-900 tracking-tight leading-none">
-                            {customizerForm.companyName || selectedTemplate.companyName || 'Company Name'}
-                          </h4>
-                          <p className="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-wider">
-                            {brandTaglineInput || 'Excellence in Printing'}
-                          </p>
-                        </div>
-                      </div>
-
-                      <span 
-                        style={{ backgroundColor: customizerForm.selectedColor || '#2563EB' }}
-                        className="px-2.5 py-1 rounded text-[10px] font-extrabold text-white tracking-widest uppercase shadow-2xs"
-                      >
-                        FRONT
-                      </span>
-                    </div>
-
-                    {/* Center decorative line */}
-                    <div className="w-full h-1.5 rounded-full my-auto opacity-80" style={{ backgroundColor: customizerForm.selectedColor || '#2563EB' }} />
-
-                    {/* Person details & Contact footer */}
-                    <div className="relative z-10 flex items-end justify-between gap-4 pt-2">
-                      <div>
-                        <h5 className="text-sm sm:text-base font-black text-slate-900 leading-tight">
-                          {customizerForm.personName || selectedTemplate.personName || 'Full Name'}
-                        </h5>
-                        <p className="text-xs font-bold text-slate-600 mt-0.5">
-                          {customizerForm.jobTitle || selectedTemplate.jobTitle || 'Job Designation'}
-                        </p>
-                      </div>
-                      <div className="text-right text-[10px] font-semibold text-slate-500 space-y-0.5 max-w-[170px] truncate">
-                        <p>{customizerForm.contactInfo?.split('|')[0]?.trim() || 'email@company.com'}</p>
-                        <p>{customizerForm.contactInfo?.split('|')[1]?.trim() || '+91 98765 43210'}</p>
-                      </div>
-                    </div>
-
-                    {/* Sheen reflection gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/40 pointer-events-none" />
                   </div>
 
                   {/* BACK SIDE */}
                   <div
-                    style={{ 
-                      borderColor: customizerForm.selectedColor || '#2563EB',
-                      backgroundColor: customizerForm.selectedColor || '#031A30',
-                      transform: 'rotateY(180deg)'
+                    style={{
+                      transform: 'rotateY(180deg)',
+                      borderColor: customizerForm.selectedColor || '#2563EB'
                     }}
-                    className="absolute inset-0 w-full h-full rounded-2xl border-[6px] shadow-inner flex flex-col items-center justify-center p-6 sm:p-8 text-white text-center [backface-visibility:hidden] overflow-hidden"
+                    className="absolute inset-0 w-full h-full shadow-inner flex flex-col items-center justify-center backface-hidden overflow-hidden bg-white"
                   >
-                    <div className="absolute inset-0 bg-black/20 pointer-events-none" />
-                    
-                    {/* Back side center content */}
-                    <div className="relative z-10 space-y-3 max-w-xs mx-auto">
-                      <div className="w-14 h-14 mx-auto rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-2xl font-black shadow-lg">
-                        {(customizerForm.companyName || 'C').charAt(0).toUpperCase()}
-                      </div>
-                      <h4 className="text-lg sm:text-xl font-black tracking-wide">
-                        {customizerForm.companyName || selectedTemplate.companyName || 'Company Name'}
-                      </h4>
-                      <p className="text-xs text-white/80 font-medium leading-relaxed">
-                        {customizerForm.contactInfo || 'info@company.com | +91 98765 43210'}
-                      </p>
-                      <div className="pt-2 border-t border-white/10 flex items-center justify-center gap-4 text-[10px] font-bold tracking-widest uppercase text-white/60">
-                        <span>www.company.com</span>
-                        <span>•</span>
-                        <span>Est. 2026</span>
-                      </div>
-                    </div>
-
-                    <span className="absolute bottom-4 right-4 text-[9px] font-extrabold uppercase tracking-widest text-white/40">
-                      BACK SIDE PREVIEW
-                    </span>
+                    <img
+                      src={selectedTemplate.backImage || selectedTemplate.frontImage || selectedTemplate.image}
+                      alt={`${selectedTemplate.title} - Back`}
+                      className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Bottom Bar: Front & Back Toggle Buttons right below the card (matching user screenshot) */}
+              {/* Bottom Bar: Conditional Front & Back Toggle Buttons (Only for Visiting Cards) */}
               <div className="z-10 flex flex-col items-center gap-3">
-                <div className="inline-flex rounded-xl bg-white border border-slate-200/80 p-1 shadow-sm">
-                  <button
-                    type="button"
-                    onClick={() => setCardSide('Front')}
-                    className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${
-                      cardSide === 'Front'
-                        ? 'bg-white text-slate-900 shadow-sm border border-slate-200 font-black scale-105'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Front
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCardSide('Back')}
-                    className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${
-                      cardSide === 'Back'
-                        ? 'bg-white text-slate-900 shadow-sm border border-slate-200 font-black scale-105'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Back
-                  </button>
-                </div>
-                <p className="text-[11px] font-semibold text-slate-500">
-                  💡 Move mouse over card to tilt in 3D • Click Front/Back to flip 180°
-                </p>
+                {(categorySlug === 'visiting-cards' || selectedTemplate.hasBackSide) ? (
+                  <>
+                    <div className="inline-flex items-center gap-3 bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200/80 p-2 shadow-lg">
+                      <button
+                        type="button"
+                        onClick={() => setCardSide('Front')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${cardSide === 'Front'
+                            ? 'bg-[#031A30] text-white shadow-md font-black scale-105'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                          }`}
+                      >
+                        <div className="w-6 h-4 rounded overflow-hidden border border-slate-300/60 bg-slate-100 shrink-0">
+                          <img src={selectedTemplate.frontImage || selectedTemplate.image} alt="Front thumb" className="w-full h-full object-contain" />
+                        </div>
+                        <span>Front Image</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCardSide('Back')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${cardSide === 'Back'
+                            ? 'bg-[#031A30] text-white shadow-md font-black scale-105'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                          }`}
+                      >
+                        <div className="w-6 h-4 rounded overflow-hidden border border-slate-300/60 bg-slate-100 shrink-0">
+                          <img src={selectedTemplate.backImage || selectedTemplate.frontImage || selectedTemplate.image} alt="Back thumb" className="w-full h-full object-contain" />
+                        </div>
+                        <span>Back Image</span>
+                      </button>
+                    </div>
+                    <p className="text-[11px] font-semibold text-slate-500">
+                      💡 Move mouse over card to tilt in 3D • Click Front/Back to flip 180°
+                    </p>
+                  </>
+                ) : (
+                  <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200/80 px-4 py-2 shadow-lg text-xs font-bold text-slate-700">
+                    💡 Move mouse over design to tilt and inspect in 3D perspective
+                  </div>
+                )}
               </div>
 
             </div>
 
             {/* Right Area: Template Info & Edit Controls (approx 38% width) */}
             <div className="lg:w-[38%] p-6 sm:p-8 flex flex-col justify-between bg-white relative">
-              
+
               {!isEditingDesign ? (
                 /* VIEW MODE (Exactly reproducing the reference screenshot!) */
                 <div className="flex flex-col justify-between h-full space-y-6">
@@ -911,14 +817,20 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                     <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-snug pr-8">
                       {selectedTemplate.title}
                     </h3>
-                    
-                    <div className="mt-4">
+
+                    <div className="mt-4 bg-orange-50/60 border border-orange-100 rounded-2xl p-4">
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Base Package Price</div>
                       <div className="text-2xl sm:text-3xl font-black text-slate-900">
                         {selectedTemplate.price || categoryInfo.basePrice || '₹200.00'}
                       </div>
-                      <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                        {selectedTemplate.unitPrice || categoryInfo.unitPriceText || '₹2.00 each / 100 units'}
-                      </p>
+                      <div className="mt-3 pt-3 border-t border-orange-200/60 flex items-center justify-between text-xs font-black text-[#CC3B10]">
+                        <span>Pricing As Per Unit:</span>
+                        <span>{selectedTemplate.unitPrice || categoryInfo.unitPriceText || '₹2.00 each / 100 units'}</span>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-orange-200/60 flex items-center justify-between text-xs font-bold text-slate-700">
+                        <span>Template Size (Dimensions):</span>
+                        <span className="font-black text-slate-900 text-right">{selectedTemplate.size || '85mm x 55mm'}</span>
+                      </div>
                     </div>
 
                     <div className="mt-5 pt-5 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-700">
@@ -928,65 +840,19 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                         Review delivery options
                       </a>
                     </div>
-
-                    {/* Swatches Selector */}
-                    <div className="mt-6 pt-5 border-t border-slate-100">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="bg-[#031A30] text-white text-[11px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
-                          {selectedTemplate.colorName || (customizerForm.selectedColor === '#2563EB' ? 'blue' : customizerForm.selectedColor === '#10B981' ? 'green' : customizerForm.selectedColor === '#DC2626' ? 'red' : 'dark')}
-                        </span>
-                        <span className="text-xs font-bold text-slate-700">color swatches</span>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        {(selectedTemplate.colors || ['#2563EB', '#1E293B', '#10B981', '#DC2626']).map((cHex, idx) => {
-                          const isColorSelected = customizerForm.selectedColor === cHex;
-                          return (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => setCustomizerForm({ ...customizerForm, selectedColor: cHex })}
-                              className={`w-8 h-8 rounded-full border-2 p-0.5 transition-all flex items-center justify-center ${
-                                isColorSelected ? 'border-slate-900 scale-110 shadow-md' : 'border-slate-300 hover:scale-105'
-                              }`}
-                            >
-                              <span 
-                                style={{ backgroundColor: cHex }} 
-                                className="w-full h-full rounded-full block" 
-                              />
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
                   </div>
 
                   {/* Bottom Action Button: Edit my design & Launch Full Studio */}
                   <div className="pt-6 border-t border-slate-100 space-y-3">
                     <button
                       type="button"
-                      onClick={() => setIsEditingDesign(true)}
-                      className="w-full bg-[#40bde8] hover:bg-[#20a8d8] text-white font-extrabold py-3.5 rounded-xl text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <span>Quick Edit Text</span>
-                      <span>→</span>
-                    </button>
-
-                    <button
-                      type="button"
                       onClick={() => {
-                        const queryParams = new URLSearchParams({
-                          customCompany: customizerForm.companyName,
-                          customPerson: customizerForm.personName,
-                          customTitle: customizerForm.jobTitle,
-                          selectedColor: customizerForm.selectedColor
-                        });
-                        router.push(`/Editer?${queryParams.toString()}`);
+                        const queryString = getEditerParams(selectedTemplate, customizerForm, categoryInfo?.name || categorySlug);
+                        router.push(`/Editer?${queryString}`);
                       }}
                       className="w-full bg-[#031A30] hover:bg-[#0A2D4E] text-white font-extrabold py-3.5 rounded-xl text-xs sm:text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer border border-slate-700"
                     >
-                      <span>🎨 Open Full Online Design Studio</span>
-                      <span className="text-yellow-400 font-normal text-[11px]">(Vistaprint Studio Mode)</span>
+                      <span>Edit my Design</span>
                     </button>
 
                     <button
@@ -1085,13 +951,8 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                     <button
                       type="button"
                       onClick={() => {
-                        const queryParams = new URLSearchParams({
-                          customCompany: customizerForm.companyName,
-                          customPerson: customizerForm.personName,
-                          customTitle: customizerForm.jobTitle,
-                          selectedColor: customizerForm.selectedColor
-                        });
-                        router.push(`/Editer?${queryParams.toString()}`);
+                        const queryString = getEditerParams(selectedTemplate, customizerForm, categoryInfo?.name || categorySlug);
+                        router.push(`/Editer?${queryString}`);
                       }}
                       className="w-full bg-slate-900 hover:bg-black text-white font-extrabold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
                     >

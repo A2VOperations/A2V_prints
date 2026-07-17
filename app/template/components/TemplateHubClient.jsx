@@ -7,8 +7,27 @@ import { categoryTemplateMap, getAllTemplates } from '../../lib/templatesData';
 export default function TemplateHubClient() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState('All');
+  const [dbTemplates, setDbTemplates] = useState([]);
 
-  const allTemplates = getAllTemplates();
+  React.useEffect(() => {
+    const fetchDbTemplates = async () => {
+      try {
+        const res = await fetch('/api/templates?limit=500');
+        if (res.ok) {
+          const data = await res.json();
+          setDbTemplates(data.data || []);
+        }
+      } catch (err) {
+        console.error('Failed fetching live templates in Hub:', err);
+      }
+    };
+    fetchDbTemplates();
+  }, []);
+
+  const allTemplates = React.useMemo(() => {
+    return [...dbTemplates, ...getAllTemplates()];
+  }, [dbTemplates]);
+
   const categoriesList = Object.entries(categoryTemplateMap).map(([slug, data]) => ({
     slug,
     ...data
@@ -114,7 +133,7 @@ export default function TemplateHubClient() {
                   <img
                     src={cat.templates?.[0]?.image || 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80'}
                     alt={cat.name}
-                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
                   />
                   <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-white/95 text-[#CC3B10] font-extrabold text-[11px] shadow-sm">
@@ -158,9 +177,9 @@ export default function TemplateHubClient() {
               <div>
                 <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-slate-100 mb-4">
                   <img
-                    src={t.image}
+                    src={t.frontImage || t.image}
                     alt={t.title}
-                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
                   />
                   <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-900/90 text-white font-extrabold text-[10px] uppercase shadow-sm">
@@ -187,9 +206,16 @@ export default function TemplateHubClient() {
                 <h3 className="text-base font-extrabold text-slate-900 group-hover:text-[#CC3B10] transition-colors leading-snug line-clamp-1 mb-1.5">
                   {t.title}
                 </h3>
-                <p className="text-xs text-slate-500 font-semibold mb-4">
-                  {t.price} <span className="font-normal text-[11px] text-slate-400">({t.unitPrice})</span>
-                </p>
+                <div className="flex flex-col gap-0.5 text-xs font-bold text-slate-800 mb-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 font-semibold text-[11px]">Base Price:</span>
+                    <span className="font-black text-slate-900">{t.price || '₹200.00'}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                    <span className="text-[#CC3B10] font-extrabold text-[11px]">Pricing As Per Unit:</span>
+                    <span className="text-[#CC3B10] font-black text-xs">{t.unitPrice || '₹2.00 each / 100 units'}</span>
+                  </div>
+                </div>
               </div>
 
               <div className="w-full bg-[#031A30] group-hover:bg-[#CC3B10] text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors">

@@ -34,7 +34,8 @@ export function addToCart(userId, item) {
       String(i.productId) === String(item.productId) &&
       i.quality === item.quality &&
       i.style === item.style &&
-      i.qtyOption === item.qtyOption
+      i.qtyOption === item.qtyOption &&
+      JSON.stringify(i.customSelections || null) === JSON.stringify(item.customSelections || null)
   )
 
   if (existingIndex > -1) {

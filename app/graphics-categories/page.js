@@ -18,6 +18,7 @@ function AllCategoriesContent() {
   const [sortBy, setSortBy] = useState('recommended');
   const [selectedService, setSelectedService] = useState(null);
   const [packageTier, setPackageTier] = useState('standard');
+  const [uploadedFile, setUploadedFile] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
   const [filters, setFilters] = useState({
@@ -183,15 +184,9 @@ function AllCategoriesContent() {
                 Premium graphic design solutions that speak volumes before you even say a word. Choose from 8 specialized categories and over 50+ custom design solutions crafted for excellence.
               </p>
               <div className="flex flex-wrap items-center gap-3 pt-2">
-                <Link
-                  href="#catalog-grid"
-                  className="px-6 py-3 rounded-xl bg-linear-to-r from-[#FF551D] to-[#FF0055] hover:opacity-95 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all"
-                >
-                  Explore Templates
-                </Link>
                 <button
                   onClick={() => showToast('Upload Design feature initiated! Upload your custom artwork.')}
-                  className="px-6 py-3 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-extrabold text-xs sm:text-sm shadow-sm border border-slate-200/80 transition-all cursor-pointer"
+                  className="px-6 py-3 rounded-xl bg-linear-to-r from-[#FF551D] to-[#FF0055] hover:opacity-95 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
                 >
                   Upload Design
                 </button>
@@ -475,7 +470,7 @@ function AllCategoriesContent() {
                     href={`/${service.categorySlug}/${service.id}`}
                     className="w-full bg-[#031A30] hover:bg-[#0A2D4E] text-white font-bold py-3 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors shadow-xs"
                   >
-                    <span>Start Designing</span>
+                    <span>Upload & Order</span>
                     <span>→</span>
                   </Link>
                 </div>
@@ -553,29 +548,45 @@ function AllCategoriesContent() {
                 </div>
               </div>
 
-              {/* Package Selector */}
+              {/* Upload Custom Requirement & Artwork Box */}
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Select Design Package</h4>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { id: 'basic', label: 'Basic', price: selectedService.price, revs: '2 Revisions' },
-                    { id: 'standard', label: 'Standard', price: '₹3,499', revs: 'Unlimited Revisions' },
-                    { id: 'premium', label: 'Premium Suite', price: '₹5,999', revs: 'VIP Priority + Source' },
-                  ].map((tier) => (
-                    <button
-                      key={tier.id}
-                      onClick={() => setPackageTier(tier.id)}
-                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                        packageTier === tier.id
-                          ? 'border-[#5348e2] bg-indigo-50/70 ring-2 ring-indigo-500/20'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
-                    >
-                      <div className="text-xs font-extrabold text-slate-900">{tier.label}</div>
-                      <div className="text-sm font-black text-[#5348e2] mt-1">{tier.price}</div>
-                      <div className="text-[10px] font-medium text-slate-500 mt-0.5">{tier.revs}</div>
-                    </button>
-                  ))}
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Upload Custom Requirement & Artwork</h4>
+                <div className="bg-slate-50 border-2 border-dashed border-[#5348e2]/40 rounded-2xl p-5 text-center transition-all hover:border-[#5348e2]">
+                  {uploadedFile ? (
+                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <span className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm shrink-0">✓</span>
+                        <div className="text-left truncate">
+                          <p className="text-xs font-bold text-slate-800 truncate">{uploadedFile.name}</p>
+                          <p className="text-[10px] text-slate-400">Ready for order</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setUploadedFile(null)}
+                        className="text-rose-500 hover:text-rose-700 text-xs font-extrabold px-2 py-1 rounded hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer flex flex-col items-center justify-center py-2">
+                      <div className="w-11 h-11 rounded-full bg-indigo-100 text-[#5348e2] flex items-center justify-center mb-2 shadow-2xs">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                      </div>
+                      <span className="text-xs font-extrabold text-slate-800 block">Click to Upload Artwork or Brief</span>
+                      <span className="text-[11px] text-slate-500 block mt-0.5">Supports PDF, AI, PSD, PNG, JPG, ZIP or DOCX</span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) setUploadedFile(e.target.files[0]);
+                        }}
+                      />
+                    </label>
+                  )}
                 </div>
               </div>
 
@@ -591,11 +602,12 @@ function AllCategoriesContent() {
                   onClick={() => {
                     const name = selectedService.name;
                     setSelectedService(null);
-                    showToast(`Added ${name} (${packageTier.toUpperCase()} Package) to your order!`);
+                    setUploadedFile(null);
+                    showToast(`Uploaded design & added ${name} to your custom design order!`);
                   }}
                   className="px-6 py-2.5 rounded-xl bg-[#5348e2] hover:bg-[#4338ca] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all cursor-pointer"
                 >
-                  Proceed with Order →
+                  Upload & Proceed with Order →
                 </button>
               </div>
             </div>

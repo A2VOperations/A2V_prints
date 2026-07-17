@@ -107,6 +107,13 @@ export async function PUT(request, { params }) {
     }
 
     Object.assign(product, body);
+    const arrayFields = ["customOptions", "quantityTiers", "qualityOptions", "styleOptions", "specifications", "images", "deliverables", "options"];
+    arrayFields.forEach((field) => {
+      if (typeof body[field] !== "undefined") {
+        product.set(field, body[field]);
+        product.markModified(field);
+      }
+    });
     await product.save();
 
     return NextResponse.json({

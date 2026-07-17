@@ -203,9 +203,46 @@ const TEMPLATES_LIST = [
   { id: 't-rose-creative', name: 'Rose Studio Minimal', primaryColor: '#e11d48', bg: '#fff1f2', style: 'Creative' }
 ];
 
+const getCanvasDimensions = (orientationStr = '', sizeStr = '') => {
+  const combined = `${sizeStr || ''} ${orientationStr || ''}`;
+  const matches = combined.match(/(\d+(?:\.\d+)?)\s*(?:mm|cm)?\s*(?:[xX×*])\s*(\d+(?:\.\d+)?)\s*(?:mm|cm)?/i);
+  
+  const isVertical = orientationStr.toLowerCase().includes('vertical');
+  
+  if (matches && matches[1] && matches[2]) {
+    let w = parseFloat(matches[1]);
+    let h = parseFloat(matches[2]);
+    if (w > 0 && h > 0) {
+      if (isVertical && w > h) {
+        const temp = w;
+        w = h;
+        h = temp;
+      } else if (!isVertical && h > w && !combined.toLowerCase().includes('vertical')) {
+        // preserve ratio
+      }
+      
+      const maxDim = 620;
+      const aspect = w / h;
+      if (w >= h) {
+        const calcW = maxDim;
+        const calcH = Math.max(200, Math.min(620, Math.round(maxDim / aspect)));
+        return { width: `${calcW}px`, height: `${calcH}px` };
+      } else {
+        const calcH = maxDim;
+        const calcW = Math.max(200, Math.min(620, Math.round(maxDim * aspect)));
+        return { width: `${calcW}px`, height: `${calcH}px` };
+      }
+    }
+  }
+  
+  return isVertical ? { width: '360px', height: '620px' } : { width: '620px', height: '350px' };
+};
+
 function StudioEditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isAdminMode = searchParams?.get('adminMode') === 'true' || searchParams?.get('admin') === 'true';
+  const adminTemplateId = searchParams?.get('templateId');
 
   // Active state
   const [activeSide, setActiveSide] = useState('Front'); // 'Front' | 'Back'
@@ -261,27 +298,84 @@ function StudioEditorContent() {
   // Read URL query parameters to pre-fill elements if navigated from templates
   useEffect(() => {
     if (!searchParams) return;
+    const templateId = searchParams.get('templateId');
+    const templateTitle = searchParams.get('templateTitle');
+    const bgImage = searchParams.get('bgImage');
+    const backBgImage = searchParams.get('backBgImage');
+    const size = searchParams.get('size');
+    const orientation = searchParams.get('orientation');
+    const category = searchParams.get('category');
+    const price = searchParams.get('price');
+    const unitPrice = searchParams.get('unitPrice');
     const customCompany = searchParams.get('customCompany');
     const customPerson = searchParams.get('customPerson');
     const customTitle = searchParams.get('customTitle');
     const selectedColor = searchParams.get('selectedColor');
 
-    if (customCompany || customPerson || customTitle || selectedColor) {
-      setFrontElements(prev => prev.map(el => {
-        if (el.id === 'el-company-name' && customCompany) {
+    if (bgImage && bgImage.trim() !== '') {
+      setFrontBackground(bgImage);
+    }
+    if (backBgImage && backBgImage.trim() !== '') {
+      setBackBackground(backBgImage);
+    }
+    if (orientation || size || category || price) {
+      setProductOptions(prev => ({
+        ...prev,
+        category: category || prev.category,
+        orientation: orientation ? (size ? `${orientation} (${size})` : orientation) : (size ? `Standard (${size})` : prev.orientation),
+        quantity: price && unitPrice ? `${unitPrice} - ${price}` : prev.quantity
+      }));
+    }
+
+    const applyOverrides = (elementsList) => {
+      if (!customCompany && !customPerson && !customTitle && !selectedColor) return elementsList;
+      return elementsList.map(el => {
+        const lowerLabel = (el.label || el.text || '').toLowerCase();
+        if ((el.id === 'el-company-name' || lowerLabel.includes('company') || lowerLabel.includes('brand')) && customCompany) {
           return { ...el, text: customCompany };
         }
-        if (el.id === 'el-person-name' && customPerson) {
+        if ((el.id === 'el-person-name' || lowerLabel.includes('person') || lowerLabel.includes('name') || lowerLabel.includes('full name')) && customPerson) {
           return { ...el, text: customPerson };
         }
-        if (el.id === 'el-job-title' && customTitle) {
+        if ((el.id === 'el-job-title' || lowerLabel.includes('job') || lowerLabel.includes('title') || lowerLabel.includes('designation')) && customTitle) {
           return { ...el, text: customTitle };
         }
         if (selectedColor && (el.color === '#2563EB' || el.fill === '#2563EB')) {
           return { ...el, color: el.color ? selectedColor : undefined, fill: el.fill ? selectedColor : undefined };
         }
         return el;
-      }));
+      });
+    };
+
+    if (templateId) {
+      fetch(`/api/templates/${templateId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data) {
+            const tpl = data.data;
+            if (tpl.frontBackground) setFrontBackground(tpl.frontBackground);
+            if (tpl.backBackground) setBackBackground(tpl.backBackground);
+
+            if (tpl.frontElements && Array.isArray(tpl.frontElements) && tpl.frontElements.length > 0) {
+              setFrontElements(applyOverrides(tpl.frontElements));
+            } else if (customCompany || customPerson || customTitle || selectedColor) {
+              setFrontElements(prev => applyOverrides(prev));
+            }
+            if (tpl.backElements && Array.isArray(tpl.backElements) && tpl.backElements.length > 0) {
+              setBackElements(tpl.backElements);
+            }
+          } else if (customCompany || customPerson || customTitle || selectedColor) {
+            setFrontElements(prev => applyOverrides(prev));
+          }
+        })
+        .catch(err => {
+          console.error('Failed fetching template layout:', err);
+          if (customCompany || customPerson || customTitle || selectedColor) {
+            setFrontElements(prev => applyOverrides(prev));
+          }
+        });
+    } else if (customCompany || customPerson || customTitle || selectedColor) {
+      setFrontElements(prev => applyOverrides(prev));
     }
   }, [searchParams]);
 
@@ -289,6 +383,9 @@ function StudioEditorContent() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
+      if (searchParams && (searchParams.get('bgImage') || searchParams.get('templateId'))) {
+        return;
+      }
       const savedSession = sessionStorage.getItem('a2v_editor_session');
       if (savedSession) {
         const parsed = JSON.parse(savedSession);
@@ -534,6 +631,12 @@ function StudioEditorContent() {
   // Apply quick theme / template
   const handleApplyTemplate = (t) => {
     setCurrentBackground(t.bg);
+    if (t.size || t.orientation) {
+      setProductOptions(prev => ({
+        ...prev,
+        orientation: t.orientation ? (t.size ? `${t.orientation} (${t.size})` : t.orientation) : (t.size ? `Standard (${t.size})` : prev.orientation)
+      }));
+    }
     setCurrentElements(prev =>
       prev.map(el => {
         if (el.color) return { ...el, color: el.color === '#64748b' ? '#64748b' : t.primaryColor };
@@ -836,33 +939,80 @@ function StudioEditorContent() {
             <span>{isPreviewMode ? 'Exit Preview' : 'Preview'}</span>
           </button>
 
-          <div className="text-right hidden md:block">
-            <div className="text-sm font-black text-slate-900 leading-none flex items-center justify-end gap-1.5">
-              <span>₹{totalPrice.toFixed(2)}</span>
-              {isBackCustomized && (
-                <span className="text-[9px] font-extrabold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full uppercase tracking-wider" title="Back side custom design (+50%)">
-                  +50% Back
-                </span>
-              )}
+          {!isAdminMode && (
+            <div className="text-right hidden md:block">
+              <div className="text-sm font-black text-slate-900 leading-none flex items-center justify-end gap-1.5">
+                <span>₹{totalPrice.toFixed(2)}</span>
+                {isBackCustomized && (
+                  <span className="text-[9px] font-extrabold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full uppercase tracking-wider" title="Back side custom design (+50%)">
+                    +50% Back
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">
+                {productOptions.quantity.split(' -')[0]} • {isBackCustomized ? 'Double Sided' : 'Single Sided'}
+              </span>
             </div>
-            <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">
-              {productOptions.quantity.split(' -')[0]} • {isBackCustomized ? 'Double Sided' : 'Single Sided'}
-            </span>
-          </div>
+          )}
 
-          <button
-            onClick={() => {
-              setHasApprovedDesign(false);
-              setReviewStep('review');
-              setShowNextModal(true);
-            }}
-            className="bg-[#38bdf8] hover:bg-[#0ea5e9] text-white font-extrabold px-5 py-2 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
-          >
-            <span>Next</span>
-            <span>→</span>
-          </button>
+          {isAdminMode ? (
+            <button
+              onClick={async () => {
+                if (!adminTemplateId) {
+                  alert('No template ID found to save to. Please ensure templateId is in the URL.');
+                  return;
+                }
+                try {
+                  const res = await fetch(`/api/templates/${adminTemplateId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      frontElements,
+                      backElements,
+                      frontBackground,
+                      backBackground
+                    })
+                  });
+                  if (res.ok) {
+                    alert('🎉 Admin Layout Saved Successfully! When users customize this template, they will start with your exact text positions, images, and layout.');
+                  } else {
+                    const err = await res.json();
+                    alert(`Failed to save admin layout: ${err.error || 'Unknown error'}`);
+                  }
+                } catch (err) {
+                  console.error('Error saving admin layout:', err);
+                  alert('Error saving admin layout. Check console.');
+                }
+              }}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-4 py-2 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5 ring-2 ring-emerald-400/50"
+            >
+              <span>💾 Save Admin Template Layout</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                setHasApprovedDesign(false);
+                setReviewStep('review');
+                setShowNextModal(true);
+              }}
+              className="bg-[#38bdf8] hover:bg-[#0ea5e9] text-white font-extrabold px-5 py-2 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <span>Next</span>
+              <span>→</span>
+            </button>
+          )}
         </div>
       </header>
+
+      {isAdminMode && (
+        <div className="bg-indigo-900 text-white px-4 py-2 text-xs font-bold flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-sm z-30 gap-1 border-b border-indigo-700">
+          <div className="flex items-center gap-2">
+            <span className="bg-amber-400 text-slate-900 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shrink-0">ADMIN DESIGN MODE</span>
+            <span>You are setting the default layout, text positions, and images for template: <strong className="underline">{searchParams?.get('templateTitle') || adminTemplateId}</strong></span>
+          </div>
+          <span className="text-indigo-200 text-[11px] font-normal">Click &quot;💾 Save Admin Template Layout&quot; above when done to save as defaults for users.</span>
+        </div>
+      )}
 
       {/* 2. MAIN WORKSPACE (Sidebar Drawer + Center Canvas + Right Switcher) */}
       <div className="flex flex-1 overflow-hidden relative">
@@ -2249,23 +2399,53 @@ function StudioEditorContent() {
                     <p className="text-[11px] text-slate-500">Clicking a template switches color scheme and arrangement.</p>
 
                     <div className="space-y-3 pt-1">
-                      {TEMPLATES_LIST.map((t) => (
-                        <div
-                          key={t.id}
-                          onClick={() => handleApplyTemplate(t)}
-                          className="p-3.5 rounded-2xl border border-slate-200 hover:border-blue-500 bg-slate-50 hover:bg-white cursor-pointer shadow-2xs transition-all"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-extrabold text-slate-900">{t.name}</span>
-                            <span className="px-2 py-0.5 rounded-full bg-slate-200 text-[10px] font-bold text-slate-700">{t.style}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span style={{ backgroundColor: t.primaryColor }} className="w-5 h-5 rounded-full border border-slate-300 block" />
-                            <span style={{ backgroundColor: t.bg }} className="w-5 h-5 rounded-full border border-slate-300 block" />
-                            <span className="text-[11px] font-semibold text-slate-500">Click to apply palette →</span>
-                          </div>
-                        </div>
-                      ))}
+                      {(() => {
+                        const list = [...TEMPLATES_LIST];
+                        const urlId = searchParams?.get('templateId');
+                        const urlTitle = searchParams?.get('templateTitle');
+                        const urlBg = searchParams?.get('bgImage');
+                        const urlSize = searchParams?.get('size');
+                        const urlOrient = searchParams?.get('orientation');
+                        const urlColor = searchParams?.get('selectedColor');
+
+                        if (urlId || urlBg) {
+                          list.unshift({
+                            id: urlId || 'custom-url-template',
+                            name: urlTitle || 'Selected Design Template',
+                            primaryColor: urlColor || '#2563EB',
+                            bg: urlBg || '#ffffff',
+                            style: 'Active Design',
+                            size: urlSize,
+                            orientation: urlOrient
+                          });
+                        }
+                        return list.map((t) => {
+                          const isActive = currentBackground === t.bg || searchParams?.get('templateId') === t.id;
+                          return (
+                            <div
+                              key={t.id}
+                              onClick={() => handleApplyTemplate(t)}
+                              className={`p-3.5 rounded-2xl border cursor-pointer shadow-2xs transition-all ${
+                                isActive ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-500/20' : 'border-slate-200 hover:border-blue-500 bg-slate-50 hover:bg-white'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-extrabold text-slate-900">{t.name}</span>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isActive ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'}`}>{isActive ? '✓ Active Template' : t.style}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span style={{ backgroundColor: t.primaryColor }} className="w-5 h-5 rounded-full border border-slate-300 block shrink-0" />
+                                {t.bg.startsWith('http') || t.bg.startsWith('/') ? (
+                                  <div style={{ backgroundImage: `url("${t.bg}")` }} className="w-6 h-5 rounded border border-slate-300 bg-cover bg-center shrink-0" />
+                                ) : (
+                                  <span style={{ backgroundColor: t.bg }} className="w-5 h-5 rounded-full border border-slate-300 block shrink-0" />
+                                )}
+                                <span className="text-[11px] font-semibold text-slate-500 truncate">{isActive ? 'Current active design' : 'Click to apply design & sizing →'}</span>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
                 )}
@@ -2339,7 +2519,7 @@ function StudioEditorContent() {
           {/* Top Info Rulers & Bleed Toggles */}
           <div className="absolute top-4 inset-x-8 flex items-center justify-between pointer-events-none z-10">
             <div className="flex items-center gap-4 text-xs font-extrabold text-slate-500 bg-white/90 backdrop-blur-xs px-3.5 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs pointer-events-auto">
-              <span>Ruler: <strong className="text-slate-800">{productOptions.orientation.includes('Vertical') ? '5.38cm x 9.18cm' : '9.18cm x 5.38cm'}</strong></span>
+              <span>Ruler: <strong className="text-slate-800">{searchParams?.get('size') || (productOptions.orientation.includes('Vertical') ? '5.38cm x 9.18cm' : '9.18cm x 5.38cm')}</strong></span>
               <span className="text-slate-300">•</span>
               <span>Zoom: <strong className="text-slate-800">{zoomLevel}%</strong></span>
             </div>
@@ -2401,8 +2581,8 @@ function StudioEditorContent() {
                 }
               }}
               style={{
-                width: productOptions.orientation.includes('Vertical') ? '360px' : '620px',
-                height: productOptions.orientation.includes('Vertical') ? '620px' : '350px',
+                width: getCanvasDimensions(productOptions.orientation, searchParams?.get('size')).width,
+                height: getCanvasDimensions(productOptions.orientation, searchParams?.get('size')).height,
                 background: currentBackground && (currentBackground.startsWith('http') || currentBackground.startsWith('/') || currentBackground.startsWith('data:image') || currentBackground.startsWith('blob:') || currentBackground.startsWith('url(') || currentBackground.includes('gradient'))
                   ? (currentBackground.startsWith('http') || currentBackground.startsWith('/') || currentBackground.startsWith('data:image') || currentBackground.startsWith('blob:') ? `url("${currentBackground}") center/cover no-repeat` : currentBackground)
                   : undefined,
@@ -2411,7 +2591,7 @@ function StudioEditorContent() {
                   : undefined,
                 borderRadius: productOptions.corners.includes('Rounded') ? '24px' : '0px'
               }}
-              className={`relative shadow-2xl border border-slate-300 overflow-hidden transition-all duration-300 shrink-0 group cursor-default ${productOptions.corners.includes('Rounded') ? 'rounded-3xl' : 'rounded-none'}`}
+              className={`relative shadow-2xl border border-slate-300 ${selectedId && !isPreviewMode ? 'overflow-visible' : 'overflow-hidden'} transition-all duration-300 shrink-0 group cursor-default ${productOptions.corners.includes('Rounded') ? 'rounded-3xl' : 'rounded-none'}`}
             >
               {/* Bleed Margin Overlay */}
               {showBleed && (
@@ -2473,29 +2653,187 @@ function StudioEditorContent() {
                   >
                     {/* Floating Toolbar when selected */}
                     {isSelected && !isPreviewMode && (
-                      <div className="absolute -top-9 left-0 bg-slate-900 text-white rounded-lg px-2 py-1 flex items-center gap-2 shadow-xl z-50 text-xs">
-                        <span className="font-extrabold truncate max-w-[100px] text-[10px] text-sky-300">{el.label || el.type}</span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDuplicateElement(el);
+                      el.type === 'text' ? (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            left: `${Math.max(-el.x + 6, Math.min(0, (productOptions.orientation?.toLowerCase().includes('vertical') || productOptions.orientation?.toLowerCase().includes('portrait') ? 354 : 614) - el.x - 410))}px`,
+                            ...(el.y < 52
+                              ? { top: '100%', marginTop: '8px' }
+                              : { bottom: '100%', marginBottom: '8px' })
                           }}
-                          title="Duplicate"
-                          className="hover:text-blue-400"
+                          className="absolute bg-white text-slate-800 rounded-xl px-2.5 py-1.5 flex flex-wrap items-center gap-1.5 shadow-2xl border border-slate-200/90 z-50 text-xs w-max pointer-events-auto"
                         >
-                          ❐
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteElement(el.id);
+                          {/* Font Family */}
+                          <select
+                            value={el.fontFamily || 'Fira Sans'}
+                            onChange={(e) => updateSelectedProperty('fontFamily', e.target.value)}
+                            className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer w-28 max-w-[110px]"
+                          >
+                            {FONT_FAMILIES.map(font => (
+                              <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>
+                            ))}
+                          </select>
+
+                          {/* Font Size */}
+                          <div className="flex items-center border border-slate-200 rounded-lg bg-slate-50 overflow-hidden shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => updateSelectedProperty('fontSize', Math.max(8, (el.fontSize || 16) - 2))}
+                              className="px-2 py-1 hover:bg-slate-200 text-slate-700 font-extrabold text-xs cursor-pointer"
+                            >
+                              −
+                            </button>
+                            <input
+                              type="number"
+                              value={el.fontSize || 16}
+                              onChange={(e) => updateSelectedProperty('fontSize', parseInt(e.target.value) || 16)}
+                              className="w-9 text-center text-xs font-black border-x border-slate-200 py-1 bg-white focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => updateSelectedProperty('fontSize', Math.min(120, (el.fontSize || 16) + 2))}
+                              className="px-2 py-1 hover:bg-slate-200 text-slate-700 font-extrabold text-xs cursor-pointer"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          {/* Bold */}
+                          <button
+                            type="button"
+                            onClick={() => updateSelectedProperty('bold', !el.bold)}
+                            className={`w-7 h-7 rounded-lg font-black flex items-center justify-center text-xs transition-colors shrink-0 cursor-pointer ${
+                              el.bold ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-100 text-slate-700'
+                            }`}
+                            title="Bold"
+                          >
+                            B
+                          </button>
+
+                          {/* Italic */}
+                          <button
+                            type="button"
+                            onClick={() => updateSelectedProperty('italic', !el.italic)}
+                            className={`w-7 h-7 rounded-lg italic font-bold flex items-center justify-center text-xs transition-colors shrink-0 cursor-pointer ${
+                              el.italic ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-100 text-slate-700'
+                            }`}
+                            title="Italic"
+                          >
+                            I
+                          </button>
+
+                          {/* Underline */}
+                          <button
+                            type="button"
+                            onClick={() => updateSelectedProperty('underline', !el.underline)}
+                            className={`w-7 h-7 rounded-lg underline font-bold flex items-center justify-center text-xs transition-colors shrink-0 cursor-pointer ${
+                              el.underline ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-100 text-slate-700'
+                            }`}
+                            title="Underline"
+                          >
+                            U
+                          </button>
+
+                          {/* Text Color */}
+                          <div className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-slate-100 shrink-0 border border-slate-200/60 bg-white" title="Text Color">
+                            <input
+                              type="color"
+                              value={el.color || el.fill || '#1e293b'}
+                              onChange={(e) => {
+                                updateSelectedProperty('color', e.target.value);
+                                updateSelectedProperty('fill', e.target.value);
+                              }}
+                              className="w-5 h-5 rounded-full cursor-pointer border border-slate-300 p-0 overflow-hidden"
+                            />
+                          </div>
+
+                          {/* Alignments */}
+                          <div className="flex items-center gap-0.5 border border-slate-200 rounded-lg p-0.5 bg-slate-50 shrink-0">
+                            {['left', 'center', 'right'].map((align) => (
+                              <button
+                                key={align}
+                                type="button"
+                                onClick={() => updateSelectedProperty('align', align)}
+                                className={`w-6 h-6 rounded flex items-center justify-center text-xs transition-colors cursor-pointer ${
+                                  el.align === align ? 'bg-blue-600 text-white font-bold shadow-2xs' : 'hover:bg-slate-200 text-slate-600'
+                                }`}
+                                title={`Align ${align}`}
+                              >
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                                  {align === 'left' && <path d="M3 4h18v2H3V4zm0 7h12v2H3v-2zm0 7h18v2H3v-2z" />}
+                                  {align === 'center' && <path d="M3 4h18v2H3V4zm3 7h12v2H6v-2zm-3 7h18v2H3v-2z" />}
+                                  {align === 'right' && <path d="M3 4h18v2H3V4zm6 7h12v2H9v-2zm-6 7h18v2H3v-2z" />}
+                                </svg>
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Duplicate & Delete */}
+                          <div className="flex items-center gap-1 pl-1.5 border-l border-slate-200 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleDuplicateElement(el)}
+                              title="Duplicate"
+                              className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-blue-600 flex items-center justify-center font-bold text-sm cursor-pointer"
+                            >
+                              ❐
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteElement(el.id)}
+                              title="Delete"
+                              className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-rose-600 flex items-center justify-center font-bold text-sm cursor-pointer"
+                            >
+                              🗑
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            left: `${Math.max(-el.x + 6, Math.min(0, (productOptions.orientation?.toLowerCase().includes('vertical') || productOptions.orientation?.toLowerCase().includes('portrait') ? 354 : 614) - el.x - 180))}px`,
+                            ...(el.y < 44
+                              ? { top: '100%', marginTop: '8px' }
+                              : { bottom: '100%', marginBottom: '8px' })
                           }}
-                          title="Delete"
-                          className="hover:text-rose-400"
+                          className="absolute bg-slate-900 text-white rounded-lg px-2.5 py-1.5 flex items-center gap-2 shadow-xl z-50 text-xs w-max pointer-events-auto"
                         >
-                          🗑
-                        </button>
-                      </div>
+                          <span className="font-extrabold truncate max-w-[100px] text-[10px] text-sky-300">{el.label || el.type}</span>
+                          {el.type === 'shape' && (
+                            <div className="flex items-center gap-1.5 px-1 bg-slate-800 rounded">
+                              <span className="text-[10px] text-slate-300 font-semibold">Fill:</span>
+                              <input
+                                type="color"
+                                value={el.fill || '#2563EB'}
+                                onChange={(e) => updateSelectedProperty('fill', e.target.value)}
+                                className="w-5 h-5 rounded-full cursor-pointer border border-slate-600 p-0 overflow-hidden"
+                              />
+                            </div>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDuplicateElement(el);
+                            }}
+                            title="Duplicate"
+                            className="hover:text-blue-400 cursor-pointer"
+                          >
+                            ❐
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteElement(el.id);
+                            }}
+                            title="Delete"
+                            className="hover:text-rose-400 cursor-pointer"
+                          >
+                            🗑
+                          </button>
+                        </div>
+                      )
                     )}
 
                     {/* Element Rendered Content */}

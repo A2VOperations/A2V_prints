@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, Suspense, useMemo } from 'react'
+import React, { useState, useEffect, Suspense, useMemo, useRef } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useDatabaseData } from '../lib/useDatabaseData'
@@ -134,6 +134,13 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
       String(c.id || '').toLowerCase() === String(categoryKey).toLowerCase()
   )
 
+  const isGraphicCategory = Boolean(
+    matchedGraphicService ||
+    (dbCategory && dbCategory.serviceType === 'graphic') ||
+    (graphicCategories && graphicCategories.some((c) => String(c.slug || c.id || '').toLowerCase() === String(categoryKey).toLowerCase())) ||
+    ['logo-identity-design', 'graphic-design', 'web-design', 'digital-marketing', 'outdoor-signage', 'print-design', 'Product-Merchandize', 'Art-Illustration', 'logo-design', 'flyer-design', 'brochure-design', 'social-media-graphics', 'poster-design', 'visiting-card-design', 'letterhead-design', 'packaging-design', 'graphics-categories'].includes(String(categoryKey).toLowerCase())
+  )
+
   const catInfo = dynamicCatInfo || (dbCategory && dbCategory.defaultQualityOptions && dbCategory.defaultQualityOptions.length > 0 ? {
     name: dbCategory.name,
     link: `/${dbCategory.slug}`,
@@ -176,14 +183,109 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
     }
     : staticProduct
 
-  const [selectedQty, setSelectedQty] = useState(catInfo.defaultQtyOptions[0])
-  const [selectedQuality, setSelectedQuality] = useState(catInfo.defaultQualityOptions[0].id)
-  const [selectedStyle, setSelectedStyle] = useState(catInfo.defaultStyleOptions[0].id)
+  const effectiveQtyOptions = useMemo(() => {
+    if (product.quantityTiers && Array.isArray(product.quantityTiers) && product.quantityTiers.length > 0) {
+      return product.quantityTiers
+    }
+    return (catInfo.defaultQtyOptions || ['100 Units', '250 Units', '500 Units']).map((q) =>
+      typeof q === 'string' ? { label: q, priceModifier: 0 } : q
+    )
+  }, [product.quantityTiers, catInfo.defaultQtyOptions])
+
+  const effectiveQualityOptions = useMemo(() => {
+    if (product.qualityOptions && Array.isArray(product.qualityOptions) && product.qualityOptions.length > 0) {
+      return product.qualityOptions
+    }
+    return catInfo.defaultQualityOptions || []
+  }, [product.qualityOptions, catInfo.defaultQualityOptions])
+
+  const effectiveStyleOptions = useMemo(() => {
+    if (product.styleOptions && Array.isArray(product.styleOptions) && product.styleOptions.length > 0) {
+      return product.styleOptions
+    }
+    return catInfo.defaultStyleOptions || []
+  }, [product.styleOptions, catInfo.defaultStyleOptions])
+
+  const effectiveSpecs = useMemo(() => {
+    if (product.specifications && Array.isArray(product.specifications) && product.specifications.length > 0) {
+      return product.specifications
+    }
+    return catInfo.defaultSpecs || []
+  }, [product.specifications, catInfo.defaultSpecs])
+
+  const effectiveCustomOptions = useMemo(() => {
+    return Array.isArray(product.customOptions) ? product.customOptions : []
+  }, [product.customOptions])
+
+  const [selectedQty, setSelectedQty] = useState(() => {
+    const first = (catInfo.defaultQtyOptions && catInfo.defaultQtyOptions[0]) || '100 Units'
+    return typeof first === 'object' ? first.label : first
+  })
+  const [selectedQuality, setSelectedQuality] = useState(() => (catInfo.defaultQualityOptions && catInfo.defaultQualityOptions[0]?.id) || 'standard')
+  const [selectedStyle, setSelectedStyle] = useState(() => (catInfo.defaultStyleOptions && catInfo.defaultStyleOptions[0]?.id) || 'regular')
+  const [selectedCustomOptions, setSelectedCustomOptions] = useState({})
+  const [uploadedGraphicFile, setUploadedGraphicFile] = useState(null)
+  const fileInputRef = useRef(null)
   const [activeTab, setActiveTab] = useState('Description')
   const [openFaqIndex, setOpenFaqIndex] = useState(0)
   const [isMounted] = useState(true)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [isWishlisted, setIsWishlisted] = useState(false)
+
+  useEffect(() => {
+    if (effectiveQtyOptions.length > 0 && !effectiveQtyOptions.some(q => (typeof q === 'object' ? q.label : q) === selectedQty)) {
+      const first = effectiveQtyOptions[0]
+      setSelectedQty(typeof first === 'object' ? first.label : first)
+    }
+    if (effectiveQualityOptions.length > 0 && !effectiveQualityOptions.some(q => q.id === selectedQuality)) {
+      setSelectedQuality(effectiveQualityOptions[0].id)
+    }
+    if (effectiveStyleOptions.length > 0 && !effectiveStyleOptions.some(s => s.id === selectedStyle)) {
+      setSelectedStyle(effectiveStyleOptions[0].id)
+    }
+    if (effectiveCustomOptions.length > 0) {
+      setSelectedCustomOptions((prev) => {
+        const next = { ...prev }
+        let changed = false
+        effectiveCustomOptions.forEach((opt, idx) => {
+          if (!next[idx] && opt.choices && opt.choices.length > 0) {
+            next[idx] = opt.choices[0].label
+            changed = true
+          }
+        })
+        return changed ? next : prev
+      })
+    }
+  }, [effectiveQtyOptions, effectiveQualityOptions, effectiveStyleOptions, effectiveCustomOptions, selectedQty, selectedQuality, selectedStyle])
+
+  const calculatedTotalPrice = useMemo(() => {
+    let base = Number(product.numericPrice)
+    if (!base && product.price) {
+      const match = product.price.toString().replace(/[^0-9.]/g, '')
+      base = match ? parseFloat(match) : 249
+    }
+    if (!base || isNaN(base)) base = 249
+
+    const selectedQtyObj = effectiveQtyOptions.find(q => (typeof q === 'object' ? q.label : q) === selectedQty)
+    const qtyMod = (selectedQtyObj && typeof selectedQtyObj === 'object' && selectedQtyObj.priceModifier) ? Number(selectedQtyObj.priceModifier) : 0
+
+    const selectedQualityObj = effectiveQualityOptions.find(q => q.id === selectedQuality)
+    const qualityMod = selectedQualityObj?.priceModifier ? Number(selectedQualityObj.priceModifier) : 0
+
+    const selectedStyleObj = effectiveStyleOptions.find(s => s.id === selectedStyle)
+    const styleMod = selectedStyleObj?.priceModifier ? Number(selectedStyleObj.priceModifier) : 0
+
+    let customMod = 0
+    effectiveCustomOptions.forEach((opt, idx) => {
+      const choiceLabel = selectedCustomOptions[idx]
+      const choiceObj = (opt.choices || []).find(c => c.label === choiceLabel)
+      if (choiceObj && choiceObj.priceModifier) {
+        customMod += Number(choiceObj.priceModifier) || 0
+      }
+    })
+
+    return base + qtyMod + qualityMod + styleMod + customMod
+  }, [product, effectiveQtyOptions, effectiveQualityOptions, effectiveStyleOptions, effectiveCustomOptions, selectedQty, selectedQuality, selectedStyle, selectedCustomOptions])
   const currentProductId = String(product?.id || '')
   const sameCategoryRecommendations = useMemo(() => {
     if (initialRecommendations && initialRecommendations.length > 0) {
@@ -243,18 +345,25 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
       alert('Please log in to add items to your Shopping Cart.')
       return
     }
-    const qualityObj = catInfo.defaultQualityOptions.find((q) => q.id === selectedQuality)
-    const styleObj = catInfo.defaultStyleOptions.find((s) => s.id === selectedStyle)
+    const qualityObj = effectiveQualityOptions.find((q) => q.id === selectedQuality)
+    const styleObj = effectiveStyleOptions.find((s) => s.id === selectedStyle)
+    const customSelectionsList = effectiveCustomOptions.map((opt, idx) => ({
+      name: opt.name || 'Option',
+      choice: selectedCustomOptions[idx] || (opt.choices?.[0]?.label || '')
+    }))
     addToCart(currentUser.id, {
       productId: product.id || product.numericId || '1',
       title: product.title,
-      price: product.price,
+      price: `₹${calculatedTotalPrice.toLocaleString('en-IN')}`,
+      numericPrice: calculatedTotalPrice,
       image: product.image,
       category: categoryKey,
-      qtyOption: selectedQty,
-      quality: qualityObj ? qualityObj.title : selectedQuality,
-      style: styleObj ? styleObj.title : selectedStyle,
+      qtyOption: isGraphicCategory ? '1 Custom Design Service' : selectedQty,
+      quality: isGraphicCategory ? (uploadedGraphicFile ? `Uploaded File: ${uploadedGraphicFile.name}` : 'Custom Artwork Requirement') : (qualityObj ? qualityObj.title : selectedQuality),
+      style: isGraphicCategory ? 'Custom Design Requirement' : (styleObj ? styleObj.title : selectedStyle),
+      customSelections: customSelectionsList,
       quantity: 1,
+      uploadedFile: uploadedGraphicFile ? uploadedGraphicFile.name : null,
     })
     showProductToast('Added to Cart!')
   }
@@ -264,24 +373,34 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
       alert('Please log in to save items to your Wishlist.')
       return
     }
-    const qualityObj = catInfo.defaultQualityOptions.find((q) => q.id === selectedQuality)
-    const styleObj = catInfo.defaultStyleOptions.find((s) => s.id === selectedStyle)
+    const qualityObj = effectiveQualityOptions.find((q) => q.id === selectedQuality)
+    const styleObj = effectiveStyleOptions.find((s) => s.id === selectedStyle)
+    const customSelectionsList = effectiveCustomOptions.map((opt, idx) => ({
+      name: opt.name || 'Option',
+      choice: selectedCustomOptions[idx] || (opt.choices?.[0]?.label || '')
+    }))
     addToWishlist(currentUser.id, {
       productId: product.id || product.numericId || '1',
       title: product.title,
-      price: product.price,
+      price: `₹${calculatedTotalPrice.toLocaleString('en-IN')}`,
+      numericPrice: calculatedTotalPrice,
       image: product.image,
       category: categoryKey,
       qtyOption: selectedQty,
       quality: qualityObj ? qualityObj.title : selectedQuality,
       style: styleObj ? styleObj.title : selectedStyle,
+      customSelections: customSelectionsList,
     })
     setIsWishlisted(true)
     showProductToast('Saved to Wishlist!')
   }
 
   const handleUpload = () => {
-    alert(`Opening File Uploader for "${product.title}"...\nSelected Quantity: ${selectedQty}\nQuality ID: ${selectedQuality}\nStyle ID: ${selectedStyle}`)
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
+    } else {
+      alert(`Opening File Uploader for "${product.title}"...\nSelected Quantity: ${selectedQty}\nQuality ID: ${selectedQuality}\nStyle ID: ${selectedStyle}`)
+    }
   }
 
   const handleOnlineEditor = () => {
@@ -410,116 +529,280 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
               {product.description || 'Make a lasting impression with premium quality prints and custom branding.'}
             </p>
 
-            <div className="mt-4 mb-6">
-              <span className="text-xl sm:text-2xl font-extrabold text-[#c84b00] tracking-tight">
-                {displayPrice}
-              </span>
+            <div className="mt-4 mb-6 flex flex-wrap items-center justify-between gap-4 bg-orange-50/70 border border-orange-200/80 rounded-2xl p-4">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#c84b00] block mb-0.5">Calculated Total Price</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl sm:text-3xl font-extrabold text-[#c84b00] tracking-tight">
+                    ₹{calculatedTotalPrice.toLocaleString('en-IN')}
+                  </span>
+                  {calculatedTotalPrice > (Number(product.numericPrice) || 249) && (
+                    <span className="text-xs text-slate-600 font-semibold">(includes selected options)</span>
+                  )}
+                </div>
+              </div>
+              <div className="text-right text-xs font-bold text-slate-600">
+                <div className="text-emerald-700 flex items-center gap-1 justify-end">
+                  <span>✓</span> Live Pricing Active
+                </div>
+                <div className="text-slate-400 font-medium">Updates with quantity & add-ons</div>
+              </div>
             </div>
 
             <hr className="border-slate-200/80 mb-6" />
 
-            {/* Quantity Dropdown */}
-            <div className="mb-6">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Quantity
-              </label>
-              <select
-                value={selectedQty}
-                onChange={(e) => setSelectedQty(e.target.value)}
-                className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#F06800] focus:border-[#F06800] transition-all shadow-xs cursor-pointer"
-              >
-                {catInfo.defaultQtyOptions.map((qty, idx) => (
-                  <option key={idx} value={qty}>
-                    {qty}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Paper / Material Quality */}
-            <div className="mb-6">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                {catInfo.qualityLabel || 'Paper Quality'}
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {catInfo.defaultQualityOptions.map((opt) => {
-                  const isSelected = selectedQuality === opt.id
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setSelectedQuality(opt.id)}
-                      className={`p-3.5 rounded-xl text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center border-2 select-none ${isSelected
-                        ? 'bg-[#fff3ec] border-[#F06800] text-[#c84b00] shadow-xs font-bold'
-                        : 'bg-slate-50/50 hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 font-medium'
-                        }`}
+            {isGraphicCategory ? (
+              <div className="mb-8">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Upload Custom Design & Requirement Brief
+                </label>
+                <div className="bg-slate-50/80 border-2 border-dashed border-[#F06800]/40 rounded-2xl p-6 text-center transition-all hover:border-[#F06800]">
+                  {uploadedGraphicFile ? (
+                    <div className="flex items-center justify-between bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <span className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-base shrink-0">✓</span>
+                        <div className="text-left truncate">
+                          <p className="text-sm font-bold text-slate-800 truncate">{uploadedGraphicFile.name}</p>
+                          <p className="text-xs text-slate-400">Ready to attach with your order</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setUploadedGraphicFile(null)}
+                        className="text-rose-500 hover:text-rose-700 text-xs font-extrabold px-2.5 py-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={handleUpload}
+                      className="cursor-pointer flex flex-col items-center justify-center py-4"
                     >
-                      <span className="text-sm block mb-0.5">{opt.title}</span>
-                      <span className={`text-[11px] block font-normal ${isSelected ? 'text-[#c84b00]/80' : 'text-slate-500'}`}>
-                        {opt.subtitle}
-                      </span>
-                    </button>
-                  )
-                })}
+                      <div className="w-12 h-12 rounded-full bg-orange-100 text-[#F06800] flex items-center justify-center mb-2.5 shadow-2xs">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-extrabold text-slate-800 block">Click or Browse to Upload Custom Design Files</span>
+                      <span className="text-xs text-slate-500 block mt-1">Supports PDF, AI, PSD, PNG, JPG, ZIP or DOCX requirement brief</span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Quantity Dropdown */}
+                <div className="mb-6">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    Quantity
+                  </label>
+                  <select
+                    value={selectedQty}
+                    onChange={(e) => setSelectedQty(e.target.value)}
+                    className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#F06800] focus:border-[#F06800] transition-all shadow-xs cursor-pointer"
+                  >
+                    {effectiveQtyOptions.map((qty, idx) => {
+                      const label = typeof qty === 'object' ? qty.label : qty
+                      const mod = (typeof qty === 'object' && qty.priceModifier) ? Number(qty.priceModifier) : 0
+                      return (
+                        <option key={idx} value={label}>
+                          {label} {mod > 0 ? `(+₹${mod})` : ''}
+                        </option>
+                      )
+                    })}
+                  </select>
+                </div>
 
-            {/* Corner Style / Shape */}
-            <div className="mb-8">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                {catInfo.styleLabel || 'Corner Style'}
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {catInfo.defaultStyleOptions.map((opt) => {
-                  const isSelected = selectedStyle === opt.id
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setSelectedStyle(opt.id)}
-                      className={`p-3.5 rounded-xl text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center border-2 select-none ${isSelected
-                        ? 'bg-[#fff3ec] border-[#F06800] text-[#c84b00] shadow-xs font-bold'
-                        : 'bg-slate-50/50 hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 font-medium'
-                        }`}
-                    >
-                      <span className="text-sm block mb-0.5">{opt.title}</span>
-                      <span className={`text-[11px] block font-normal ${isSelected ? 'text-[#c84b00]/80' : 'text-slate-500'}`}>
-                        {opt.subtitle}
-                      </span>
-                    </button>
-                  )
-                })}
+                {/* Paper / Material Quality */}
+                <div className="mb-6">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    {catInfo.qualityLabel || 'Paper Quality'}
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {effectiveQualityOptions.map((opt) => {
+                      const isSelected = selectedQuality === opt.id
+                      const mod = Number(opt.priceModifier) || 0
+                      return (
+                        <button
+                          key={opt.id || opt.title}
+                          type="button"
+                          onClick={() => setSelectedQuality(opt.id)}
+                          className={`p-3.5 rounded-xl text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center border-2 select-none ${
+                            isSelected
+                              ? 'bg-[#fff3ec] border-[#F06800] text-[#c84b00] shadow-xs font-bold'
+                              : 'bg-slate-50/50 hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 font-medium'
+                          }`}
+                        >
+                          <span className="text-sm block mb-0.5">
+                            {opt.title} {mod > 0 && <span className="text-xs font-extrabold text-[#F06800] ml-1">(+₹{mod})</span>}
+                          </span>
+                          <span className={`text-[11px] block font-normal ${isSelected ? 'text-[#c84b00]/80' : 'text-slate-500'}`}>
+                            {opt.subtitle}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Corner Style / Shape */}
+                <div className="mb-8">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    {catInfo.styleLabel || 'Corner Style'}
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {effectiveStyleOptions.map((opt) => {
+                      const isSelected = selectedStyle === opt.id
+                      const mod = Number(opt.priceModifier) || 0
+                      return (
+                        <button
+                          key={opt.id || opt.title}
+                          type="button"
+                          onClick={() => setSelectedStyle(opt.id)}
+                          className={`p-3.5 rounded-xl text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center border-2 select-none ${
+                            isSelected
+                              ? 'bg-[#fff3ec] border-[#F06800] text-[#c84b00] shadow-xs font-bold'
+                              : 'bg-slate-50/50 hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 font-medium'
+                          }`}
+                        >
+                          <span className="text-sm block mb-0.5">
+                            {opt.title} {mod > 0 && <span className="text-xs font-extrabold text-[#F06800] ml-1">(+₹{mod})</span>}
+                          </span>
+                          <span className={`text-[11px] block font-normal ${isSelected ? 'text-[#c84b00]/80' : 'text-slate-500'}`}>
+                            {opt.subtitle}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Dynamic Custom Variables & Selected Details */}
+                {effectiveCustomOptions.length > 0 && (
+                  <div className="space-y-6 mb-8 pt-4 border-t border-slate-200/80">
+                    {effectiveCustomOptions.map((opt, optIdx) => (
+                      <div key={optIdx}>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
+                          <span>{opt.name || `Custom Option ${optIdx + 1}`}</span>
+                          {opt.required && <span className="text-[10px] text-[#F06800] font-bold">Required</span>}
+                        </label>
+                        {opt.type === 'dropdown' ? (
+                          <select
+                            value={selectedCustomOptions[optIdx] || ''}
+                            onChange={(e) => setSelectedCustomOptions((prev) => ({ ...prev, [optIdx]: e.target.value }))}
+                            className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#F06800] focus:border-[#F06800] transition-all cursor-pointer"
+                          >
+                            {(opt.choices || []).map((c, cIdx) => (
+                              <option key={cIdx} value={c.label}>
+                                {c.label} {c.priceModifier ? `(+₹${c.priceModifier})` : ''}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            {(opt.choices || []).map((c, cIdx) => {
+                              const isSelected = selectedCustomOptions[optIdx] === c.label
+                              const mod = Number(c.priceModifier) || 0
+                              return (
+                                <button
+                                  key={cIdx}
+                                  type="button"
+                                  onClick={() => setSelectedCustomOptions((prev) => ({ ...prev, [optIdx]: c.label }))}
+                                  className={`p-3 rounded-xl text-center cursor-pointer transition-all duration-200 flex items-center justify-between px-4 border-2 select-none ${
+                                    isSelected
+                                      ? 'bg-[#fff3ec] border-[#F06800] text-[#c84b00] shadow-xs font-bold'
+                                      : 'bg-slate-50/50 hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 font-medium'
+                                  }`}
+                                >
+                                  <span className="text-sm">{c.label}</span>
+                                  {mod > 0 ? (
+                                    <span className={`text-xs font-extrabold ${isSelected ? 'text-[#F06800]' : 'text-slate-500'}`}>
+                                      +₹{mod}
+                                    </span>
+                                  ) : (
+                                    <span className="text-[11px] text-slate-400">Included</span>
+                                  )}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files?.[0]) {
+                  setUploadedGraphicFile(e.target.files[0])
+                  showProductToast(`Attached "${e.target.files[0].name}" to your order!`)
+                }
+              }}
+            />
+
+            {isGraphicCategory ? (
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={handleUpload}
+                  className="bg-[linear-gradient(90deg,#ff520a_0%,#ff0a6c_100%)] hover:opacity-95 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-md transition-all transform hover:scale-[1.01] active:scale-95 text-sm cursor-pointer w-full sm:flex-1 flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  {uploadedGraphicFile ? 'Change Uploaded File' : 'Upload Custom Design'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  className="bg-linear-to-r from-[#F06800] via-[#f54278] to-[#9842dc] hover:opacity-95 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-95 text-sm cursor-pointer w-full sm:flex-1 flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Add to Cart
+                </button>
               </div>
-            </div>
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                className="bg-linear-to-r from-[#F06800] via-[#f54278] to-[#9842dc] hover:opacity-95 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-95 text-sm cursor-pointer w-full sm:flex-1 flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                Add to Cart
-              </button>
-            </div>
+            ) : (
+              <>
+                <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleAddToCart}
+                    className="bg-linear-to-r from-[#F06800] via-[#f54278] to-[#9842dc] hover:opacity-95 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-95 text-sm cursor-pointer w-full sm:flex-1 flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Add to Cart
+                  </button>
+                </div>
 
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-2 mt-2">
-              <button
-                type="button"
-                onClick={handleUpload}
-                className="bg-[linear-gradient(90deg,#ff520a_0%,#ff0a6c_100%)] hover:opacity-95 text-white font-extrabold  py-3.5 px-6 rounded-2xl shadow-md transition-all transform hover:scale-[1.01] active:scale-95 text-sm cursor-pointer w-full sm:flex-1"
-              >
-                Upload Custom Design
-              </button>
-              <button
-                type="button"
-                onClick={handleOnlineEditor}
-                className="bg-[#221712] hover:bg-black text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-md transition-all transform hover:scale-[1.01] active:scale-95 text-sm cursor-pointer w-full sm:flex-1"
-              >
-                Browse Studio Templates
-              </button>
-            </div>
+                <div className="flex flex-col sm:flex-row justify-center items-center gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={handleUpload}
+                    className="bg-[linear-gradient(90deg,#ff520a_0%,#ff0a6c_100%)] hover:opacity-95 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-md transition-all transform hover:scale-[1.01] active:scale-95 text-sm cursor-pointer w-full sm:flex-1"
+                  >
+                    Upload Custom Design
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOnlineEditor}
+                    className="bg-[#221712] hover:bg-black text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-md transition-all transform hover:scale-[1.01] active:scale-95 text-sm cursor-pointer w-full sm:flex-1"
+                  >
+                    Browse Studio Templates
+                  </button>
+                </div>
+              </>
+            )}
 
             {/* Product Toast */}
             {toastMessage && (
@@ -566,7 +849,7 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
                   Our custom prints are the perfect networking and branding tool. Printed on high-quality, durable materials, they offer a professional look and feel that leaves a lasting impression. Choose between matte or glossy finishes to perfectly match your brand&apos;s aesthetic. The crisp printing ensures your text is legible and your colors pop, making every connection count.
                 </p>
                 <ul className="mt-4 space-y-2.5 text-slate-700 font-medium list-disc pl-5">
-                  <li>Standard Size: {catInfo.defaultSpecs[2]?.value || '3.5" x 2.0"'}</li>
+                  <li>Standard Size: {effectiveSpecs[2]?.value || '3.5" x 2.0"'}</li>
                   <li>Full-color high resolution printing on front (back optional)</li>
                   <li>Premium base material designed for durability and executive feel</li>
                 </ul>
@@ -575,7 +858,7 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
 
             {activeTab === 'Paper & Specs' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50/60 p-6 sm:p-8 rounded-2xl border border-slate-200/60 animate-fadeIn">
-                {catInfo.defaultSpecs.map((spec, idx) => (
+                {effectiveSpecs.map((spec, idx) => (
                   <div key={idx} className="flex flex-col">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
                       {spec.label}
