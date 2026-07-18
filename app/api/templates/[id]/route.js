@@ -80,6 +80,22 @@ export async function PUT(request, { params }) {
       }
     }
 
+    if (body.frontBackground && (body.frontBackground.startsWith('http') || body.frontBackground.startsWith('/') || body.frontBackground.startsWith('data:image'))) {
+      if (!body.frontImage) body.frontImage = body.frontBackground;
+      if (!body.image) body.image = body.frontBackground;
+    }
+    if (body.backBackground && (body.backBackground.startsWith('http') || body.backBackground.startsWith('/') || body.backBackground.startsWith('data:image'))) {
+      if (!body.backImage) body.backImage = body.backBackground;
+    }
+    if (body.frontImage || body.image) {
+      if (!body.frontBackground) body.frontBackground = body.frontImage || body.image;
+      if (!body.image) body.image = body.frontImage;
+      if (!body.frontImage) body.frontImage = body.image;
+    }
+    if (body.backImage && !body.backBackground) {
+      body.backBackground = body.backImage;
+    }
+
     const up = await Template.findByIdAndUpdate(template._id, body, {
       new: true,
       runValidators: true,

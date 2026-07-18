@@ -22,8 +22,8 @@ const FONT_FAMILIES = [
 ];
 
 const COLOR_PALETTE = [
-  '#2563EB', '#1e3a8a', '#3b82f6', '#0284c7', '#0d9488', 
-  '#16a34a', '#ca8a04', '#ea580c', '#dc2626', '#9333ea', 
+  '#2563EB', '#1e3a8a', '#3b82f6', '#0284c7', '#0d9488',
+  '#16a34a', '#ca8a04', '#ea580c', '#dc2626', '#9333ea',
   '#475569', '#1e293b', '#000000', '#ffffff', '#f8fafc'
 ];
 
@@ -34,12 +34,129 @@ const TEMPLATES_LIST = [
   { id: 't-rose-creative', name: 'Rose Studio Minimal', primaryColor: '#e11d48', bg: '#fff1f2', style: 'Creative' }
 ];
 
+const GRAPHICS_SHAPES = [
+  { id: 'square', name: 'Square' },
+  { id: 'circle', name: 'Circle' },
+  { id: 'triangle', name: 'Triangle' },
+  { id: 'pentagon', name: 'Pentagon' },
+  { id: 'line', name: 'Line' },
+  { id: 'arrow', name: 'Arrow' },
+  { id: 'double-arrow', name: 'Double Arrow' },
+  { id: 'star', name: 'Star' },
+  { id: 'speech-bubble-round', name: 'Round Speech Bubble' },
+  { id: 'speech-bubble-rect', name: 'Rectangular Speech Bubble' }
+];
+
+const renderShapeIcon = (shapeType, fill = '#000000') => {
+  switch (shapeType) {
+    case 'square':
+      return <div style={{ backgroundColor: fill }} className="w-full h-full rounded-none" />;
+    case 'circle':
+      return <div style={{ backgroundColor: fill }} className="w-full h-full rounded-full" />;
+    case 'triangle':
+      return (
+        <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
+          <polygon points="50,5 95,95 5,95" fill={fill} />
+        </svg>
+      );
+    case 'pentagon':
+      return (
+        <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
+          <polygon points="50,6 95,39 78,94 22,94 5,39" fill={fill} />
+        </svg>
+      );
+    case 'line':
+      return (
+        <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
+          <line x1="18" y1="18" x2="82" y2="82" stroke={fill} strokeWidth="16" strokeLinecap="round" />
+        </svg>
+      );
+    case 'arrow':
+      return (
+        <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
+          <path d="M 12,38 L 56,38 L 56,18 L 92,50 L 56,82 L 56,62 L 12,62 Z" fill={fill} />
+        </svg>
+      );
+    case 'double-arrow':
+      return (
+        <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
+          <path d="M 44,18 L 8,50 L 44,82 L 44,62 L 56,62 L 56,82 L 92,50 L 56,18 L 56,38 L 44,38 Z" fill={fill} />
+        </svg>
+      );
+    case 'star':
+      return (
+        <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
+          <polygon points="50,5 63,35 95,38 71,60 78,92 50,75 22,92 29,60 5,38 37,35" fill={fill} />
+        </svg>
+      );
+    case 'speech-bubble-round':
+      return (
+        <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
+          <path d="M 55,10 C 76,10 93,27 93,48 C 93,69 76,86 55,86 C 46,86 38,83 31,78 L 15,93 L 22,74 C 18,67 17,58 17,48 C 17,27 34,10 55,10 Z" fill={fill} />
+        </svg>
+      );
+    case 'speech-bubble-rect':
+      return (
+        <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
+          <path d="M 18,16 L 82,16 C 90,16 95,22 95,30 L 95,66 C 95,74 90,80 82,80 L 38,80 L 22,94 L 25,80 L 18,80 C 10,80 5,74 5,66 L 5,30 C 5,22 10,16 18,16 Z" fill={fill} />
+        </svg>
+      );
+    case 'icon-globe':
+      return (
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          <circle cx="50" cy="50" r="44" fill="none" stroke={fill} strokeWidth="8" />
+          <ellipse cx="50" cy="50" rx="20" ry="44" fill="none" stroke={fill} strokeWidth="8" />
+          <path d="M 6 50 L 94 50 M 15 25 L 85 25 M 15 75 L 85 75" fill="none" stroke={fill} strokeWidth="6" />
+        </svg>
+      );
+    case 'icon-badge':
+      return (
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          <circle cx="50" cy="50" r="44" fill="none" stroke={fill} strokeWidth="8" />
+          <polygon points="25,70 50,45 75,70" fill={fill} />
+          <circle cx="35" cy="35" r="8" fill={fill} />
+        </svg>
+      );
+    case 'icon-circle':
+      return (
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          <circle cx="50" cy="50" r="48" fill={fill} />
+          <polygon points="28,70 50,48 72,70" fill="white" />
+          <circle cx="36" cy="36" r="7" fill="white" />
+        </svg>
+      );
+    case 'illust-stars':
+      return (
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          <polygon points="35,10 42,30 63,33 46,47 51,68 35,56 19,68 24,47 7,33 28,30" fill={fill} />
+          <polygon points="75,40 80,52 93,54 83,63 86,76 75,69 64,76 67,63 57,54 70,52" fill={fill} opacity="0.8" />
+        </svg>
+      );
+    case 'illust-badge':
+      return (
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          <polygon points="50,6 61,20 78,20 83,36 98,44 93,60 100,75 88,86 86,100 69,96 55,100 45,96 28,100 26,86 14,75 21,60 16,44 31,36 36,20 53,20" fill={fill} />
+          <circle cx="57" cy="53" r="28" fill="white" opacity="0.9" />
+        </svg>
+      );
+    case 'illust-diamond':
+      return (
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          <polygon points="50,10 88,38 74,90 26,90 12,38" fill={fill} />
+          <polygon points="50,10 68,38 50,90 32,38" fill="white" opacity="0.3" />
+        </svg>
+      );
+    default:
+      return <div style={{ backgroundColor: fill }} className="w-full h-full rounded-lg shadow-sm" />;
+  }
+};
+
 const getCanvasDimensions = (orientationStr = '', sizeStr = '') => {
   const combined = `${sizeStr || ''} ${orientationStr || ''}`;
   const matches = combined.match(/(\d+(?:\.\d+)?)\s*(?:mm|cm)?\s*(?:[xX×*])\s*(\d+(?:\.\d+)?)\s*(?:mm|cm)?/i);
-  
+
   const isVertical = orientationStr.toLowerCase().includes('vertical');
-  
+
   if (matches && matches[1] && matches[2]) {
     let w = parseFloat(matches[1]);
     let h = parseFloat(matches[2]);
@@ -51,7 +168,7 @@ const getCanvasDimensions = (orientationStr = '', sizeStr = '') => {
       } else if (!isVertical && h > w && !combined.toLowerCase().includes('vertical')) {
         // preserve ratio
       }
-      
+
       const maxDim = 620;
       const aspect = w / h;
       if (w >= h) {
@@ -65,8 +182,44 @@ const getCanvasDimensions = (orientationStr = '', sizeStr = '') => {
       }
     }
   }
-  
+
   return isVertical ? { width: '360px', height: '620px' } : { width: '620px', height: '350px' };
+};
+
+const getBackgroundStyles = (bgValue) => {
+  if (!bgValue || bgValue === 'transparent') {
+    return {
+      backgroundColor: 'transparent',
+      backgroundImage: 'none'
+    };
+  }
+  const isImageOrGradient =
+    bgValue.startsWith('http') ||
+    bgValue.startsWith('/') ||
+    bgValue.startsWith('data:image') ||
+    bgValue.startsWith('blob:') ||
+    bgValue.startsWith('url(') ||
+    bgValue.includes('gradient');
+
+  if (isImageOrGradient) {
+    const isDirectUrl =
+      bgValue.startsWith('http') ||
+      bgValue.startsWith('/') ||
+      bgValue.startsWith('data:image') ||
+      bgValue.startsWith('blob:');
+    return {
+      backgroundColor: 'transparent',
+      backgroundImage: isDirectUrl ? `url("${bgValue}")` : bgValue,
+      backgroundPosition: 'center',
+      backgroundSize: 'cover',
+      backgroundRepeat: 'no-repeat'
+    };
+  }
+
+  return {
+    backgroundColor: bgValue,
+    backgroundImage: 'none'
+  };
 };
 
 function StudioEditorContent() {
@@ -109,6 +262,20 @@ function StudioEditorContent() {
   const [showFormatMenu, setShowFormatMenu] = useState(false);
   const [uploadedImages, setUploadedImages] = useState([]);
   const [graphicsSearch, setGraphicsSearch] = useState('');
+  const [graphicsCategory, setGraphicsCategory] = useState(null);
+  const [adminGraphicAssets, setAdminGraphicAssets] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/graphics')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && Array.isArray(data.data)) {
+          setAdminGraphicAssets(data.data);
+        }
+      })
+      .catch(err => console.error('Error loading admin graphics:', err));
+  }, []);
+
   const [recentColors, setRecentColors] = useState(['#751fb8', '#000000']);
   const [bgTab, setBgTab] = useState('Swatches');
   const [bgHue, setBgHue] = useState(280);
@@ -184,8 +351,24 @@ function StudioEditorContent() {
         .then(data => {
           if (data.success && data.data) {
             const tpl = data.data;
-            if (tpl.frontBackground) setFrontBackground(tpl.frontBackground);
-            if (tpl.backBackground) setBackBackground(tpl.backBackground);
+            const currentUrlBg = searchParams?.get('bgImage');
+            const currentUrlBackBg = searchParams?.get('backBgImage');
+
+            if (!currentUrlBg || currentUrlBg.trim() === '') {
+              if (tpl.frontBackground || tpl.frontImage || tpl.image) {
+                setFrontBackground(tpl.frontBackground || tpl.frontImage || tpl.image);
+              }
+            } else {
+              setFrontBackground(currentUrlBg);
+            }
+
+            if (!currentUrlBackBg || currentUrlBackBg.trim() === '') {
+              if (tpl.backBackground || tpl.backImage || tpl.frontImage || tpl.image) {
+                setBackBackground(tpl.backBackground || tpl.backImage || tpl.frontImage || tpl.image);
+              }
+            } else {
+              setBackBackground(currentUrlBackBg);
+            }
 
             if (tpl.frontElements && Array.isArray(tpl.frontElements) && tpl.frontElements.length > 0) {
               setFrontElements(applyOverrides(tpl.frontElements));
@@ -422,7 +605,7 @@ function StudioEditorContent() {
       const scale = zoomLevel / 100;
       const deltaX = (e.clientX - resizeStart.x) / scale;
       const deltaY = (e.clientY - resizeStart.y) / scale;
-      
+
       let newW = Math.max(20, resizeStart.w + deltaX);
       let newH = Math.max(20, resizeStart.h + deltaY);
 
@@ -479,10 +662,10 @@ function StudioEditorContent() {
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#F2F4F7] text-slate-800 select-none font-sans">
-      
+
       {/* 1. STUDIO HEADER / TOPBAR (Replicating exact Vistaprint Topbar) */}
       <header className="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between shrink-0 z-40 shadow-xs">
-        
+
         {/* Left: Brand & Product Selector & Undo/Redo */}
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 pr-3 border-r border-slate-200">
@@ -506,8 +689,8 @@ function StudioEditorContent() {
 
           {/* Undo / Redo / History / Reset Controls */}
           <div className="flex items-center gap-1 text-slate-600 pl-2 border-l border-slate-200/80">
-            <button 
-              onClick={handleUndo} 
+            <button
+              onClick={handleUndo}
               disabled={historyIndex <= 0}
               title="Undo (Ctrl+Z)"
               className="p-1.5 rounded hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
@@ -516,8 +699,8 @@ function StudioEditorContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
               </svg>
             </button>
-            <button 
-              onClick={handleRedo} 
+            <button
+              onClick={handleRedo}
               disabled={historyIndex >= history.length - 1}
               title="Redo (Ctrl+Y)"
               className="p-1.5 rounded hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
@@ -526,14 +709,14 @@ function StudioEditorContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" />
               </svg>
             </button>
-            <button 
+            <button
               onClick={() => {
                 if (confirm('Clear custom design elements and reset canvas?')) {
                   setFrontElements(DEFAULT_FRONT_ELEMENTS);
                   setBackElements(DEFAULT_BACK_ELEMENTS);
                   setFrontBackground('#ffffff');
                   setBackBackground('#ffffff');
-                  try { sessionStorage.removeItem('a2v_editor_session'); } catch(e) {}
+                  try { sessionStorage.removeItem('a2v_editor_session'); } catch (e) { }
                 }
               }}
               title="Reset Canvas"
@@ -546,225 +729,14 @@ function StudioEditorContent() {
           </div>
         </div>
 
-        {/* Center: Text & Object Formatting Toolbar (Exact reference icons!) */}
-        <div className="hidden lg:flex items-center gap-2 bg-slate-50/90 border border-slate-200/80 rounded-xl px-3 py-1 shadow-2xs">
-          {selectedElement && selectedElement.type === 'text' ? (
-            <>
-              {/* Font Family Selector */}
-              <select
-                value={selectedElement.fontFamily || 'Fira Sans'}
-                onChange={(e) => updateSelectedProperty('fontFamily', e.target.value)}
-                className="bg-white border border-slate-200 rounded-md px-2.5 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer w-32"
-              >
-                {FONT_FAMILIES.map(font => (
-                  <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>
-                ))}
-              </select>
-
-              {/* Font Size Selector */}
-              <div className="flex items-center border border-slate-200 rounded-md bg-white overflow-hidden">
-                <button 
-                  onClick={() => updateSelectedProperty('fontSize', Math.max(8, (selectedElement.fontSize || 16) - 2))}
-                  className="px-2 py-1 hover:bg-slate-100 text-slate-600 font-bold text-xs"
-                >
-                  −
-                </button>
-                <input
-                  type="number"
-                  value={selectedElement.fontSize || 16}
-                  onChange={(e) => updateSelectedProperty('fontSize', parseInt(e.target.value) || 16)}
-                  className="w-10 text-center text-xs font-extrabold border-x border-slate-200 py-1 focus:outline-none"
-                />
-                <button 
-                  onClick={() => updateSelectedProperty('fontSize', Math.min(120, (selectedElement.fontSize || 16) + 2))}
-                  className="px-2 py-1 hover:bg-slate-100 text-slate-600 font-bold text-xs"
-                >
-                  +
-                </button>
-              </div>
-
-              {/* Color Picker Circle Dot */}
-              <div className="relative group flex items-center">
-                <input
-                  type="color"
-                  value={selectedElement.color || '#2563EB'}
-                  onChange={(e) => updateSelectedProperty('color', e.target.value)}
-                  className="w-7 h-7 rounded-full cursor-pointer border border-slate-300 p-0 overflow-hidden shrink-0"
-                />
-              </div>
-
-              <div className="h-4 w-px bg-slate-200 mx-1" />
-
-              {/* Bold / Italic / Underline */}
-              <button
-                onClick={() => updateSelectedProperty('bold', !selectedElement.bold)}
-                className={`w-7 h-7 rounded flex items-center justify-center font-black text-xs transition-colors ${
-                  selectedElement.bold ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-200 text-slate-700'
-                }`}
-              >
-                B
-              </button>
-              <button
-                onClick={() => updateSelectedProperty('italic', !selectedElement.italic)}
-                className={`w-7 h-7 rounded flex items-center justify-center font-serif italic text-xs transition-colors ${
-                  selectedElement.italic ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-200 text-slate-700'
-                }`}
-              >
-                I
-              </button>
-              <button
-                onClick={() => updateSelectedProperty('underline', !selectedElement.underline)}
-                className={`w-7 h-7 rounded flex items-center justify-center underline text-xs transition-colors ${
-                  selectedElement.underline ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-200 text-slate-700'
-                }`}
-              >
-                U
-              </button>
-
-              <div className="h-4 w-px bg-slate-200 mx-1" />
-
-              {/* Alignments */}
-              {['left', 'center', 'right'].map((align) => (
-                <button
-                  key={align}
-                  onClick={() => updateSelectedProperty('align', align)}
-                  className={`w-7 h-7 rounded flex items-center justify-center text-xs transition-colors ${
-                    selectedElement.align === align ? 'bg-blue-100 text-blue-700 font-bold' : 'hover:bg-slate-200 text-slate-600'
-                  }`}
-                  title={`Align ${align}`}
-                >
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                    {align === 'left' && <path d="M3 4h18v2H3V4zm0 7h12v2H3v-2zm0 7h18v2H3v-2z" />}
-                    {align === 'center' && <path d="M3 4h18v2H3V4zm3 7h12v2H6v-2zm-3 7h18v2H3v-2z" />}
-                    {align === 'right' && <path d="M3 4h18v2H3V4zm6 7h12v2H9v-2zm-6 7h18v2H3v-2z" />}
-                  </svg>
-                </button>
-              ))}
-
-              <div className="h-4 w-px bg-slate-200 mx-1" />
-
-              {/* Format Dropdown & Menu (Matching exact Case popover screenshot!) */}
-              <div className="relative">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowFormatMenu(!showFormatMenu);
-                  }}
-                  className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded transition-colors ${
-                    showFormatMenu || (selectedElement.textCase && selectedElement.textCase !== 'none')
-                      ? 'bg-blue-100 text-blue-700 font-extrabold border border-blue-300'
-                      : 'hover:bg-slate-200 text-slate-700'
-                  }`}
-                  title="Format Case (Uppercase, Lowercase, Normal)"
-                >
-                  <span className="text-[11px]">T🗚</span>
-                  <span>Format</span>
-                </button>
-
-                {/* Case Popover Menu */}
-                {showFormatMenu && (
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    className="absolute top-full right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 flex items-center gap-3.5 whitespace-nowrap min-w-[190px]"
-                  >
-                    <span className="text-xs font-extrabold text-slate-800">Case</span>
-
-                    <div className="flex items-center gap-1.5">
-                      {/* Normal / As Typed Case (Aa) */}
-                      <button
-                        onClick={() => {
-                          updateSelectedProperty('textCase', 'none');
-                          setShowFormatMenu(false);
-                        }}
-                        className={`px-3 py-1.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center ${
-                          !selectedElement.textCase || selectedElement.textCase === 'none'
-                            ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
-                            : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
-                        }`}
-                        title="Normal / As Typed"
-                      >
-                        Aa
-                      </button>
-
-                      {/* Lowercase (a↓) */}
-                      <button
-                        onClick={() => {
-                          updateSelectedProperty('textCase', 'lowercase');
-                          setShowFormatMenu(false);
-                        }}
-                        className={`px-3 py-1.5 rounded-xl font-bold text-sm transition-all flex items-center gap-0.5 justify-center ${
-                          selectedElement.textCase === 'lowercase'
-                            ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
-                            : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
-                        }`}
-                        title="Lowercase"
-                      >
-                        <span>a</span>
-                        <span className="text-xs font-black">↓</span>
-                      </button>
-
-                      {/* Uppercase (A↑) */}
-                      <button
-                        onClick={() => {
-                          updateSelectedProperty('textCase', 'uppercase');
-                          setShowFormatMenu(false);
-                        }}
-                        className={`px-3 py-1.5 rounded-xl font-bold text-sm transition-all flex items-center gap-0.5 justify-center ${
-                          selectedElement.textCase === 'uppercase'
-                            ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
-                            : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
-                        }`}
-                        title="Uppercase"
-                      >
-                        <span>A</span>
-                        <span className="text-xs font-black">↑</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={() => setActiveTab(activeTab === 'Effects' ? 'Text' : 'Effects')}
-                className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg transition-colors ${
-                  activeTab === 'Effects' || (selectedElement.effect && selectedElement.effect !== 'none' && selectedElement.effect !== 'original') || (selectedElement.textShape && selectedElement.textShape !== 'none')
-                    ? 'bg-blue-100 text-blue-700 font-extrabold border border-blue-300 shadow-2xs'
-                    : 'hover:bg-slate-200 text-slate-700'
-                }`}
-                title="Text Effects & Shapes"
-              >
-                <span>✨</span>
-                <span>Effects</span>
-              </button>
-            </>
-          ) : selectedElement && selectedElement.type === 'shape' ? (
-            <div className="flex items-center gap-4 text-xs font-bold text-slate-700 px-2 py-0.5">
-              <span>Selected Shape: <strong className="text-slate-900 capitalize">{selectedElement.shapeType}</strong></span>
-              <div className="flex items-center gap-2">
-                <span>Fill Color:</span>
-                <input
-                  type="color"
-                  value={selectedElement.fill || '#2563EB'}
-                  onChange={(e) => updateSelectedProperty('fill', e.target.value)}
-                  className="w-7 h-7 rounded-full cursor-pointer border border-slate-300 p-0"
-                />
-              </div>
-            </div>
-          ) : (
-            <span className="text-xs font-medium text-slate-400 px-4 py-0.5 italic">
-              Click any element on the canvas below to edit text, font, size & formatting
-            </span>
-          )}
-        </div>
-
         {/* Right: Preview, Price & Next Button */}
         <div className="flex items-center gap-3 sm:gap-5">
           <button
             onClick={() => setIsPreviewMode(!isPreviewMode)}
-            className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition-all border ${
-              isPreviewMode
+            className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition-all border ${isPreviewMode
                 ? 'bg-slate-900 text-white border-slate-900 shadow-md'
                 : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-            }`}
+              }`}
           >
             <span>👁</span>
             <span>{isPreviewMode ? 'Exit Preview' : 'Preview'}</span>
@@ -847,7 +819,7 @@ function StudioEditorContent() {
 
       {/* 2. MAIN WORKSPACE (Sidebar Drawer + Center Canvas + Right Switcher) */}
       <div className="flex flex-1 overflow-hidden relative">
-        
+
         {!isPreviewMode && (
           <>
             {/* LEFTMOST VERTICAL TAB ICON STRIP (Exactly like Vistaprint leftmost strip) */}
@@ -867,12 +839,14 @@ function StudioEditorContent() {
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`w-16 py-2.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all group relative cursor-pointer ${
-                      isActive
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      if (tab.id !== 'Graphics') setGraphicsCategory(null);
+                    }}
+                    className={`w-16 py-2.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all group relative cursor-pointer ${isActive
                         ? 'bg-sky-50 text-[#0070e0] font-black shadow-2xs border border-sky-200/60'
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-semibold'
-                    }`}
+                      }`}
                   >
                     <span className="text-lg leading-none">{tab.icon}</span>
                     <span className="text-[10px] leading-tight text-center px-1 line-clamp-1">{tab.label}</span>
@@ -886,7 +860,7 @@ function StudioEditorContent() {
 
             {/* EXPANDABLE LEFT DRAWER / OPTIONS PANEL (Approx 280px wide) */}
             <div className="w-90 bg-white border-r border-slate-200 flex flex-col shrink-0 z-20 shadow-xs">
-              
+
               {/* Drawer Header */}
               <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                 <h2 className="text-sm font-black text-slate-900 tracking-tight">
@@ -907,7 +881,7 @@ function StudioEditorContent() {
 
               {/* Drawer Content */}
               <div className="flex-1 overflow-y-auto p-4 space-y-5 no-scrollbar">
-                
+
                 {/* --- TAB 1: TEXT (Exact screenshot reproduction!) --- */}
                 {activeTab === 'Text' && (
                   <div className="space-y-4">
@@ -932,11 +906,10 @@ function StudioEditorContent() {
                             <div
                               key={el.id}
                               onClick={() => setSelectedId(el.id)}
-                              className={`p-3 rounded-2xl border transition-all cursor-pointer ${
-                                isSelected
+                              className={`p-3 rounded-2xl border transition-all cursor-pointer ${isSelected
                                   ? 'bg-sky-50/70 border-sky-400 shadow-2xs'
                                   : 'bg-slate-50/60 border-slate-200 hover:border-slate-300'
-                              }`}
+                                }`}
                             >
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate max-w-[150px]">
@@ -996,17 +969,16 @@ function StudioEditorContent() {
                     {/* Style Section */}
                     <div>
                       <h3 className="text-xs font-bold text-slate-800 mb-2.5">Style</h3>
-                      
+
                       {/* Grid 1: Original, Shadow, Highlight */}
                       <div className="grid grid-cols-3 gap-2.5 mb-2.5">
                         {/* Original */}
                         <button
                           onClick={() => updateSelectedProperty('effect', 'original')}
-                          className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${
-                            !selectedElement?.effect || selectedElement.effect === 'original' || selectedElement.effect === 'none'
+                          className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${!selectedElement?.effect || selectedElement.effect === 'original' || selectedElement.effect === 'none'
                               ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
                               : 'border-slate-200 hover:border-slate-300'
-                          }`}
+                            }`}
                         >
                           <span className="text-2xl font-black text-slate-800">A</span>
                           <span className="text-[10px] font-bold text-slate-700">Original</span>
@@ -1015,11 +987,10 @@ function StudioEditorContent() {
                         {/* Shadow */}
                         <button
                           onClick={() => updateSelectedProperty('effect', 'shadow')}
-                          className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${
-                            selectedElement?.effect === 'shadow'
+                          className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${selectedElement?.effect === 'shadow'
                               ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
                               : 'border-slate-200 hover:border-slate-300'
-                          }`}
+                            }`}
                         >
                           <span className="text-2xl font-black text-blue-500 drop-shadow-[2px_2px_3px_rgba(0,112,224,0.5)]">A</span>
                           <span className="text-[10px] font-bold text-slate-700">Shadow</span>
@@ -1031,11 +1002,10 @@ function StudioEditorContent() {
                         {/* Highlight */}
                         <button
                           onClick={() => updateSelectedProperty('effect', 'highlight')}
-                          className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${
-                            selectedElement?.effect === 'highlight'
+                          className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${selectedElement?.effect === 'highlight'
                               ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
                               : 'border-slate-200 hover:border-slate-300'
-                          }`}
+                            }`}
                         >
                           <span className="text-2xl font-black text-blue-900 bg-sky-200/90 px-1.5 rounded">A</span>
                           <span className="text-[10px] font-bold text-slate-700">Highlight</span>
@@ -1050,11 +1020,10 @@ function StudioEditorContent() {
                         {/* Glitch */}
                         <button
                           onClick={() => updateSelectedProperty('effect', 'glitch')}
-                          className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${
-                            selectedElement?.effect === 'glitch'
+                          className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${selectedElement?.effect === 'glitch'
                               ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
                               : 'border-slate-200 hover:border-slate-300'
-                          }`}
+                            }`}
                         >
                           <span className="text-2xl font-black text-slate-900 tracking-wider [text-shadow:-2px_0_0_#06b6d4,2px_0_0_#ec4899]">A</span>
                           <span className="text-[10px] font-bold text-slate-700">Glitch</span>
@@ -1066,11 +1035,10 @@ function StudioEditorContent() {
                         {/* Echo */}
                         <button
                           onClick={() => updateSelectedProperty('effect', 'echo')}
-                          className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${
-                            selectedElement?.effect === 'echo'
+                          className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${selectedElement?.effect === 'echo'
                               ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
                               : 'border-slate-200 hover:border-slate-300'
-                          }`}
+                            }`}
                         >
                           <span className="text-2xl font-black text-slate-800 [text-shadow:2px_2px_0px_#94a3b8,4px_4px_0px_#cbd5e1]">A</span>
                           <span className="text-[10px] font-bold text-slate-700">Echo</span>
@@ -1212,16 +1180,15 @@ function StudioEditorContent() {
                     {/* Shape Section */}
                     <div className="pt-2 border-t border-slate-100">
                       <h3 className="text-xs font-bold text-slate-800 mb-2.5">Shape</h3>
-                      
+
                       <div className="grid grid-cols-2 gap-2.5">
                         {/* None */}
                         <button
                           onClick={() => updateSelectedProperty('textShape', 'none')}
-                          className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${
-                            !selectedElement?.textShape || selectedElement.textShape === 'none'
+                          className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${!selectedElement?.textShape || selectedElement.textShape === 'none'
                               ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
                               : 'border-slate-200 hover:border-slate-300'
-                          }`}
+                            }`}
                         >
                           <span className="text-xl font-black text-slate-800 border-b-2 border-slate-700 pb-0.5">A</span>
                           <span className="text-[10px] font-bold text-slate-700">None</span>
@@ -1233,11 +1200,10 @@ function StudioEditorContent() {
                         {/* Curve */}
                         <button
                           onClick={() => updateSelectedProperty('textShape', 'curve')}
-                          className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${
-                            selectedElement?.textShape === 'curve'
+                          className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${selectedElement?.textShape === 'curve'
                               ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
                               : 'border-slate-200 hover:border-slate-300'
-                          }`}
+                            }`}
                         >
                           <span className="text-xs font-black text-slate-800 tracking-wider transform -rotate-6">ABCD</span>
                           <span className="text-[10px] font-bold text-slate-700">Curve</span>
@@ -1291,11 +1257,10 @@ function StudioEditorContent() {
                           <button
                             key={c}
                             onClick={() => setProductOptions({ ...productOptions, corners: c })}
-                            className={`p-2.5 rounded-xl text-xs font-bold border text-center transition-all ${
-                              productOptions.corners === c
+                            className={`p-2.5 rounded-xl text-xs font-bold border text-center transition-all ${productOptions.corners === c
                                 ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                                 : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                            }`}
+                              }`}
                           >
                             {c.split(' ')[0]}
                           </button>
@@ -1463,125 +1428,132 @@ function StudioEditorContent() {
                         </div>
                       </div>
                     )}
-
-                    <div>
-                      <h4 className="text-xs font-extrabold text-slate-700 mb-2">Sample Artwork & Badges</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { title: 'Company Badge', fill: '#1e3a8a', text: 'BADGE\nLOGO' },
-                          { title: 'QR Code Placeholder', fill: '#0f172a', text: 'QR\nCODE' },
-                          { title: 'Est. Seal Gold', fill: '#ca8a04', text: 'EST.\n2026' },
-                          { title: 'Eco Friendly Leaf', fill: '#16a34a', text: 'ECO\nPURE' }
-                        ].map((sample, idx) => (
-                          <div
-                            key={idx}
-                            onClick={() => {
-                              const newId = `el-sample-${Date.now()}`;
-                              setCurrentElements(prev => [
-                                ...prev,
-                                {
-                                  id: newId,
-                                  type: 'shape',
-                                  shapeType: 'placeholder',
-                                  x: 200,
-                                  y: 120,
-                                  width: 90,
-                                  height: 90,
-                                  fill: sample.fill,
-                                  text: sample.text,
-                                  fontSize: 13,
-                                  color: '#ffffff',
-                                  align: 'center'
-                                }
-                              ]);
-                              setSelectedId(newId);
-                            }}
-                            className="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 flex flex-col items-center justify-center text-center cursor-pointer transition-colors"
-                          >
-                            <div 
-                              style={{ backgroundColor: sample.fill }}
-                              className="w-12 h-12 rounded-lg text-white font-bold text-[10px] flex items-center justify-center mb-1.5 shadow-xs whitespace-pre-line"
-                            >
-                              {sample.text}
-                            </div>
-                            <span className="text-[11px] font-bold text-slate-700">{sample.title}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 )}
 
                 {/* --- TAB 4: GRAPHICS (Exact Vistaprint Screenshot reproduction!) --- */}
                 {activeTab === 'Graphics' && (
                   <div className="space-y-6 pb-6">
-                    {/* Search bar */}
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={graphicsSearch}
-                        onChange={(e) => setGraphicsSearch(e.target.value)}
-                        placeholder="Search for content"
-                        className="w-full bg-white border border-slate-300 rounded-xl py-2 pl-3.5 pr-9 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-2xs"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 font-bold text-sm">🔍</span>
-                    </div>
-
-                    {/* Shapes Section */}
-                    {(!graphicsSearch || 'shapes square circle triangle'.includes(graphicsSearch.toLowerCase())) && (
+                    {graphicsCategory === 'Shapes' ? (
                       <div>
-                        <div className="flex items-center justify-between mb-2.5 cursor-pointer group">
-                          <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600">Shapes</h4>
-                          <span className="text-sm font-black text-slate-700 group-hover:translate-x-0.5 transition-transform">›</span>
+                        {/* Header: < Shapes */}
+                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => setGraphicsCategory(null)}
+                            className="flex items-center gap-1.5 text-slate-900 font-extrabold text-sm hover:text-blue-600 cursor-pointer"
+                          >
+                            <span className="text-base font-black">‹</span>
+                            <span>Shapes</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setGraphicsCategory(null)}
+                            className="text-slate-500 hover:text-slate-800 text-xs font-bold cursor-pointer"
+                            title="Collapse"
+                          >
+                            ↗↙
+                          </button>
                         </div>
+
+                        {/* Exact 10 Shapes Grid */}
                         <div className="grid grid-cols-3 gap-2.5">
-                          {/* Square */}
-                          <button
-                            onClick={() => {
-                              const newId = `el-shape-${Date.now()}`;
-                              setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'square', x: 140, y: 80, width: 90, height: 90, fill: '#000000' }]);
-                              setSelectedId(newId);
-                            }}
-                            className="aspect-square bg-white border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
-                          >
-                            <div className="w-full h-full bg-black rounded-none" />
-                          </button>
-
-                          {/* Circle */}
-                          <button
-                            onClick={() => {
-                              const newId = `el-shape-${Date.now()}`;
-                              setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'circle', x: 150, y: 80, width: 90, height: 90, fill: '#000000' }]);
-                              setSelectedId(newId);
-                            }}
-                            className="aspect-square bg-white border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
-                          >
-                            <div className="w-full h-full bg-black rounded-full" />
-                          </button>
-
-                          {/* Triangle */}
-                          <button
-                            onClick={() => {
-                              const newId = `el-shape-${Date.now()}`;
-                              setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'triangle', x: 160, y: 80, width: 90, height: 90, fill: '#000000' }]);
-                              setSelectedId(newId);
-                            }}
-                            className="aspect-square bg-white border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
-                          >
-                            <svg viewBox="0 0 100 100" className="w-full h-full">
-                              <polygon points="50,5 95,95 5,95" fill="black" />
-                            </svg>
-                          </button>
-                        </div>
-                        {/* Pagination indicator */}
-                        <div className="flex justify-center items-center gap-1.5 mt-2.5">
-                          <span className="w-3.5 h-1.5 bg-[#0070e0] rounded-full" />
-                          <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                          <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                          <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
+                          {GRAPHICS_SHAPES.map((shape) => (
+                            <button
+                              key={shape.id}
+                              type="button"
+                              onClick={() => {
+                                const newId = `el-shape-${Date.now()}`;
+                                setCurrentElements(prev => [
+                                  ...prev,
+                                  {
+                                    id: newId,
+                                    type: 'shape',
+                                    shapeType: shape.id,
+                                    x: 140,
+                                    y: 80,
+                                    width: 90,
+                                    height: 90,
+                                    fill: '#000000'
+                                  }
+                                ]);
+                                setSelectedId(newId);
+                              }}
+                              className="aspect-square bg-slate-50/60 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer group"
+                              title={shape.name}
+                            >
+                              <div className="w-full h-full flex items-center justify-center group-hover:scale-105 transition-transform">
+                                {renderShapeIcon(shape.id, '#000000')}
+                              </div>
+                            </button>
+                          ))}
                         </div>
                       </div>
-                    )}
+                    ) : (
+                      <>
+                        {/* Search bar */}
+                        <div className="relative">
+                          <input
+                            type="text" 
+                            value={graphicsSearch}
+                            onChange={(e) => setGraphicsSearch(e.target.value)}
+                            placeholder="Search for content"
+                            className="w-full bg-white border border-slate-300 rounded-xl py-2 pl-3.5 pr-9 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-2xs"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 font-bold text-sm">🔍</span>
+                        </div>
+
+                        {/* Shapes Section */}
+                        {(!graphicsSearch || 'shapes square circle triangle pentagon line arrow star bubble'.includes(graphicsSearch.toLowerCase())) && (
+                          <div>
+                            <div
+                              onClick={() => setGraphicsCategory('Shapes')}
+                              className="flex items-center justify-between mb-2.5 cursor-pointer group"
+                            >
+                              <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600">Shapes</h4>
+                              <span className="text-sm font-black text-slate-700 group-hover:translate-x-0.5 transition-transform">›</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2.5">
+                              {GRAPHICS_SHAPES.slice(0, 3).map((shape) => (
+                                <button
+                                  key={shape.id}
+                                  type="button"
+                                  onClick={() => {
+                                    const newId = `el-shape-${Date.now()}`;
+                                    setCurrentElements(prev => [
+                                      ...prev,
+                                      {
+                                        id: newId,
+                                        type: 'shape',
+                                        shapeType: shape.id,
+                                        x: 140,
+                                        y: 80,
+                                        width: 90,
+                                        height: 90,
+                                        fill: '#000000'
+                                      }
+                                    ]);
+                                    setSelectedId(newId);
+                                  }}
+                                  className="aspect-square bg-white border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer group"
+                                  title={shape.name}
+                                >
+                                  <div className="w-full h-full flex items-center justify-center group-hover:scale-105 transition-transform">
+                                    {renderShapeIcon(shape.id, '#000000')}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                            {/* Pagination indicator */}
+                            <div className="flex justify-center items-center gap-1.5 mt-2.5">
+                              <span className="w-3.5 h-1.5 bg-[#0070e0] rounded-full" />
+                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
+                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
+                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
+                            </div>
+                          </div>
+                        )}
+
 
                     {/* Images Section */}
                     {(!graphicsSearch || 'images photo flowers business craft workshop'.includes(graphicsSearch.toLowerCase())) && (
@@ -1594,7 +1566,8 @@ function StudioEditorContent() {
                           {[
                             { url: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=300&q=80', label: 'Flowers Florist' },
                             { url: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=300&q=80', label: 'Business Meeting' },
-                            { url: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=300&q=80', label: 'Crafting Beads' }
+                            { url: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=300&q=80', label: 'Crafting Beads' },
+                            ...adminGraphicAssets.filter(g => g.category === 'image').map(g => ({ url: g.url, label: g.title, svgContent: g.svgContent }))
                           ].map((img, idx) => (
                             <button
                               key={idx}
@@ -1604,11 +1577,12 @@ function StudioEditorContent() {
                                   ...prev,
                                   {
                                     id: newId,
-                                    type: 'image',
+                                    type: img.svgContent ? 'svg' : 'image',
                                     url: img.url,
+                                    svgContent: img.svgContent,
                                     label: img.label,
-                                    x: 100 + idx * 20,
-                                    y: 60 + idx * 20,
+                                    x: 100 + (idx % 4) * 20,
+                                    y: 60 + (idx % 4) * 20,
                                     width: 130,
                                     height: 130,
                                     naturalWidth: 300,
@@ -1618,6 +1592,7 @@ function StudioEditorContent() {
                                 setSelectedId(newId);
                               }}
                               className="aspect-square bg-white border border-slate-200 hover:border-blue-500 rounded-2xl overflow-hidden shadow-2xs transition-all cursor-pointer group relative"
+                              title={img.label}
                             >
                               <img src={img.url} alt={img.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                             </button>
@@ -1687,6 +1662,38 @@ function StudioEditorContent() {
                               <circle cx="36" cy="36" r="7" fill="white" />
                             </svg>
                           </button>
+
+                          {adminGraphicAssets.filter(g => g.category === 'icon').map((icon, idx) => (
+                            <button
+                              key={icon.id || idx}
+                              onClick={() => {
+                                const newId = `el-icon-${Date.now()}`;
+                                setCurrentElements(prev => [
+                                  ...prev,
+                                  {
+                                    id: newId,
+                                    type: icon.svgContent ? 'svg' : 'image',
+                                    url: icon.url,
+                                    svgContent: icon.svgContent,
+                                    label: icon.title,
+                                    x: 140 + (idx % 4) * 15,
+                                    y: 80 + (idx % 4) * 15,
+                                    width: 80,
+                                    height: 80
+                                  }
+                                ]);
+                                setSelectedId(newId);
+                              }}
+                              className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-2 shadow-2xs transition-all cursor-pointer overflow-hidden group"
+                              title={icon.title}
+                            >
+                              {icon.svgContent ? (
+                                <div dangerouslySetInnerHTML={{ __html: icon.svgContent }} className="w-full h-full flex items-center justify-center group-hover:scale-105 transition-transform [&>svg]:max-w-full [&>svg]:max-h-full" />
+                              ) : (
+                                <img src={icon.url} alt={icon.title} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform" />
+                              )}
+                            </button>
+                          ))}
                         </div>
                         <div className="flex justify-center items-center gap-1.5 mt-2.5">
                           <span className="w-3.5 h-1.5 bg-[#0070e0] rounded-full" />
@@ -1747,6 +1754,38 @@ function StudioEditorContent() {
                               <path d="M 50,5 Q 50,50 95,50 Q 50,50 50,95 Q 50,50 5,50 Q 50,50 50,5" fill="none" stroke="#475569" strokeWidth="5" />
                             </svg>
                           </button>
+
+                          {adminGraphicAssets.filter(g => g.category === 'illustration').map((illust, idx) => (
+                            <button
+                              key={illust.id || idx}
+                              onClick={() => {
+                                const newId = `el-illust-${Date.now()}`;
+                                setCurrentElements(prev => [
+                                  ...prev,
+                                  {
+                                    id: newId,
+                                    type: illust.svgContent ? 'svg' : 'image',
+                                    url: illust.url,
+                                    svgContent: illust.svgContent,
+                                    label: illust.title,
+                                    x: 140 + (idx % 4) * 15,
+                                    y: 80 + (idx % 4) * 15,
+                                    width: 100,
+                                    height: 100
+                                  }
+                                ]);
+                                setSelectedId(newId);
+                              }}
+                              className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-2 shadow-2xs transition-all cursor-pointer overflow-hidden group"
+                              title={illust.title}
+                            >
+                              {illust.svgContent ? (
+                                <div dangerouslySetInnerHTML={{ __html: illust.svgContent }} className="w-full h-full flex items-center justify-center group-hover:scale-105 transition-transform [&>svg]:max-w-full [&>svg]:max-h-full" />
+                              ) : (
+                                <img src={illust.url} alt={illust.title} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform" />
+                              )}
+                            </button>
+                          ))}
                         </div>
                         <div className="flex justify-center items-center gap-1.5 mt-2.5">
                           <span className="w-3.5 h-1.5 bg-[#0070e0] rounded-full" />
@@ -1755,6 +1794,8 @@ function StudioEditorContent() {
                           <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
                         </div>
                       </div>
+                    )}
+                    </>
                     )}
                   </div>
                 )}
@@ -1785,7 +1826,7 @@ function StudioEditorContent() {
                         }
                       }}
                       style={{
-                        background: `linear-gradient(to bottom, transparent, black), linear-gradient(to right, white, hsl(${bgHue}, 100%, 50%))`
+                        backgroundImage: `linear-gradient(to bottom, transparent, black), linear-gradient(to right, white, hsl(${bgHue}, 100%, 50%))`
                       }}
                       className="w-full h-36 rounded-2xl relative overflow-hidden shadow-sm border border-slate-200/80 cursor-crosshair select-none"
                     >
@@ -1797,7 +1838,7 @@ function StudioEditorContent() {
                     </div>
 
                     {/* Rainbow Hue Spectrum Bar */}
-                    <div className="relative w-full h-2 rounded-full my-2" style={{ background: 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)' }}>
+                    <div className="relative w-full h-2 rounded-full my-2" style={{ backgroundImage: 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)' }}>
                       <input
                         type="range"
                         min="0"
@@ -1825,7 +1866,7 @@ function StudioEditorContent() {
                         placeholder="#751FB8"
                         className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 uppercase focus:outline-none focus:border-blue-500 shadow-2xs"
                       />
-                      
+
                       {/* Eyedropper Button - Color picker from the design */}
                       <button
                         type="button"
@@ -1857,31 +1898,28 @@ function StudioEditorContent() {
                     <div className="flex border-b border-slate-200 pt-1">
                       <button
                         onClick={() => setBgTab('Swatches')}
-                        className={`pb-2 px-1 text-xs mr-4 cursor-pointer transition-all ${
-                          bgTab === 'Swatches'
+                        className={`pb-2 px-1 text-xs mr-4 cursor-pointer transition-all ${bgTab === 'Swatches'
                             ? 'font-extrabold text-slate-900 border-b-2 border-blue-600 -mb-px'
                             : 'font-bold text-slate-400 hover:text-slate-700'
-                        }`}
+                          }`}
                       >
                         Swatches
                       </button>
                       <button
                         onClick={() => setBgTab('Images')}
-                        className={`pb-2 px-1 text-xs mr-4 cursor-pointer transition-all ${
-                          bgTab === 'Images'
+                        className={`pb-2 px-1 text-xs mr-4 cursor-pointer transition-all ${bgTab === 'Images'
                             ? 'font-extrabold text-slate-900 border-b-2 border-blue-600 -mb-px'
                             : 'font-bold text-slate-400 hover:text-slate-700'
-                        }`}
+                          }`}
                       >
                         Images & Textures
                       </button>
                       <button
                         onClick={() => setBgTab('CMYK')}
-                        className={`pb-2 px-1 text-xs cursor-pointer transition-all ${
-                          bgTab === 'CMYK'
+                        className={`pb-2 px-1 text-xs cursor-pointer transition-all ${bgTab === 'CMYK'
                             ? 'font-extrabold text-slate-900 border-b-2 border-blue-600 -mb-px'
                             : 'font-bold text-slate-400 hover:text-slate-700'
-                        }`}
+                          }`}
                       >
                         CMYK
                       </button>
@@ -1905,11 +1943,10 @@ function StudioEditorContent() {
                                     key={idx}
                                     onClick={() => handleBackgroundChange(color)}
                                     style={{ backgroundColor: color }}
-                                    className={`w-7 h-7 rounded-full transition-all cursor-pointer ${
-                                      isSelected
+                                    className={`w-7 h-7 rounded-full transition-all cursor-pointer ${isSelected
                                         ? 'border-2 border-blue-600 ring-2 ring-blue-600/30 ring-offset-2'
                                         : 'border border-slate-300 hover:scale-105 shadow-2xs'
-                                    }`}
+                                      }`}
                                     title={`Design color: ${color}`}
                                   />
                                 );
@@ -1929,11 +1966,10 @@ function StudioEditorContent() {
                                   key={idx}
                                   onClick={() => handleBackgroundChange(color)}
                                   style={{ backgroundColor: color }}
-                                  className={`w-7 h-7 rounded-full transition-all cursor-pointer ${
-                                    isSelected
+                                  className={`w-7 h-7 rounded-full transition-all cursor-pointer ${isSelected
                                       ? 'border-2 border-blue-600 ring-2 ring-blue-600/30 ring-offset-2'
                                       : 'border border-slate-300 hover:scale-105'
-                                  }`}
+                                    }`}
                                   title={color}
                                 />
                               );
@@ -1961,9 +1997,8 @@ function StudioEditorContent() {
                                   key={idx}
                                   onClick={() => handleBackgroundChange(hex)}
                                   style={{ backgroundColor: hex }}
-                                  className={`w-7 h-7 rounded-full border border-slate-300/80 transition-transform cursor-pointer hover:scale-110 shadow-2xs ${
-                                    isSelected ? 'ring-2 ring-blue-600 ring-offset-2 border-blue-600' : ''
-                                  }`}
+                                  className={`w-7 h-7 rounded-full border border-slate-300/80 transition-transform cursor-pointer hover:scale-110 shadow-2xs ${isSelected ? 'ring-2 ring-blue-600 ring-offset-2 border-blue-600' : ''
+                                    }`}
                                   title={hex}
                                 />
                               );
@@ -2017,11 +2052,10 @@ function StudioEditorContent() {
                                 <button
                                   key={idx}
                                   onClick={() => handleBackgroundChange(item.url)}
-                                  className={`h-20 rounded-xl relative overflow-hidden border transition-all text-left group cursor-pointer ${
-                                    isSelected
+                                  className={`h-20 rounded-xl relative overflow-hidden border transition-all text-left group cursor-pointer ${isSelected
                                       ? 'border-blue-600 ring-2 ring-blue-600/30 shadow-md scale-102'
                                       : 'border-slate-200 hover:border-slate-400 shadow-2xs hover:scale-101'
-                                  }`}
+                                    }`}
                                 >
                                   <img src={item.url} alt={item.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-2 flex items-end">
@@ -2073,9 +2107,8 @@ function StudioEditorContent() {
                               if (qrError) setQrError('');
                             }}
                             placeholder="https://example.com or yourwebsite.com"
-                            className={`w-full bg-white border rounded-xl py-2.5 pl-3.5 pr-8 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none shadow-2xs transition-all ${
-                              qrError ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-300 focus:border-blue-500'
-                            }`}
+                            className={`w-full bg-white border rounded-xl py-2.5 pl-3.5 pr-8 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none shadow-2xs transition-all ${qrError ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-300 focus:border-blue-500'
+                              }`}
                           />
                           {qrInput && (
                             <button
@@ -2156,11 +2189,10 @@ function StudioEditorContent() {
                                   <button
                                     key={style.id}
                                     onClick={() => setQrStyle(style.id)}
-                                    className={`p-2 rounded-xl border flex items-center gap-2.5 text-left transition-all cursor-pointer ${
-                                      isSelected
+                                    className={`p-2 rounded-xl border flex items-center gap-2.5 text-left transition-all cursor-pointer ${isSelected
                                         ? 'border-blue-600 bg-blue-50/40 ring-2 ring-blue-600/20 shadow-2xs'
                                         : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                                    }`}
+                                      }`}
                                   >
                                     <div
                                       style={{ backgroundColor: `#${style.bgcolor}` }}
@@ -2256,9 +2288,8 @@ function StudioEditorContent() {
                             <div
                               key={t.id}
                               onClick={() => handleApplyTemplate(t)}
-                              className={`p-3.5 rounded-2xl border cursor-pointer shadow-2xs transition-all ${
-                                isActive ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-500/20' : 'border-slate-200 hover:border-blue-500 bg-slate-50 hover:bg-white'
-                              }`}
+                              className={`p-3.5 rounded-2xl border cursor-pointer shadow-2xs transition-all ${isActive ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-500/20' : 'border-slate-200 hover:border-blue-500 bg-slate-50 hover:bg-white'
+                                }`}
                             >
                               <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs font-extrabold text-slate-900">{t.name}</span>
@@ -2358,21 +2389,19 @@ function StudioEditorContent() {
             <div className="flex items-center gap-2 pointer-events-auto">
               <button
                 onClick={() => setShowSafetyArea(!showSafetyArea)}
-                className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all border ${
-                  showSafetyArea
+                className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all border ${showSafetyArea
                     ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                }`}
+                  }`}
               >
                 Safety Area
               </button>
               <button
                 onClick={() => setShowBleed(!showBleed)}
-                className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all border ${
-                  showBleed
+                className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all border ${showBleed
                     ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                }`}
+                  }`}
               >
                 Bleed
               </button>
@@ -2380,7 +2409,7 @@ function StudioEditorContent() {
           </div>
 
           {/* Rulers visualization along top and left */}
-          <div 
+          <div
             style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'center center' }}
             className="relative transition-transform duration-200 flex items-center justify-center my-auto"
           >
@@ -2414,12 +2443,7 @@ function StudioEditorContent() {
               style={{
                 width: getCanvasDimensions(productOptions.orientation, searchParams?.get('size')).width,
                 height: getCanvasDimensions(productOptions.orientation, searchParams?.get('size')).height,
-                background: currentBackground && (currentBackground.startsWith('http') || currentBackground.startsWith('/') || currentBackground.startsWith('data:image') || currentBackground.startsWith('blob:') || currentBackground.startsWith('url(') || currentBackground.includes('gradient'))
-                  ? (currentBackground.startsWith('http') || currentBackground.startsWith('/') || currentBackground.startsWith('data:image') || currentBackground.startsWith('blob:') ? `url("${currentBackground}") center/cover no-repeat` : currentBackground)
-                  : undefined,
-                backgroundColor: !currentBackground || (!currentBackground.startsWith('http') && !currentBackground.startsWith('/') && !currentBackground.startsWith('data:image') && !currentBackground.startsWith('blob:') && !currentBackground.startsWith('url(') && !currentBackground.includes('gradient'))
-                  ? (currentBackground || '#ffffff')
-                  : undefined,
+                ...getBackgroundStyles(currentBackground || '#ffffff'),
                 borderRadius: productOptions.corners.includes('Rounded') ? '24px' : '0px'
               }}
               className={`relative shadow-2xl border border-slate-300 ${selectedId && !isPreviewMode ? 'overflow-visible' : 'overflow-hidden'} transition-all duration-300 shrink-0 group cursor-default ${productOptions.corners.includes('Rounded') ? 'rounded-3xl' : 'rounded-none'}`}
@@ -2478,9 +2502,8 @@ function StudioEditorContent() {
                       height: el.height ? `${el.height}px` : 'auto',
                       zIndex: isSelected ? 50 : 10
                     }}
-                    className={`absolute select-none group/el cursor-move transition-shadow ${
-                      isSelected ? 'ring-2 ring-blue-600 shadow-lg bg-blue-50/10 rounded-lg p-1' : 'hover:ring-1 hover:ring-blue-300/80 p-1'
-                    }`}
+                    className={`absolute select-none group/el cursor-move transition-shadow ${isSelected ? 'ring-2 ring-blue-600 shadow-lg bg-blue-50/10 rounded-lg p-1' : 'hover:ring-1 hover:ring-blue-300/80 p-1'
+                      }`}
                   >
                     {/* Floating Toolbar when selected */}
                     {isSelected && !isPreviewMode && (
@@ -2488,12 +2511,13 @@ function StudioEditorContent() {
                         <div
                           onClick={(e) => e.stopPropagation()}
                           style={{
-                            left: `${Math.max(-el.x + 6, Math.min(0, (productOptions.orientation?.toLowerCase().includes('vertical') || productOptions.orientation?.toLowerCase().includes('portrait') ? 354 : 614) - el.x - 410))}px`,
+                            left: '50%',
+                            transform: 'translateX(-50%)',
                             ...(el.y < 52
                               ? { top: '100%', marginTop: '8px' }
-                              : { bottom: '100%', marginBottom: '8px' })
+                              : { bottom: '100%', marginBottom: '10px' })
                           }}
-                          className="absolute bg-white text-slate-800 rounded-xl px-2.5 py-1.5 flex flex-wrap items-center gap-1.5 shadow-2xl border border-slate-200/90 z-50 text-xs w-max pointer-events-auto"
+                          className="absolute bg-white text-slate-800 rounded-xl px-2.5 py-1.5 flex flex-wrap items-center justify-center gap-1.5 shadow-2xl border border-slate-200/90 z-50 text-xs w-max pointer-events-auto"
                         >
                           {/* Font Family */}
                           <select
@@ -2534,9 +2558,8 @@ function StudioEditorContent() {
                           <button
                             type="button"
                             onClick={() => updateSelectedProperty('bold', !el.bold)}
-                            className={`w-7 h-7 rounded-lg font-black flex items-center justify-center text-xs transition-colors shrink-0 cursor-pointer ${
-                              el.bold ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-100 text-slate-700'
-                            }`}
+                            className={`w-7 h-7 rounded-lg font-black flex items-center justify-center text-xs transition-colors shrink-0 cursor-pointer ${el.bold ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-100 text-slate-700'
+                              }`}
                             title="Bold"
                           >
                             B
@@ -2546,9 +2569,8 @@ function StudioEditorContent() {
                           <button
                             type="button"
                             onClick={() => updateSelectedProperty('italic', !el.italic)}
-                            className={`w-7 h-7 rounded-lg italic font-bold flex items-center justify-center text-xs transition-colors shrink-0 cursor-pointer ${
-                              el.italic ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-100 text-slate-700'
-                            }`}
+                            className={`w-7 h-7 rounded-lg italic font-bold flex items-center justify-center text-xs transition-colors shrink-0 cursor-pointer ${el.italic ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-100 text-slate-700'
+                              }`}
                             title="Italic"
                           >
                             I
@@ -2558,9 +2580,8 @@ function StudioEditorContent() {
                           <button
                             type="button"
                             onClick={() => updateSelectedProperty('underline', !el.underline)}
-                            className={`w-7 h-7 rounded-lg underline font-bold flex items-center justify-center text-xs transition-colors shrink-0 cursor-pointer ${
-                              el.underline ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-100 text-slate-700'
-                            }`}
+                            className={`w-7 h-7 rounded-lg underline font-bold flex items-center justify-center text-xs transition-colors shrink-0 cursor-pointer ${el.underline ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-100 text-slate-700'
+                              }`}
                             title="Underline"
                           >
                             U
@@ -2586,9 +2607,8 @@ function StudioEditorContent() {
                                 key={align}
                                 type="button"
                                 onClick={() => updateSelectedProperty('align', align)}
-                                className={`w-6 h-6 rounded flex items-center justify-center text-xs transition-colors cursor-pointer ${
-                                  el.align === align ? 'bg-blue-600 text-white font-bold shadow-2xs' : 'hover:bg-slate-200 text-slate-600'
-                                }`}
+                                className={`w-6 h-6 rounded flex items-center justify-center text-xs transition-colors cursor-pointer ${el.align === align ? 'bg-blue-600 text-white font-bold shadow-2xs' : 'hover:bg-slate-200 text-slate-600'
+                                  }`}
                                 title={`Align ${align}`}
                               >
                                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
@@ -2599,6 +2619,101 @@ function StudioEditorContent() {
                               </button>
                             ))}
                           </div>
+
+                          {/* Format Dropdown & Menu (Case Popover) */}
+                          <div className="relative shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowFormatMenu(!showFormatMenu);
+                              }}
+                              className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg transition-colors cursor-pointer ${showFormatMenu || (el.textCase && el.textCase !== 'none')
+                                  ? 'bg-blue-100 text-blue-700 font-extrabold border border-blue-300 shadow-2xs'
+                                  : 'hover:bg-slate-100 text-slate-700 border border-slate-200/60 bg-white'
+                                }`}
+                              title="Format Case (Uppercase, Lowercase, Normal)"
+                            >
+                              <span className="text-[11px]">T🗚</span>
+                              <span className="hidden sm:inline">Format</span>
+                            </button>
+
+                            {/* Case Popover Menu */}
+                            {showFormatMenu && (
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 flex items-center gap-3.5 whitespace-nowrap min-w-[190px]"
+                              >
+                                <span className="text-xs font-extrabold text-slate-800">Case</span>
+
+                                <div className="flex items-center gap-1.5">
+                                  {/* Normal / As Typed Case (Aa) */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      updateSelectedProperty('textCase', 'none');
+                                      setShowFormatMenu(false);
+                                    }}
+                                    className={`px-3 py-1.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center cursor-pointer ${!el.textCase || el.textCase === 'none'
+                                        ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
+                                        : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
+                                      }`}
+                                    title="Normal / As Typed"
+                                  >
+                                    Aa
+                                  </button>
+
+                                  {/* Lowercase (a↓) */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      updateSelectedProperty('textCase', 'lowercase');
+                                      setShowFormatMenu(false);
+                                    }}
+                                    className={`px-3 py-1.5 rounded-xl font-bold text-sm transition-all flex items-center gap-0.5 justify-center cursor-pointer ${el.textCase === 'lowercase'
+                                        ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
+                                        : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
+                                      }`}
+                                    title="Lowercase"
+                                  >
+                                    <span>a</span>
+                                    <span className="text-xs font-black">↓</span>
+                                  </button>
+
+                                  {/* Uppercase (A↑) */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      updateSelectedProperty('textCase', 'uppercase');
+                                      setShowFormatMenu(false);
+                                    }}
+                                    className={`px-3 py-1.5 rounded-xl font-bold text-sm transition-all flex items-center gap-0.5 justify-center cursor-pointer ${el.textCase === 'uppercase'
+                                        ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
+                                        : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
+                                      }`}
+                                    title="Uppercase"
+                                  >
+                                    <span>A</span>
+                                    <span className="text-xs font-black">↑</span>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Effects Button */}
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab(activeTab === 'Effects' ? 'Text' : 'Effects')}
+                            className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg transition-colors shrink-0 cursor-pointer ${activeTab === 'Effects' || (el.effect && el.effect !== 'none' && el.effect !== 'original') || (el.textShape && el.textShape !== 'none')
+                                ? 'bg-blue-100 text-blue-700 font-extrabold border border-blue-300 shadow-2xs'
+                                : 'hover:bg-slate-100 text-slate-700 border border-slate-200/60 bg-white'
+                              }`}
+                            title="Text Effects & Shapes"
+                          >
+                            <span>✨</span>
+                            <span className="hidden sm:inline">Effects</span>
+                          </button>
 
                           {/* Duplicate & Delete */}
                           <div className="flex items-center gap-1 pl-1.5 border-l border-slate-200 shrink-0">
@@ -2624,7 +2739,8 @@ function StudioEditorContent() {
                         <div
                           onClick={(e) => e.stopPropagation()}
                           style={{
-                            left: `${Math.max(-el.x + 6, Math.min(0, (productOptions.orientation?.toLowerCase().includes('vertical') || productOptions.orientation?.toLowerCase().includes('portrait') ? 354 : 614) - el.x - 180))}px`,
+                            left: '50%',
+                            transform: 'translateX(-50%)',
                             ...(el.y < 44
                               ? { top: '100%', marginTop: '8px' }
                               : { bottom: '100%', marginBottom: '8px' })
@@ -2675,6 +2791,11 @@ function StudioEditorContent() {
                         draggable={false}
                         className="w-full h-full object-contain rounded-md pointer-events-none select-none"
                       />
+                    ) : el.type === 'svg' ? (
+                      <div
+                        dangerouslySetInnerHTML={{ __html: el.svgContent || '' }}
+                        className="w-full h-full flex items-center justify-center pointer-events-none select-none [&>svg]:w-full [&>svg]:h-full"
+                      />
                     ) : el.type === 'text' ? (() => {
                       // Compute Text Effect Styles
                       let textShadow = 'none';
@@ -2708,7 +2829,7 @@ function StudioEditorContent() {
                         textShadow = `-${offset}px 0px 0px #06b6d4, ${offset}px 0px 0px #ec4899`;
                       } else if (el.effect === 'echo') {
                         const intensity = el.effectIntensity !== undefined ? el.effectIntensity : 4;
-                        textShadow = `${intensity}px ${intensity}px 0px rgba(0,0,0,0.35), ${intensity*2}px ${intensity*2}px 0px rgba(0,0,0,0.2), ${intensity*3}px ${intensity*3}px 0px rgba(0,0,0,0.1)`;
+                        textShadow = `${intensity}px ${intensity}px 0px rgba(0,0,0,0.35), ${intensity * 2}px ${intensity * 2}px 0px rgba(0,0,0,0.2), ${intensity * 3}px ${intensity * 3}px 0px rgba(0,0,0,0.1)`;
                       }
 
                       const isCurved = el.textShape === 'curve';
@@ -2817,21 +2938,8 @@ function StudioEditorContent() {
                       >
                         {el.text || 'Placeholder'}
                       </div>
-                    ) : el.shapeType === 'line' ? (
-                      <div
-                        style={{ backgroundColor: el.fill || '#2563EB' }}
-                        className="w-full h-full rounded-full"
-                      />
-                    ) : el.shapeType === 'circle' ? (
-                      <div
-                        style={{ backgroundColor: el.fill || '#10b981' }}
-                        className="w-full h-full rounded-full shadow-sm"
-                      />
                     ) : (
-                      <div
-                        style={{ backgroundColor: el.fill || '#3b82f6' }}
-                        className="w-full h-full rounded-lg shadow-sm"
-                      />
+                      renderShapeIcon(el.shapeType, el.fill || '#000000')
                     )}
 
                     {/* Resize Handles (Corners) when selected */}
@@ -2887,14 +2995,13 @@ function StudioEditorContent() {
               {/* Front Side Button / Preview */}
               <div
                 onClick={() => setActiveSide('Front')}
-                className={`p-2 rounded-2xl border-2 transition-all cursor-pointer ${
-                  activeSide === 'Front'
+                className={`p-2 rounded-2xl border-2 transition-all cursor-pointer ${activeSide === 'Front'
                     ? 'border-[#0070e0] bg-blue-50/40 shadow-sm'
                     : 'border-slate-200 hover:border-slate-300 bg-white'
-                }`}
+                  }`}
               >
-                <div 
-                  style={{ backgroundColor: frontBackground }}
+                <div
+                  style={getBackgroundStyles(frontBackground || '#ffffff')}
                   className="aspect-[1.75/1] w-full rounded-xl border border-slate-200 p-2 flex flex-col justify-between shadow-2xs relative overflow-hidden"
                 >
                   <div className="w-6 h-6 rounded bg-blue-500/20 text-[6px] font-bold text-blue-800 flex items-center justify-center">
@@ -2916,14 +3023,13 @@ function StudioEditorContent() {
               {/* Back Side Button / Preview */}
               <div
                 onClick={() => setActiveSide('Back')}
-                className={`p-2 rounded-2xl border-2 transition-all cursor-pointer ${
-                  activeSide === 'Back'
+                className={`p-2 rounded-2xl border-2 transition-all cursor-pointer ${activeSide === 'Back'
                     ? 'border-[#0070e0] bg-blue-50/40 shadow-sm'
                     : 'border-slate-200 hover:border-slate-300 bg-white'
-                }`}
+                  }`}
               >
-                <div 
-                  style={{ backgroundColor: backBackground }}
+                <div
+                  style={getBackgroundStyles(backBackground || '#ffffff')}
                   className="aspect-[1.75/1] w-full rounded-xl border border-slate-200 p-2 flex flex-col items-center justify-center shadow-2xs relative overflow-hidden"
                 >
                   <div className="w-8 h-8 rounded-full bg-blue-900 text-white text-[7px] font-extrabold flex items-center justify-center mb-1">
@@ -2960,7 +3066,7 @@ function StudioEditorContent() {
       {showNextModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/75 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-6xl w-full shadow-2xl border border-slate-100 flex flex-col lg:flex-row overflow-hidden relative my-auto max-h-[92vh]">
-            
+
             {/* Close Button top right */}
             <button
               onClick={() => setShowNextModal(false)}
@@ -2972,19 +3078,19 @@ function StudioEditorContent() {
 
             {/* LEFT COLUMN: Visual Preview Cards (Front & Back) & Circular Zoom Bubble */}
             <div className="w-full lg:w-3/5 bg-slate-100/80 p-6 sm:p-8 flex flex-col items-center justify-center relative min-h-[520px] sm:min-h-[660px] overflow-y-auto border-b lg:border-b-0 lg:border-r border-slate-200/60">
-              
+
               <div className="w-full flex-1 flex flex-col items-center justify-center gap-6 sm:gap-8 py-4 my-auto">
-                
+
                 {/* 1. FRONT SIDE PREVIEW */}
                 <div className="flex flex-col items-center gap-2">
                   <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider bg-white/80 px-3 py-0.5 rounded-full border border-slate-200 shadow-2xs">
                     Front Side Preview
                   </span>
-                  <div 
+                  <div
                     style={{
-                      backgroundColor: frontBackground !== 'transparent' ? frontBackground : '#ffffff',
                       width: '380px',
                       height: '217px',
+                      ...getBackgroundStyles(frontBackground !== 'transparent' ? frontBackground : '#ffffff'),
                       borderRadius: productOptions.corners.includes('Rounded') ? '24px' : '0px',
                       boxShadow: '0 20px 40px -15px rgba(0,0,0,0.15), 0 0 1px 1px rgba(0,0,0,0.05)'
                     }}
@@ -3026,11 +3132,11 @@ function StudioEditorContent() {
                   <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider bg-white/80 px-3 py-0.5 rounded-full border border-slate-200 shadow-2xs">
                     Back Side Preview
                   </span>
-                  <div 
+                  <div
                     style={{
-                      backgroundColor: backBackground !== 'transparent' ? backBackground : '#ffffff',
                       width: '380px',
                       height: '217px',
+                      ...getBackgroundStyles(backBackground !== 'transparent' ? backBackground : '#ffffff'),
                       borderRadius: productOptions.corners.includes('Rounded') ? '24px' : '0px',
                       boxShadow: '0 20px 40px -15px rgba(0,0,0,0.15), 0 0 1px 1px rgba(0,0,0,0.05)'
                     }}
@@ -3180,11 +3286,10 @@ function StudioEditorContent() {
                               key={stockOption.name}
                               type="button"
                               onClick={() => setProductOptions({ ...productOptions, stock: stockOption.name })}
-                              className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
-                                isSelected
+                              className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${isSelected
                                   ? 'bg-sky-50/70 border-2 border-[#38bdf8] text-slate-900 shadow-2xs'
                                   : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
-                              }`}
+                                }`}
                             >
                               <span className="font-extrabold text-xs block">{stockOption.label}</span>
                               <span className={`text-[11px] block mt-0.5 ${isSelected ? 'text-slate-600 font-semibold' : 'text-slate-400 font-normal'}`}>
@@ -3246,7 +3351,7 @@ function StudioEditorContent() {
                           if (data?.user?.id) {
                             addToCart(data.user.id, cartItem);
                           }
-                        }).catch(() => {}).finally(() => {
+                        }).catch(() => { }).finally(() => {
                           setShowNextModal(false);
                           router.push('/cart');
                         });

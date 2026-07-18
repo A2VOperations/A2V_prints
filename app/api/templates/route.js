@@ -100,11 +100,11 @@ export async function POST(request) {
       unitPrice: body.unitPrice || catData.unitPriceText || "₹2.00 each / 100 units",
       size: body.size || catData.size || "Standard Fixed Size",
       hasBackSide: isVisitingCard,
-      image: body.frontImage || body.image || "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&q=80",
-      frontImage: body.frontImage || body.image || "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&q=80",
+      image: body.frontImage || body.image || body.frontBackground || "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&q=80",
+      frontImage: body.frontImage || body.image || body.frontBackground || "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&q=80",
       backImage: isVisitingCard
-        ? (body.backImage || body.frontImage || body.image || "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&q=80")
-        : (body.frontImage || body.image || "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&q=80"),
+        ? (body.backImage || body.backBackground || body.frontImage || body.image || "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&q=80")
+        : (body.frontImage || body.image || body.frontBackground || "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&q=80"),
       rating: body.rating || 4.8,
       reviews: body.reviews || 0,
       badge: body.badge || "New",

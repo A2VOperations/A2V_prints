@@ -74,6 +74,19 @@ export default function AdminDashboardPage() {
     style: "Bold & Modern"
   });
 
+  // Graphics Library State (Cloudinary / DB)
+  const [graphicsList, setGraphicsList] = useState([]);
+  const [graphicsFilter, setGraphicsFilter] = useState("All");
+  const [editingGraphicId, setEditingGraphicId] = useState(null);
+  const [graphicUploading, setGraphicUploading] = useState(false);
+  const [graphicsForm, setGraphicsForm] = useState({
+    title: "",
+    category: "image",
+    url: "",
+    svgContent: "",
+    isActive: true
+  });
+
   // Settings State (dynamic persistence)
   const [storeConfig, setStoreConfig] = useState({
     storeName: "A2V Prints Studio",
@@ -114,6 +127,13 @@ export default function AdminDashboardPage() {
         const tplData = await tplRes.json();
         const tplList = tplData.data || (Array.isArray(tplData) ? tplData : []);
         setTemplates(tplList);
+      }
+
+      // Fetch live Graphic Assets from MongoDB
+      const graphicsRes = await fetch("/api/graphics?all=true");
+      if (graphicsRes.ok) {
+        const gData = await graphicsRes.json();
+        if (gData.success) setGraphicsList(gData.data || []);
       }
 
       // 3. Fetch live Users from MongoDB
@@ -400,6 +420,108 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleSaveGraphic = async (e) => {
+    e.preventDefault();
+    if (!graphicsForm.title || !graphicsForm.url) {
+      showToastMsg("Please provide Title and Image URL/File");
+      return;
+    }
+    try {
+      const payload = {
+        title: graphicsForm.title,
+        category: graphicsForm.category,
+        url: graphicsForm.url,
+        svgContent: graphicsForm.svgContent || "",
+        isActive: graphicsForm.isActive
+      };
+      if (editingGraphicId) {
+        const res = await fetch(`/api/graphics/${editingGraphicId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          showToastMsg("Graphic asset updated successfully!");
+        } else {
+          showToastMsg("Failed updating graphic asset");
+        }
+      } else {
+        const res = await fetch("/api/graphics", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          showToastMsg("New graphic asset saved to Cloudinary/DB!");
+        } else {
+          showToastMsg("Failed creating graphic asset");
+        }
+      }
+      setEditingGraphicId(null);
+      setGraphicsForm({ title: "", category: "image", url: "", svgContent: "", isActive: true });
+      await fetchAllData();
+    } catch (err) {
+      console.error(err);
+      showToastMsg("Error saving graphic asset");
+    }
+  };
+
+  const handleDeleteGraphic = async (gId) => {
+    if (!confirm("Delete this graphic asset?")) return;
+    try {
+      const res = await fetch(`/api/graphics/${gId}`, { method: "DELETE" });
+      if (res.ok) {
+        setGraphicsList((prev) => prev.filter((g) => g.id !== gId));
+        showToastMsg("Graphic asset deleted");
+      } else {
+        showToastMsg("Failed deleting asset");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleGraphicFileUpload = async (file) => {
+    if (!file) return;
+    setGraphicUploading(true);
+    try {
+      const isSvg = file.name?.endsWith(".svg") || file.type === "image/svg+xml";
+      if (isSvg) {
+        const text = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsText(file);
+        });
+        setGraphicsForm((prev) => ({ ...prev, svgContent: text }));
+      }
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "a2v_graphics");
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        setGraphicsForm((prev) => ({ ...prev, url: data.url }));
+        showToastMsg("Uploaded to Cloudinary successfully!");
+      } else {
+        showToastMsg(data.error || "Upload failed. Using fallback data URL.");
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(file);
+        });
+        setGraphicsForm((prev) => ({ ...prev, url: dataUrl }));
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      showToastMsg("Upload failed");
+    } finally {
+      setGraphicUploading(false);
+    }
+  };
+
   const handleToggleUserRole = async (targetUser) => {
     const newRole = targetUser.role === "admin" ? "user" : "admin";
     setUsers((prev) =>
@@ -548,6 +670,23 @@ export default function AdminDashboardPage() {
             </div>
             <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-primary-container text-on-primary-container">
               {templates.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("graphics")}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+              activeTab === "graphics"
+                ? "bg-primary text-on-primary shadow-sm"
+                : "text-secondary hover:bg-surface-container-high hover:text-on-surface"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-[20px]">photo_library</span>
+              <span>Graphics & Assets</span>
+            </div>
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-primary-container text-on-primary-container">
+              {graphicsList.length}
             </span>
           </button>
 
@@ -2151,6 +2290,266 @@ export default function AdminDashboardPage() {
                   )}
                 </div>
               </form>
+            </div>
+          )}
+
+          {/* TAB 3.5: GRAPHICS & ASSETS LIBRARY (CLOUDINARY & MONGODB) */}
+          {activeTab === "graphics" && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-xs">
+                <div>
+                  <h2 className="text-2xl font-bold text-on-surface flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary">photo_library</span>
+                    <span>Studio Graphics & Asset Library</span>
+                  </h2>
+                  <p className="text-sm text-secondary mt-1">
+                    Upload and manage background photos, icons, vector shapes, and illustrations stored in Cloudinary and Mongo DB.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs bg-indigo-50 text-indigo-700 font-bold px-3 py-1.5 rounded-lg border border-indigo-200">
+                    ☁ Cloudinary Powered
+                  </span>
+                </div>
+              </div>
+
+              {/* Add / Edit Asset Form */}
+              <form onSubmit={handleSaveGraphic} className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-xs space-y-5">
+                <div className="flex justify-between items-center border-b border-outline-variant pb-3">
+                  <h3 className="font-bold text-base text-on-surface flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary">
+                      {editingGraphicId ? 'edit' : 'add_circle'}
+                    </span>
+                    <span>{editingGraphicId ? 'Edit Graphic Asset' : 'Upload / Add New Graphic Asset'}</span>
+                  </h3>
+                  {editingGraphicId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingGraphicId(null);
+                        setGraphicsForm({ title: '', category: 'image', url: '', svgContent: '', isActive: true });
+                      }}
+                      className="text-xs text-secondary hover:text-on-surface font-semibold underline cursor-pointer"
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <label className="block text-xs font-semibold text-secondary uppercase tracking-wider mb-1.5">
+                      Asset Category *
+                    </label>
+                    <select
+                      value={graphicsForm.category}
+                      onChange={(e) => setGraphicsForm({ ...graphicsForm, category: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm focus:outline-none focus:border-primary"
+                    >
+                      <option value="image">Image / Photo (Tab: Images)</option>
+                      <option value="icon">Icon / Symbol (Tab: Icons)</option>
+                      <option value="illustration">Illustration / Graphic (Tab: Illustrations)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-secondary uppercase tracking-wider mb-1.5">
+                      Asset Title / Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={graphicsForm.title}
+                      onChange={(e) => setGraphicsForm({ ...graphicsForm, title: e.target.value })}
+                      placeholder="e.g. Floral Florist Bouquet or Gold Badge"
+                      className="w-full px-4 py-2.5 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-secondary uppercase tracking-wider mb-1.5">
+                      Status
+                    </label>
+                    <select
+                      value={graphicsForm.isActive ? 'active' : 'hidden'}
+                      onChange={(e) => setGraphicsForm({ ...graphicsForm, isActive: e.target.value === 'active' })}
+                      className="w-full px-4 py-2.5 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm focus:outline-none focus:border-primary"
+                    >
+                      <option value="active">Active (Visible in Studio)</option>
+                      <option value="hidden">Hidden</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                  <div className="space-y-3 bg-surface-container-low/50 p-4 rounded-xl border border-outline-variant">
+                    <label className="block text-xs font-bold text-on-surface uppercase tracking-wider">
+                      Option 1: Upload File from Computer (Cloudinary)
+                    </label>
+                    <p className="text-xs text-secondary">
+                      Select JPG, PNG, WEBP, or SVG. It will instantly upload to your Cloudinary storage folder (`a2v_graphics`).
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <label className="px-4 py-2.5 bg-primary text-on-primary rounded-lg text-xs font-bold cursor-pointer hover:brightness-110 transition-all flex items-center gap-2 shadow-xs">
+                        <span className="material-symbols-outlined text-[16px]">cloud_upload</span>
+                        <span>{graphicUploading ? 'Uploading to Cloudinary...' : 'Choose & Upload File'}</span>
+                        <input
+                          type="file"
+                          accept="image/*,.svg"
+                          disabled={graphicUploading}
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              handleGraphicFileUpload(e.target.files[0]);
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                      {graphicsForm.url && (
+                        <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                          <span>File Ready</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 bg-surface-container-low/50 p-4 rounded-xl border border-outline-variant">
+                    <label className="block text-xs font-bold text-on-surface uppercase tracking-wider">
+                      Option 2: Paste Direct Image / SVG URL
+                    </label>
+                    <p className="text-xs text-secondary">
+                      Or directly paste any URL (`https://...` or `data:image/...`) if already hosted online.
+                    </p>
+                    <input
+                      type="text"
+                      value={graphicsForm.url}
+                      onChange={(e) => setGraphicsForm({ ...graphicsForm, url: e.target.value })}
+                      placeholder="https://res.cloudinary.com/..."
+                      className="w-full px-4 py-2 rounded-lg border border-outline-variant bg-surface text-on-surface text-xs focus:outline-none focus:border-primary font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Optional SVG Raw Code textarea for icons */}
+                {(graphicsForm.category === 'icon' || graphicsForm.category === 'illustration') && (
+                  <div className="pt-2">
+                    <label className="block text-xs font-semibold text-secondary uppercase tracking-wider mb-1">
+                      Raw SVG Code / Paths (Optional Vector Data)
+                    </label>
+                    <textarea
+                      rows="2"
+                      value={graphicsForm.svgContent || ''}
+                      onChange={(e) => setGraphicsForm({ ...graphicsForm, svgContent: e.target.value })}
+                      placeholder='<svg viewBox="0 0 100 100">...</svg> (If provided, renders razor-sharp scalable vectors)'
+                      className="w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface text-on-surface text-xs font-mono focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                )}
+
+                {/* Live Preview & Submit */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-3 border-t border-outline-variant">
+                  <div className="flex items-center gap-4">
+                    <span className="text-xs font-bold text-secondary uppercase">Live Preview:</span>
+                    <div className="w-16 h-16 rounded-xl border border-outline-variant bg-slate-50 flex items-center justify-center overflow-hidden shadow-2xs p-1">
+                      {graphicsForm.url ? (
+                        <img src={graphicsForm.url} alt="Preview" className="max-w-full max-h-full object-contain" />
+                      ) : (
+                        <span className="text-[10px] text-slate-400 font-bold">No Image</span>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={graphicUploading}
+                    className="px-6 py-2.5 bg-primary text-on-primary rounded-lg font-bold text-sm hover:brightness-110 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                  >
+                    {editingGraphicId ? 'Update Graphic Asset' : 'Save Graphic Asset'}
+                  </button>
+                </div>
+              </form>
+
+              {/* Category Filter Tabs */}
+              <div className="border-b border-outline-variant flex gap-6 text-sm font-medium">
+                {["All", "image", "icon", "illustration"].map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setGraphicsFilter(cat)}
+                    className={`pb-3 border-b-2 transition-all cursor-pointer capitalize ${
+                      graphicsFilter === cat
+                        ? "border-primary text-primary font-bold"
+                        : "border-transparent text-secondary hover:text-on-surface"
+                    }`}
+                  >
+                    {cat === "All" ? "All Assets" : `${cat}s`} ({graphicsList.filter(g => cat === "All" || g.category === cat).length})
+                  </button>
+                ))}
+              </div>
+
+              {/* Graphics Grid / Table */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {graphicsList
+                  .filter((g) => graphicsFilter === "All" || g.category === graphicsFilter)
+                  .map((g) => (
+                    <div
+                      key={g.id || g._id}
+                      className={`bg-surface-container-lowest border rounded-xl p-3 flex flex-col justify-between shadow-2xs relative group transition-all ${
+                        !g.isActive ? "border-amber-300 opacity-60" : "border-outline-variant hover:border-primary"
+                      }`}
+                    >
+                      <div className="space-y-2">
+                        <div className="aspect-square bg-slate-50/80 rounded-lg border border-slate-100 flex items-center justify-center overflow-hidden p-2 relative">
+                          {g.url ? (
+                            <img src={g.url} alt={g.title} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform" />
+                          ) : (
+                            <span className="text-xs text-slate-400 font-bold">No Preview</span>
+                          )}
+                          <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-slate-900/80 text-white tracking-wider">
+                            {g.category}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-xs text-on-surface truncate" title={g.title}>
+                          {g.title}
+                        </h4>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 mt-2 border-t border-outline-variant/60 text-xs">
+                        <span className={`text-[10px] font-extrabold ${g.isActive ? "text-emerald-600" : "text-amber-600"}`}>
+                          {g.isActive ? "● Active" : "○ Hidden"}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingGraphicId(g.id);
+                              setGraphicsForm({
+                                title: g.title || "",
+                                category: g.category || "image",
+                                url: g.url || "",
+                                svgContent: g.svgContent || "",
+                                isActive: g.isActive !== undefined ? g.isActive : true
+                              });
+                              window.scrollTo({ top: 300, behavior: "smooth" });
+                            }}
+                            className="p-1 text-secondary hover:text-primary rounded cursor-pointer"
+                            title="Edit"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteGraphic(g.id)}
+                            className="p-1 text-secondary hover:text-error rounded cursor-pointer"
+                            title="Delete"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
           )}
 
