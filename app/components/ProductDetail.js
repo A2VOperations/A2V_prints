@@ -6,36 +6,6 @@ import Link from 'next/link'
 import { useDatabaseData } from '../lib/useDatabaseData'
 import { addToCart, addToWishlist } from '../lib/cartWishlist'
 
-const defaultGeneralFaqs = [
-  { question: 'How do I submit my custom design or artwork?', answer: 'You can either upload your ready-to-print file (PDF, AI, PSD, PNG, JPG) using the "Upload Design" button or create a design from scratch using our online template studio.' },
-  { question: 'What is the standard turnaround and shipping time?', answer: 'Standard production takes 2 to 3 business days after digital proof approval. Express dispatch is also available at checkout for 1–2 day priority delivery.' },
-  { question: 'Can I request a custom sample before placing a bulk order?', answer: 'Yes! We offer single-unit sample orders and print sample kits so you can inspect the paper quality, fabric GSM, and color accuracy before ordering in bulk.' },
-  { question: 'What is your refund and reprint guarantee policy?', answer: 'We stand by a 100% satisfaction guarantee. If there is any print defect or damage during transit, we will reprint and ship your order immediately at zero extra cost.' }
-]
-
-const defaultCategoryConfig = {
-  name: 'Standard Printing Service',
-  link: '/',
-  products: [],
-  qualityLabel: 'Quality / Material',
-  styleLabel: 'Style / Finish',
-  defaultQtyOptions: ['100 Units', '250 Units', '500 Units'],
-  defaultQualityOptions: [
-    { id: 'standard', title: 'Standard Quality', subtitle: 'High-grade commercial finish' },
-    { id: 'premium', title: 'Premium Finish', subtitle: 'Enhanced durability & sheen' }
-  ],
-  defaultStyleOptions: [
-    { id: 'regular', title: 'Regular Cut', subtitle: 'Standard professional trim' },
-    { id: 'custom', title: 'Custom Finish', subtitle: 'Specialized finishing touches' }
-  ],
-  defaultSpecs: [
-    { label: 'Quality Standards', value: 'Commercial Grade Printing & Finishing' },
-    { label: 'Turnaround Time', value: 'Standard 2–3 Business Days' },
-    { label: 'Print Resolution', value: 'High-definition color fidelity' }
-  ]
-}
-
-
 const singleProductCache = new Map()
 const inFlightSingleProduct = new Map()
 
@@ -106,25 +76,12 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
     ? {
       name: matchedGraphicService.categoryName,
       link: `/${matchedGraphicService.categorySlug}`,
-      qualityLabel: 'Package Tier',
-      styleLabel: 'Delivery Speed',
-      defaultQtyOptions: ['1 Custom Concept', '2 Concepts Bundle', 'Complete Suite'],
-      defaultQualityOptions: [
-        { id: 'standard', title: 'Standard Package', subtitle: 'High-Res PNG, JPG & PDF files' },
-        { id: 'premium', title: 'Premium + Vector Files', subtitle: 'AI, EPS, SVG source files included' }
-      ],
-      defaultStyleOptions: [
-        { id: 'normal', title: 'Standard Delivery', subtitle: matchedGraphicService.turnaround },
-        { id: 'express', title: 'Express 24 Hr Rush', subtitle: 'VIP Priority Delivery' }
-      ],
-      defaultSpecs: [
-        { label: 'Service Category', value: matchedGraphicService.categoryName },
-        { label: 'Included Deliverables', value: matchedGraphicService.deliverables ? matchedGraphicService.deliverables.join(', ') : 'Vector AI, EPS, PDF & High-Res PNG' },
-        { label: 'Turnaround Time', value: matchedGraphicService.turnaround },
-        { label: 'Customer Reviews', value: `${matchedGraphicService.rating} ★ (${matchedGraphicService.reviews} Verified Reviews)` },
-        { label: 'Revisions', value: 'Unlimited Revisions on Standard & Premium Tiers' },
-        { label: 'Copyright Ownership', value: '100% Commercial Copyright Ownership Transferred' }
-      ]
+      qualityLabel: matchedGraphicService.qualityLabel || 'Quality / Package Tier',
+      styleLabel: matchedGraphicService.styleLabel || 'Style / Delivery',
+      defaultQtyOptions: Array.isArray(matchedGraphicService.defaultQtyOptions) ? matchedGraphicService.defaultQtyOptions : [],
+      defaultQualityOptions: Array.isArray(matchedGraphicService.defaultQualityOptions) ? matchedGraphicService.defaultQualityOptions : [],
+      defaultStyleOptions: Array.isArray(matchedGraphicService.defaultStyleOptions) ? matchedGraphicService.defaultStyleOptions : [],
+      defaultSpecs: Array.isArray(matchedGraphicService.defaultSpecs) ? matchedGraphicService.defaultSpecs : []
     }
     : null
 
@@ -137,42 +94,35 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
   const isGraphicCategory = Boolean(
     matchedGraphicService ||
     (dbCategory && dbCategory.serviceType === 'graphic') ||
-    (graphicCategories && graphicCategories.some((c) => String(c.slug || c.id || '').toLowerCase() === String(categoryKey).toLowerCase())) ||
-    ['logo-identity-design', 'graphic-design', 'web-design', 'digital-marketing', 'outdoor-signage', 'print-design', 'Product-Merchandize', 'Art-Illustration', 'logo-design', 'flyer-design', 'brochure-design', 'social-media-graphics', 'poster-design', 'visiting-card-design', 'letterhead-design', 'packaging-design', 'graphics-categories'].includes(String(categoryKey).toLowerCase())
+    (graphicCategories && graphicCategories.some((c) => String(c.slug || c.id || '').toLowerCase() === String(categoryKey).toLowerCase()))
   )
 
-  const catInfo = dynamicCatInfo || (dbCategory && dbCategory.defaultQualityOptions && dbCategory.defaultQualityOptions.length > 0 ? {
-    name: dbCategory.name,
-    link: `/${dbCategory.slug}`,
-    products: [],
-    qualityLabel: dbCategory.qualityLabel || 'Paper Quality',
-    styleLabel: dbCategory.styleLabel || 'Corner Style',
-    defaultQtyOptions: dbCategory.defaultQtyOptions && dbCategory.defaultQtyOptions.length ? dbCategory.defaultQtyOptions : defaultCategoryConfig.defaultQtyOptions,
-    defaultQualityOptions: dbCategory.defaultQualityOptions && dbCategory.defaultQualityOptions.length ? dbCategory.defaultQualityOptions : defaultCategoryConfig.defaultQualityOptions,
-    defaultStyleOptions: dbCategory.defaultStyleOptions && dbCategory.defaultStyleOptions.length ? dbCategory.defaultStyleOptions : defaultCategoryConfig.defaultStyleOptions,
-    defaultSpecs: dbCategory.defaultSpecs && dbCategory.defaultSpecs.length ? dbCategory.defaultSpecs : defaultCategoryConfig.defaultSpecs,
-  } : defaultCategoryConfig)
+  const catInfo = dynamicCatInfo || {
+    name: dbCategory?.name || '',
+    link: dbCategory?.slug ? `/${dbCategory.slug}` : '/',
+    products: Array.isArray(dbCategory?.products) ? dbCategory.products : [],
+    qualityLabel: dbCategory?.qualityLabel || '',
+    styleLabel: dbCategory?.styleLabel || '',
+    defaultQtyOptions: Array.isArray(dbCategory?.defaultQtyOptions) ? dbCategory.defaultQtyOptions : [],
+    defaultQualityOptions: Array.isArray(dbCategory?.defaultQualityOptions) ? dbCategory.defaultQualityOptions : [],
+    defaultStyleOptions: Array.isArray(dbCategory?.defaultStyleOptions) ? dbCategory.defaultStyleOptions : [],
+    defaultSpecs: Array.isArray(dbCategory?.defaultSpecs) ? dbCategory.defaultSpecs : [],
+  }
 
-  const activeFaqs = (dbCategory && dbCategory.faqs && dbCategory.faqs.length > 0) ? dbCategory.faqs : defaultGeneralFaqs
+  const activeFaqs = Array.isArray(dbCategory?.faqs) ? dbCategory.faqs : []
   const productList = catInfo.products || []
   const staticProduct = matchedService
     ? {
       ...matchedService,
       id: matchedService.id,
-      title: matchedService.title || matchedService.name,
-      price: matchedService.price,
-      description: matchedService.description || matchedService.desc,
-      image: matchedService.image,
-      images: matchedService.images,
-      badge: matchedService.badge || 'Popular'
+      title: matchedService.title || matchedService.name || '',
+      price: matchedService.price || '',
+      description: matchedService.description || matchedService.desc || '',
+      image: matchedService.image || '',
+      images: Array.isArray(matchedService.images) ? matchedService.images : [],
+      badge: matchedService.badge || ''
     }
-    : productList.find((p) => String(p.id) === String(productId) || String(p.numericId) === String(productId)) || productList[0] || {
-      id: productId || 1,
-      title: `${catInfo.name || 'Custom Print'} Item #${productId || '1'}`,
-      price: 'From ₹249',
-      description: `Premium high-resolution printing for your custom ${catInfo.name || 'print'} project. Crafted with top-tier materials.`,
-      image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80',
-    }
+    : productList.find((p) => String(p.id) === String(productId) || String(p.numericId) === String(productId)) || productList[0] || {}
 
   const product = dbProduct
     ? {
@@ -187,7 +137,7 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
     if (product.quantityTiers && Array.isArray(product.quantityTiers) && product.quantityTiers.length > 0) {
       return product.quantityTiers
     }
-    return (catInfo.defaultQtyOptions || ['100 Units', '250 Units', '500 Units']).map((q) =>
+    return (Array.isArray(catInfo.defaultQtyOptions) ? catInfo.defaultQtyOptions : []).map((q) =>
       typeof q === 'string' ? { label: q, priceModifier: 0 } : q
     )
   }, [product.quantityTiers, catInfo.defaultQtyOptions])
@@ -218,11 +168,11 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
   }, [product.customOptions])
 
   const [selectedQty, setSelectedQty] = useState(() => {
-    const first = (catInfo.defaultQtyOptions && catInfo.defaultQtyOptions[0]) || '100 Units'
-    return typeof first === 'object' ? first.label : first
+    const first = Array.isArray(catInfo.defaultQtyOptions) && catInfo.defaultQtyOptions[0]
+    return typeof first === 'object' ? (first?.label || '') : (first || '')
   })
-  const [selectedQuality, setSelectedQuality] = useState(() => (catInfo.defaultQualityOptions && catInfo.defaultQualityOptions[0]?.id) || 'standard')
-  const [selectedStyle, setSelectedStyle] = useState(() => (catInfo.defaultStyleOptions && catInfo.defaultStyleOptions[0]?.id) || 'regular')
+  const [selectedQuality, setSelectedQuality] = useState(() => (Array.isArray(catInfo.defaultQualityOptions) && catInfo.defaultQualityOptions[0]?.id) || '')
+  const [selectedStyle, setSelectedStyle] = useState(() => (Array.isArray(catInfo.defaultStyleOptions) && catInfo.defaultStyleOptions[0]?.id) || '')
   const [selectedCustomOptions, setSelectedCustomOptions] = useState({})
   const [uploadedGraphicFile, setUploadedGraphicFile] = useState(null)
   const fileInputRef = useRef(null)
@@ -614,70 +564,6 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
                   </select>
                 </div>
 
-                {/* Paper / Material Quality */}
-                <div className="mb-6">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                    {catInfo.qualityLabel || 'Paper Quality'}
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {effectiveQualityOptions.map((opt) => {
-                      const isSelected = selectedQuality === opt.id
-                      const mod = Number(opt.priceModifier) || 0
-                      return (
-                        <button
-                          key={opt.id || opt.title}
-                          type="button"
-                          onClick={() => setSelectedQuality(opt.id)}
-                          className={`p-3.5 rounded-xl text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center border-2 select-none ${
-                            isSelected
-                              ? 'bg-[#fff3ec] border-[#F06800] text-[#c84b00] shadow-xs font-bold'
-                              : 'bg-slate-50/50 hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 font-medium'
-                          }`}
-                        >
-                          <span className="text-sm block mb-0.5">
-                            {opt.title} {mod > 0 && <span className="text-xs font-extrabold text-[#F06800] ml-1">(+₹{mod})</span>}
-                          </span>
-                          <span className={`text-[11px] block font-normal ${isSelected ? 'text-[#c84b00]/80' : 'text-slate-500'}`}>
-                            {opt.subtitle}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {/* Corner Style / Shape */}
-                <div className="mb-8">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                    {catInfo.styleLabel || 'Corner Style'}
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {effectiveStyleOptions.map((opt) => {
-                      const isSelected = selectedStyle === opt.id
-                      const mod = Number(opt.priceModifier) || 0
-                      return (
-                        <button
-                          key={opt.id || opt.title}
-                          type="button"
-                          onClick={() => setSelectedStyle(opt.id)}
-                          className={`p-3.5 rounded-xl text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center border-2 select-none ${
-                            isSelected
-                              ? 'bg-[#fff3ec] border-[#F06800] text-[#c84b00] shadow-xs font-bold'
-                              : 'bg-slate-50/50 hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 font-medium'
-                          }`}
-                        >
-                          <span className="text-sm block mb-0.5">
-                            {opt.title} {mod > 0 && <span className="text-xs font-extrabold text-[#F06800] ml-1">(+₹{mod})</span>}
-                          </span>
-                          <span className={`text-[11px] block font-normal ${isSelected ? 'text-[#c84b00]/80' : 'text-slate-500'}`}>
-                            {opt.subtitle}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-
                 {/* Dynamic Custom Variables & Selected Details */}
                 {effectiveCustomOptions.length > 0 && (
                   <div className="space-y-6 mb-8 pt-4 border-t border-slate-200/80">
@@ -969,55 +855,57 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
         </div>
 
         {/* FAQ Accordion Section */}
-        <div className="mt-20 pt-16 border-t border-slate-200/80 max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <span className="inline-block px-3.5 py-1 rounded-full bg-[#F06800]/10 border border-[#F06800]/30 text-[#c84b00] text-xs font-extrabold tracking-wider uppercase mb-3 shadow-xs">
-              Got Questions?
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Frequently Asked Questions
-            </h2>
-            <p className="mt-2 text-sm sm:text-base text-slate-600 font-normal">
-              Everything you need to know about ordering custom {catInfo.name || 'prints'} with us.
-            </p>
-          </div>
+        {activeFaqs && activeFaqs.length > 0 && (
+          <div className="mt-20 pt-16 border-t border-slate-200/80 max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <span className="inline-block px-3.5 py-1 rounded-full bg-[#F06800]/10 border border-[#F06800]/30 text-[#c84b00] text-xs font-extrabold tracking-wider uppercase mb-3 shadow-xs">
+                Got Questions?
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                Frequently Asked Questions
+              </h2>
+              <p className="mt-2 text-sm sm:text-base text-slate-600 font-normal">
+                Everything you need to know about ordering custom {catInfo.name || 'prints'} with us.
+              </p>
+            </div>
 
-          <div className="space-y-4">
-            {(activeFaqs || defaultGeneralFaqs).map((faq, idx) => {
-              const isOpen = openFaqIndex === idx
-              return (
-                <div
-                  key={idx}
-                  className="bg-slate-50/70 rounded-2xl border border-slate-200/80 overflow-hidden transition-all duration-300 shadow-xs hover:shadow-md"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                    className="w-full px-6 py-5 text-left flex items-center justify-between gap-4 cursor-pointer select-none hover:bg-slate-100/60 transition-colors"
+            <div className="space-y-4">
+              {activeFaqs.map((faq, idx) => {
+                const isOpen = openFaqIndex === idx
+                return (
+                  <div
+                    key={idx}
+                    className="bg-slate-50/70 rounded-2xl border border-slate-200/80 overflow-hidden transition-all duration-300 shadow-xs hover:shadow-md"
                   >
-                    <span className="text-base font-bold text-slate-900">
-                      {faq.question}
-                    </span>
-                    <span
-                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold transition-all duration-300 ${isOpen
-                        ? 'bg-[#F06800] text-white rotate-180 shadow-xs'
-                        : 'bg-white text-slate-600 border border-slate-200 shadow-xs'
-                        }`}
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
+                      className="w-full px-6 py-5 text-left flex items-center justify-between gap-4 cursor-pointer select-none hover:bg-slate-100/60 transition-colors"
                     >
-                      {isOpen ? '−' : '+'}
-                    </span>
-                  </button>
+                      <span className="text-base font-bold text-slate-900">
+                        {faq.question}
+                      </span>
+                      <span
+                        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold transition-all duration-300 ${isOpen
+                          ? 'bg-[#F06800] text-white rotate-180 shadow-xs'
+                          : 'bg-white text-slate-600 border border-slate-200 shadow-xs'
+                          }`}
+                      >
+                        {isOpen ? '−' : '+'}
+                      </span>
+                    </button>
 
-                  {isOpen && (
-                    <div className="px-6 pb-6 pt-2 text-sm sm:text-base text-slate-600 leading-relaxed border-t border-slate-200/40 bg-white/60 animate-fadeIn font-normal">
-                      {faq.answer}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+                    {isOpen && (
+                      <div className="px-6 pb-6 pt-2 text-sm sm:text-base text-slate-600 leading-relaxed border-t border-slate-200/40 bg-white/60 animate-fadeIn font-normal">
+                        {faq.answer}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )

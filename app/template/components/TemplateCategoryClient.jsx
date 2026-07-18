@@ -20,11 +20,28 @@ const parseAspectRatio = (sizeStr) => {
 
 const getEditerParams = (templateObj, formState = {}, fallbackCategory = 'visiting-cards') => {
   if (!templateObj) return '';
-  const params = new URLSearchParams({
+  const bgImg = templateObj.frontImage || templateObj.image || '';
+  const backBgImg = templateObj.backImage || templateObj.frontImage || templateObj.image || '';
+
+  try {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('a2v_editor_session', JSON.stringify({
+        templateId: templateObj.id || '',
+        frontBackground: bgImg,
+        backBackground: backBgImg,
+        productOptions: {
+          size: templateObj.size || '85mm x 55mm',
+          orientation: templateObj.orientation || 'Standard',
+          category: templateObj.categoryName || templateObj.categorySlug || fallbackCategory,
+          quantity: templateObj.price ? `${templateObj.unitPrice || ''} - ${templateObj.price}` : undefined
+        }
+      }));
+    }
+  } catch (e) {}
+
+  const paramsObj = {
     templateId: templateObj.id || '',
     templateTitle: templateObj.title || '',
-    bgImage: templateObj.frontImage || templateObj.image || '',
-    backBgImage: templateObj.backImage || templateObj.frontImage || templateObj.image || '',
     size: templateObj.size || '85mm x 55mm',
     orientation: templateObj.orientation || 'Standard',
     category: templateObj.categoryName || templateObj.categorySlug || fallbackCategory,
@@ -34,7 +51,16 @@ const getEditerParams = (templateObj, formState = {}, fallbackCategory = 'visiti
     customPerson: formState.personName || templateObj.personName || '',
     customTitle: formState.jobTitle || templateObj.jobTitle || '',
     selectedColor: formState.selectedColor || templateObj.colors?.[0] || '#2563EB'
-  });
+  };
+
+  if (bgImg && bgImg.length < 500 && !bgImg.startsWith('data:')) {
+    paramsObj.bgImage = bgImg;
+  }
+  if (backBgImg && backBgImg.length < 500 && !backBgImg.startsWith('data:')) {
+    paramsObj.backBgImage = backBgImg;
+  }
+
+  const params = new URLSearchParams(paramsObj);
   return params.toString();
 };
 

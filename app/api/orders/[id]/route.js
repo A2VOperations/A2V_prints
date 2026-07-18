@@ -7,9 +7,10 @@ export async function GET(request, { params }) {
   try {
     await connectDB();
     const { id } = await params;
-    const order = await Order.findOne({
-      $or: [{ orderId: id }, { _id: id }]
-    }).lean();
+    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+    const query = isValidObjectId ? { $or: [{ orderId: id }, { _id: id }] } : { orderId: id };
+
+    const order = await Order.findOne(query).lean();
 
     if (!order) {
       return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
@@ -27,8 +28,11 @@ export async function PATCH(request, { params }) {
     const { id } = await params;
     const body = await request.json();
 
+    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+    const query = isValidObjectId ? { $or: [{ orderId: id }, { _id: id }] } : { orderId: id };
+
     const updatedOrder = await Order.findOneAndUpdate(
-      { $or: [{ orderId: id }, { _id: id }] },
+      query,
       { $set: body },
       { new: true }
     );

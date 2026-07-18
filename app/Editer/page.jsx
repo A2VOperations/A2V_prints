@@ -222,6 +222,138 @@ const getBackgroundStyles = (bgValue) => {
   };
 };
 
+const renderDesignPreview = (elements = [], background = '#ffffff', corners = '', orientation = '', size = '', maxDim = 380) => {
+  const mainDim = getCanvasDimensions(orientation, size);
+  const mainW = parseFloat(mainDim.width) || 620;
+  const mainH = parseFloat(mainDim.height) || 350;
+
+  const isVertical = orientation.toLowerCase().includes('vertical') || mainH > mainW;
+  const scale = isVertical ? (maxDim / mainH) : (maxDim / mainW);
+  const previewW = Math.round(mainW * scale);
+  const previewH = Math.round(mainH * scale);
+
+  return (
+    <div
+      style={{
+        width: `${previewW}px`,
+        height: `${previewH}px`,
+        ...getBackgroundStyles(background !== 'transparent' ? background : '#ffffff'),
+        borderRadius: corners.includes('Rounded') ? `${Math.max(12, Math.round(24 * (maxDim / 380)))}px` : '0px',
+        boxShadow: maxDim >= 300 ? '0 20px 40px -15px rgba(0,0,0,0.15), 0 0 1px 1px rgba(0,0,0,0.05)' : '0 4px 10px -2px rgba(0,0,0,0.1)'
+      }}
+      className={`relative overflow-hidden flex items-center justify-center border border-slate-200/80 transform hover:scale-105 transition-all duration-300 select-none bg-white max-w-[85vw] shrink-0 ${corners.includes('Rounded') ? (maxDim >= 300 ? 'rounded-3xl' : 'rounded-xl') : 'rounded-none'}`}
+    >
+      {elements.length === 0 ? (
+        <span className="text-xs font-bold text-slate-400">No elements</span>
+      ) : (
+        elements.map((el, idx) => {
+          let textShadow = 'none';
+          let bgColor = 'transparent';
+          let padding = '0px';
+          let borderRadius = '0px';
+
+          if (el.effect === 'shadow') {
+            const dist = (el.shadowDistance !== undefined ? el.shadowDistance : 10) * scale;
+            const angleRad = ((el.shadowAngle !== undefined ? el.shadowAngle : 35) * Math.PI) / 180;
+            const offsetX = Math.round(dist * Math.cos(angleRad));
+            const offsetY = Math.round(dist * Math.sin(angleRad));
+            const blur = (el.shadowBlur !== undefined ? el.shadowBlur : 10) * scale;
+            const opacity = (el.shadowOpacity !== undefined ? el.shadowOpacity : 40) / 100;
+            const hex = el.shadowColor || '#000000';
+            const r = parseInt(hex.slice(1, 3) || '00', 16);
+            const g = parseInt(hex.slice(3, 5) || '00', 16);
+            const b = parseInt(hex.slice(5, 7) || '00', 16);
+            textShadow = `${offsetX}px ${offsetY}px ${blur}px rgba(${r}, ${g}, ${b}, ${opacity})`;
+          } else if (el.effect === 'highlight') {
+            const hex = el.highlightColor || '#dbeafe';
+            const opacity = (el.highlightOpacity !== undefined ? el.highlightOpacity : 80) / 100;
+            const r = parseInt(hex.slice(1, 3) || 'db', 16);
+            const g = parseInt(hex.slice(3, 5) || 'ea', 16);
+            const b = parseInt(hex.slice(5, 7) || 'fe', 16);
+            bgColor = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+            padding = `${2 * scale}px ${6 * scale}px`;
+            borderRadius = `${4 * scale}px`;
+          } else if (el.effect === 'glitch') {
+            const offset = (el.effectIntensity !== undefined ? el.effectIntensity : 4) * scale;
+            textShadow = `-${offset}px 0px 0px #06b6d4, ${offset}px 0px 0px #ec4899`;
+          } else if (el.effect === 'echo') {
+            const intensity = (el.effectIntensity !== undefined ? el.effectIntensity : 4) * scale;
+            textShadow = `${intensity}px ${intensity}px 0px rgba(0,0,0,0.35), ${intensity * 2}px ${intensity * 2}px 0px rgba(0,0,0,0.2), ${intensity * 3}px ${intensity * 3}px 0px rgba(0,0,0,0.1)`;
+          }
+
+          const isCurved = el.textShape === 'curve';
+
+          return (
+            <div
+              key={`preview-el-${el.id || idx}`}
+              style={{
+                position: 'absolute',
+                left: `${(el.x || 0) * scale}px`,
+                top: `${(el.y || 0) * scale}px`,
+                width: el.width ? `${el.width * scale}px` : 'auto',
+                height: el.height ? `${el.height * scale}px` : 'auto',
+                zIndex: el.zIndex || 10
+              }}
+              className="pointer-events-none break-words leading-tight select-none"
+            >
+              {el.type === 'image' ? (
+                <img src={el.url} alt={el.label || 'Image'} className="w-full h-full object-contain rounded-md" />
+              ) : el.type === 'svg' ? (
+                <div dangerouslySetInnerHTML={{ __html: el.svgContent || '' }} className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full" />
+              ) : el.type === 'text' ? (
+                <div
+                  style={{
+                    fontSize: el.fontSize ? `${Math.max(6, el.fontSize * scale)}px` : '10px',
+                    fontFamily: el.fontFamily || 'Fira Sans',
+                    color: el.color || '#0f172a',
+                    fontWeight: el.bold ? 'bold' : 'normal',
+                    fontStyle: el.italic ? 'italic' : 'normal',
+                    textDecoration: el.underline ? 'underline' : 'none',
+                    textAlign: el.align || 'left',
+                    textTransform: el.textCase || 'none',
+                    textShadow: textShadow,
+                    backgroundColor: bgColor,
+                    padding: padding,
+                    borderRadius: borderRadius,
+                    lineHeight: 1.25,
+                    whiteSpace: 'pre-wrap',
+                    transform: isCurved ? `perspective(400px) rotateX(${el.curveRadius !== undefined ? el.curveRadius : 30}deg)` : 'none'
+                  }}
+                  className="w-full break-words transition-all"
+                >
+                  {isCurved ? (
+                    <svg viewBox="0 0 300 120" className="w-full h-auto overflow-visible">
+                      <path id={`preview-curve-${el.id || idx}`} d="M 10,90 Q 150,-20 290,90" fill="transparent" />
+                      <text fill={el.color || '#0f172a'} style={{ fontSize: `${Math.max(6, (el.fontSize || 16) * scale)}px`, fontFamily: el.fontFamily || 'Fira Sans', fontWeight: el.bold ? 'bold' : 'normal', textTransform: el.textCase || 'none', textShadow: textShadow }}>
+                        <textPath href={`#preview-curve-${el.id || idx}`} startOffset="50%" textAnchor="middle">
+                          {el.text || 'Curve Text'}
+                        </textPath>
+                      </text>
+                    </svg>
+                  ) : (
+                    el.text || 'Text Field'
+                  )}
+                </div>
+              ) : el.shapeType === 'placeholder' ? (
+                <div
+                  style={{ backgroundColor: el.fill || '#e2e8f0', color: el.color || '#64748b', fontSize: `${Math.max(6, (el.fontSize || 14) * scale)}px` }}
+                  className="w-full h-full rounded-xl flex items-center justify-center text-center font-bold p-2 whitespace-pre-line shadow-inner border border-slate-300/60"
+                >
+                  {el.text || 'Placeholder'}
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full">
+                  {renderShapeIcon(el.shapeType, el.fill || '#000000')}
+                </div>
+              )}
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+};
+
 function StudioEditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -310,12 +442,33 @@ function StudioEditorContent() {
     const customTitle = searchParams.get('customTitle');
     const selectedColor = searchParams.get('selectedColor');
 
+    let localSessionBg = null;
+    let localSessionBackBg = null;
+    if (typeof window !== 'undefined') {
+      try {
+        const storedAdminSession = localStorage.getItem('a2v_admin_editor_session') || sessionStorage.getItem('a2v_editor_session');
+        if (storedAdminSession) {
+          const parsedAdmin = JSON.parse(storedAdminSession);
+          if (parsedAdmin.templateId === templateId || searchParams?.get('adminMode') === 'true' || !templateId) {
+            localSessionBg = parsedAdmin.bgImage || parsedAdmin.frontBackground;
+            localSessionBackBg = parsedAdmin.backBgImage || parsedAdmin.backBackground;
+          }
+        }
+      } catch (e) {}
+    }
+
     if (bgImage && bgImage.trim() !== '') {
       setFrontBackground(bgImage);
+    } else if (localSessionBg) {
+      setFrontBackground(localSessionBg);
     }
+
     if (backBgImage && backBgImage.trim() !== '') {
       setBackBackground(backBgImage);
+    } else if (localSessionBackBg) {
+      setBackBackground(localSessionBackBg);
     }
+
     if (orientation || size || category || price) {
       setProductOptions(prev => ({
         ...prev,
@@ -355,7 +508,9 @@ function StudioEditorContent() {
             const currentUrlBackBg = searchParams?.get('backBgImage');
 
             if (!currentUrlBg || currentUrlBg.trim() === '') {
-              if (tpl.frontBackground || tpl.frontImage || tpl.image) {
+              if (localSessionBg) {
+                setFrontBackground(localSessionBg);
+              } else if (tpl.frontBackground || tpl.frontImage || tpl.image) {
                 setFrontBackground(tpl.frontBackground || tpl.frontImage || tpl.image);
               }
             } else {
@@ -363,7 +518,9 @@ function StudioEditorContent() {
             }
 
             if (!currentUrlBackBg || currentUrlBackBg.trim() === '') {
-              if (tpl.backBackground || tpl.backImage || tpl.frontImage || tpl.image) {
+              if (localSessionBackBg) {
+                setBackBackground(localSessionBackBg);
+              } else if (tpl.backBackground || tpl.backImage || tpl.frontImage || tpl.image) {
                 setBackBackground(tpl.backBackground || tpl.backImage || tpl.frontImage || tpl.image);
               }
             } else {
@@ -1240,13 +1397,12 @@ function StudioEditorContent() {
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">Product Orientation</label>
                       <select
-                        value={productOptions.orientation}
+                        value={productOptions.orientation.toLowerCase().includes('vertical') ? 'Vertical' : 'Horizontal'}
                         onChange={(e) => setProductOptions({ ...productOptions, orientation: e.target.value })}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
                       >
-                        <option>Horizontal (91.8mm x 53.8mm)</option>
-                        <option>Vertical (53.8mm x 91.8mm)</option>
-                        <option>Square (65mm x 65mm)</option>
+                        <option value="Horizontal">Horizontal</option>
+                        <option value="Vertical">Vertical</option>
                       </select>
                     </div>
 
@@ -2996,22 +3152,11 @@ function StudioEditorContent() {
               <div
                 onClick={() => setActiveSide('Front')}
                 className={`p-2 rounded-2xl border-2 transition-all cursor-pointer ${activeSide === 'Front'
-                    ? 'border-[#0070e0] bg-blue-50/40 shadow-sm'
-                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                  ? 'border-[#0070e0] bg-blue-50/40 shadow-sm'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
                   }`}
               >
-                <div
-                  style={getBackgroundStyles(frontBackground || '#ffffff')}
-                  className="aspect-[1.75/1] w-full rounded-xl border border-slate-200 p-2 flex flex-col justify-between shadow-2xs relative overflow-hidden"
-                >
-                  <div className="w-6 h-6 rounded bg-blue-500/20 text-[6px] font-bold text-blue-800 flex items-center justify-center">
-                    LOGO
-                  </div>
-                  <div className="space-y-0.5">
-                    <div className="w-3/4 h-1.5 bg-blue-600/80 rounded" />
-                    <div className="w-1/2 h-1 bg-slate-400/60 rounded" />
-                  </div>
-                </div>
+                {renderDesignPreview(frontElements, frontBackground, productOptions.corners, productOptions.orientation, searchParams?.get('size'), 120)}
                 <div className="mt-2 flex items-center justify-between px-1">
                   <span className={`text-xs font-black ${activeSide === 'Front' ? 'text-[#0070e0]' : 'text-slate-700'}`}>
                     Front
@@ -3024,19 +3169,11 @@ function StudioEditorContent() {
               <div
                 onClick={() => setActiveSide('Back')}
                 className={`p-2 rounded-2xl border-2 transition-all cursor-pointer ${activeSide === 'Back'
-                    ? 'border-[#0070e0] bg-blue-50/40 shadow-sm'
-                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                  ? 'border-[#0070e0] bg-blue-50/40 shadow-sm'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
                   }`}
               >
-                <div
-                  style={getBackgroundStyles(backBackground || '#ffffff')}
-                  className="aspect-[1.75/1] w-full rounded-xl border border-slate-200 p-2 flex flex-col items-center justify-center shadow-2xs relative overflow-hidden"
-                >
-                  <div className="w-8 h-8 rounded-full bg-blue-900 text-white text-[7px] font-extrabold flex items-center justify-center mb-1">
-                    A2V
-                  </div>
-                  <div className="w-1/2 h-1 bg-blue-900/80 rounded" />
-                </div>
+                {renderDesignPreview(backElements, backBackground, productOptions.corners, productOptions.orientation, searchParams?.get('size'), 120)}
                 <div className="mt-2 flex items-center justify-between px-1">
                   <span className={`text-xs font-black ${activeSide === 'Back' ? 'text-[#0070e0]' : 'text-slate-700'}`}>
                     Back
@@ -3044,17 +3181,6 @@ function StudioEditorContent() {
                   {activeSide === 'Back' && <span className="w-2 h-2 rounded-full bg-[#0070e0]" />}
                 </div>
               </div>
-            </div>
-
-            {/* Need Design Help Button (Exact bottom right button in screenshot!) */}
-            <div className="pt-4 border-t border-slate-100">
-              <button
-                onClick={() => alert('Our senior design support team is available 24/7! You can chat directly or request a designer review before print.')}
-                className="w-full bg-[#f6a118] hover:bg-[#e08e0b] text-white font-extrabold py-2.5 px-3 rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-1.5"
-              >
-                <span>(?)</span>
-                <span>Need design help?</span>
-              </button>
             </div>
           </aside>
         )}
@@ -3086,45 +3212,7 @@ function StudioEditorContent() {
                   <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider bg-white/80 px-3 py-0.5 rounded-full border border-slate-200 shadow-2xs">
                     Front Side Preview
                   </span>
-                  <div
-                    style={{
-                      width: '380px',
-                      height: '217px',
-                      ...getBackgroundStyles(frontBackground !== 'transparent' ? frontBackground : '#ffffff'),
-                      borderRadius: productOptions.corners.includes('Rounded') ? '24px' : '0px',
-                      boxShadow: '0 20px 40px -15px rgba(0,0,0,0.15), 0 0 1px 1px rgba(0,0,0,0.05)'
-                    }}
-                    className={`relative overflow-hidden flex items-center justify-center border border-slate-200/80 transform hover:scale-105 transition-all duration-300 select-none bg-white max-w-[85vw] ${productOptions.corners.includes('Rounded') ? 'rounded-3xl' : 'rounded-none'}`}
-                  >
-                    {frontElements.length === 0 ? (
-                      <span className="text-xs font-bold text-slate-400">No elements on Front</span>
-                    ) : (
-                      frontElements.map(el => (
-                        <div
-                          key={`preview-front-${el.id}`}
-                          style={{
-                            position: 'absolute',
-                            left: `${(el.x || 0) * 0.54}px`,
-                            top: `${(el.y || 0) * 0.54}px`,
-                            width: el.width ? `${el.width * 0.54}px` : 'auto',
-                            fontSize: el.fontSize ? `${Math.max(8, el.fontSize * 0.54)}px` : '10px',
-                            fontFamily: el.fontFamily || 'Fira Sans',
-                            color: el.color || '#0f172a',
-                            fontWeight: el.bold ? 'bold' : 'normal',
-                            fontStyle: el.italic ? 'italic' : 'normal',
-                            textDecoration: el.underline ? 'underline' : 'none',
-                            textAlign: el.align || 'left',
-                            textTransform: el.textCase || 'none'
-                          }}
-                          className="pointer-events-none break-words"
-                        >
-                          {el.type === 'text' ? el.text : el.type === 'image' ? (
-                            <img src={el.url} alt="Logo" className="max-w-full max-h-full object-contain" />
-                          ) : null}
-                        </div>
-                      ))
-                    )}
-                  </div>
+                  {renderDesignPreview(frontElements, frontBackground, productOptions.corners, productOptions.orientation, searchParams?.get('size'), 380)}
                 </div>
 
                 {/* 2. BACK SIDE PREVIEW */}
@@ -3132,45 +3220,7 @@ function StudioEditorContent() {
                   <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider bg-white/80 px-3 py-0.5 rounded-full border border-slate-200 shadow-2xs">
                     Back Side Preview
                   </span>
-                  <div
-                    style={{
-                      width: '380px',
-                      height: '217px',
-                      ...getBackgroundStyles(backBackground !== 'transparent' ? backBackground : '#ffffff'),
-                      borderRadius: productOptions.corners.includes('Rounded') ? '24px' : '0px',
-                      boxShadow: '0 20px 40px -15px rgba(0,0,0,0.15), 0 0 1px 1px rgba(0,0,0,0.05)'
-                    }}
-                    className={`relative overflow-hidden flex items-center justify-center border border-slate-200/80 transform hover:scale-105 transition-all duration-300 select-none bg-white max-w-[85vw] ${productOptions.corners.includes('Rounded') ? 'rounded-3xl' : 'rounded-none'}`}
-                  >
-                    {backElements.length === 0 ? (
-                      <span className="text-xs font-bold text-slate-400">No elements on Back</span>
-                    ) : (
-                      backElements.map(el => (
-                        <div
-                          key={`preview-back-${el.id}`}
-                          style={{
-                            position: 'absolute',
-                            left: `${(el.x || 0) * 0.54}px`,
-                            top: `${(el.y || 0) * 0.54}px`,
-                            width: el.width ? `${el.width * 0.54}px` : 'auto',
-                            fontSize: el.fontSize ? `${Math.max(8, el.fontSize * 0.54)}px` : '10px',
-                            fontFamily: el.fontFamily || 'Fira Sans',
-                            color: el.color || '#0f172a',
-                            fontWeight: el.bold ? 'bold' : 'normal',
-                            fontStyle: el.italic ? 'italic' : 'normal',
-                            textDecoration: el.underline ? 'underline' : 'none',
-                            textAlign: el.align || 'left',
-                            textTransform: el.textCase || 'none'
-                          }}
-                          className="pointer-events-none break-words"
-                        >
-                          {el.type === 'text' ? el.text : el.type === 'image' ? (
-                            <img src={el.url} alt="Logo" className="max-w-full max-h-full object-contain" />
-                          ) : null}
-                        </div>
-                      ))
-                    )}
-                  </div>
+                  {renderDesignPreview(backElements, backBackground, productOptions.corners, productOptions.orientation, searchParams?.get('size'), 380)}
                 </div>
 
               </div>
@@ -3340,6 +3390,8 @@ function StudioEditorContent() {
                             backBackground,
                             productOptions: {
                               ...productOptions,
+                              size: searchParams?.get('size') || productOptions.size || '91.8mm x 53.8mm',
+                              orientation: productOptions.orientation || 'Horizontal',
                               stock: productOptions.stock.includes('Premium') ? 'Premium Gloss Coated (350 gsm)' : 'Standard Matte (300 gsm)'
                             },
                             isBackCustomized,

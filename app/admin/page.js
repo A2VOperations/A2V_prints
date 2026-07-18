@@ -79,6 +79,9 @@ export default function AdminDashboardPage() {
   const [graphicsFilter, setGraphicsFilter] = useState("All");
   const [editingGraphicId, setEditingGraphicId] = useState(null);
   const [graphicUploading, setGraphicUploading] = useState(false);
+  const [templateFrontUploading, setTemplateFrontUploading] = useState(false);
+  const [templateBackUploading, setTemplateBackUploading] = useState(false);
+  const [productPhotoUploading, setProductPhotoUploading] = useState(false);
   const [graphicsForm, setGraphicsForm] = useState({
     title: "",
     category: "image",
@@ -522,6 +525,95 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleTemplateImageUpload = async (file, side = "front") => {
+    if (!file) return;
+    if (side === "front") setTemplateFrontUploading(true);
+    else setTemplateBackUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "a2v_templates");
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        if (side === "front") {
+          setTemplateForm((prev) => ({ ...prev, frontImage: data.url }));
+        } else {
+          setTemplateForm((prev) => ({ ...prev, backImage: data.url }));
+        }
+        showToastMsg(`Uploaded ${side === "front" ? "Front/Design" : "Back"} photo to Cloudinary!`);
+      } else {
+        showToastMsg(data.error || "Upload failed. Using fallback data URL.");
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(file);
+        });
+        if (side === "front") {
+          setTemplateForm((prev) => ({ ...prev, frontImage: dataUrl }));
+        } else {
+          setTemplateForm((prev) => ({ ...prev, backImage: dataUrl }));
+        }
+      }
+    } catch (err) {
+      console.error("Template photo upload error:", err);
+      showToastMsg("Upload failed");
+    } finally {
+      if (side === "front") setTemplateFrontUploading(false);
+      else setTemplateBackUploading(false);
+    }
+  };
+
+  const handleProductPhotoUpload = async (file) => {
+    if (!file) return;
+    setProductPhotoUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "a2v_products");
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        setProductForm((prev) => {
+          const updated = [...(prev.images || []), data.url];
+          return {
+            ...prev,
+            images: updated,
+            image: prev.image || updated[0]
+          };
+        });
+        showToastMsg("Product photo uploaded to Cloudinary!");
+      } else {
+        showToastMsg(data.error || "Upload failed. Using fallback data URL.");
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(file);
+        });
+        setProductForm((prev) => {
+          const updated = [...(prev.images || []), dataUrl];
+          return {
+            ...prev,
+            images: updated,
+            image: prev.image || updated[0]
+          };
+        });
+      }
+    } catch (err) {
+      console.error("Product photo upload error:", err);
+      showToastMsg("Upload failed");
+    } finally {
+      setProductPhotoUploading(false);
+    }
+  };
+
   const handleToggleUserRole = async (targetUser) => {
     const newRole = targetUser.role === "admin" ? "user" : "admin";
     setUsers((prev) =>
@@ -595,6 +687,46 @@ export default function AdminDashboardPage() {
 
   // Compute live revenue from orders
   const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+
+  // Helper to open Studio without HTTP 431 error when images are base64/long data URLs
+  const openAdminStudio = (tplId, formState) => {
+    const sessionData = {
+      templateId: tplId,
+      templateTitle: formState.title || '',
+      bgImage: formState.frontImage || '',
+      backBgImage: formState.backImage || formState.frontImage || '',
+      size: formState.size || '85mm x 55mm',
+      orientation: formState.orientation || 'Standard',
+      category: formState.categorySlug || 'visiting-cards',
+      frontBackground: formState.frontImage || '',
+      backBackground: formState.backImage || formState.frontImage || ''
+    };
+    try {
+      sessionStorage.setItem('a2v_editor_session', JSON.stringify(sessionData));
+      localStorage.setItem('a2v_admin_editor_session', JSON.stringify(sessionData));
+    } catch (e) {
+      console.warn('Storage error:', e);
+    }
+
+    const paramsObj = {
+      adminMode: 'true',
+      templateId: tplId,
+      templateTitle: formState.title || '',
+      size: formState.size || '85mm x 55mm',
+      orientation: formState.orientation || 'Standard',
+      category: formState.categorySlug || 'visiting-cards'
+    };
+
+    if (formState.frontImage && formState.frontImage.length < 500 && !formState.frontImage.startsWith('data:')) {
+      paramsObj.bgImage = formState.frontImage;
+    }
+    if (formState.backImage && formState.backImage.length < 500 && !formState.backImage.startsWith('data:')) {
+      paramsObj.backBgImage = formState.backImage;
+    }
+
+    const params = new URLSearchParams(paramsObj);
+    window.open(`/Editer?${params.toString()}`, '_blank');
+  };
 
   return (
     <div className="min-h-screen bg-surface text-on-surface font-sans flex antialiased">
@@ -1786,7 +1918,23 @@ export default function AdminDashboardPage() {
                     </div>
 
                     {/* Add new photo bar */}
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-all flex items-center gap-1.5 cursor-pointer shrink-0 shadow-xs">
+                        <span className="material-symbols-outlined text-[16px]">cloud_upload</span>
+                        <span>{productPhotoUploading ? "Uploading to Cloudinary..." : "Upload From Device"}</span>
+                        <input
+                          type="file"
+                          accept="image/*,.svg"
+                          disabled={productPhotoUploading}
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              handleProductPhotoUpload(e.target.files[0]);
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                      <span className="text-xs font-bold text-secondary">OR</span>
                       <input
                         type="text"
                         value={newPhotoInput}
@@ -1806,7 +1954,7 @@ export default function AdminDashboardPage() {
                           }
                         }}
                         placeholder="Paste image URL (https://...)"
-                        className="flex-1 bg-surface-container-low border border-outline-variant rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:border-primary"
+                        className="flex-1 min-w-[180px] bg-surface-container-low border border-outline-variant rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:border-primary"
                       />
                       <button
                         type="button"
@@ -2056,19 +2204,7 @@ export default function AdminDashboardPage() {
                   {editingTemplateId && (
                     <button
                       type="button"
-                      onClick={() => {
-                        const params = new URLSearchParams({
-                          adminMode: 'true',
-                          templateId: editingTemplateId,
-                          templateTitle: templateForm.title || '',
-                          bgImage: templateForm.frontImage || '',
-                          backBgImage: templateForm.backImage || templateForm.frontImage || '',
-                          size: templateForm.size || '85mm x 55mm',
-                          orientation: templateForm.orientation || 'Standard',
-                          category: templateForm.categorySlug || 'visiting-cards'
-                        });
-                        window.open(`/Editer?${params.toString()}`, '_blank');
-                      }}
+                      onClick={() => openAdminStudio(editingTemplateId, templateForm)}
                       className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-sm transition-all shadow-sm flex items-center gap-2 cursor-pointer"
                     >
                       <span>🎨 Open Studio to Position Elements</span>
@@ -2201,18 +2337,39 @@ export default function AdminDashboardPage() {
                   </div>
 
                   <div className="space-y-6">
-                    <div>
-                      <label className="block text-xs font-semibold text-secondary uppercase tracking-wider mb-1.5">
-                        {templateForm.categorySlug === "visiting-cards" ? "Front Image URL *" : "Design Image URL *"}
+                    <div className="space-y-3 bg-surface-container-low/50 p-4 rounded-xl border border-outline-variant">
+                      <label className="block text-xs font-bold text-on-surface uppercase tracking-wider">
+                        {templateForm.categorySlug === "visiting-cards" ? "Front Photo / Design (Cloudinary Upload) *" : "Design Photo (Cloudinary Upload) *"}
                       </label>
-                      <input
-                        type="url"
-                        required
-                        value={templateForm.frontImage}
-                        onChange={(e) => setTemplateForm({ ...templateForm, frontImage: e.target.value })}
-                        placeholder="https://images.unsplash.com/photo-front..."
-                        className="w-full px-4 py-2.5 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm focus:outline-none focus:border-primary"
-                      />
+                      <p className="text-xs text-secondary">
+                        Upload a photo directly from your computer or phone (`a2v_templates` on Cloudinary), or paste an existing image URL.
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <label className="px-4 py-2.5 bg-primary text-on-primary rounded-lg text-xs font-bold cursor-pointer hover:brightness-110 transition-all flex items-center gap-2 shadow-xs">
+                          <span className="material-symbols-outlined text-[16px]">cloud_upload</span>
+                          <span>{templateFrontUploading ? 'Uploading to Cloudinary...' : 'Upload From Device'}</span>
+                          <input
+                            type="file"
+                            accept="image/*,.svg"
+                            disabled={templateFrontUploading}
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleTemplateImageUpload(e.target.files[0], "front");
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                        <span className="text-xs font-bold text-secondary">OR</span>
+                        <input
+                          type="text"
+                          required
+                          value={templateForm.frontImage}
+                          onChange={(e) => setTemplateForm({ ...templateForm, frontImage: e.target.value })}
+                          placeholder="Paste direct URL (https://... or data:image/...)"
+                          className="flex-1 min-w-[200px] px-3 py-2 rounded-lg border border-outline-variant bg-surface text-on-surface text-xs focus:outline-none focus:border-primary font-mono"
+                        />
+                      </div>
                       {templateForm.frontImage && (
                         <div
                           style={{ aspectRatio: parseMmAspectRatio(templateForm.size) }}
@@ -2227,18 +2384,39 @@ export default function AdminDashboardPage() {
                     </div>
 
                     {templateForm.categorySlug === "visiting-cards" && (
-                      <div>
-                        <label className="block text-xs font-semibold text-secondary uppercase tracking-wider mb-1.5">
-                          Back Image URL *
+                      <div className="space-y-3 bg-surface-container-low/50 p-4 rounded-xl border border-outline-variant">
+                        <label className="block text-xs font-bold text-on-surface uppercase tracking-wider">
+                          Back Photo (Cloudinary Upload) *
                         </label>
-                        <input
-                          type="url"
-                          required
-                          value={templateForm.backImage}
-                          onChange={(e) => setTemplateForm({ ...templateForm, backImage: e.target.value })}
-                          placeholder="https://images.unsplash.com/photo-back..."
-                          className="w-full px-4 py-2.5 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm focus:outline-none focus:border-primary"
-                        />
+                        <p className="text-xs text-secondary">
+                          Upload the back side photo from your device (`a2v_templates` on Cloudinary), or paste an image URL.
+                        </p>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <label className="px-4 py-2.5 bg-primary text-on-primary rounded-lg text-xs font-bold cursor-pointer hover:brightness-110 transition-all flex items-center gap-2 shadow-xs">
+                            <span className="material-symbols-outlined text-[16px]">cloud_upload</span>
+                            <span>{templateBackUploading ? 'Uploading to Cloudinary...' : 'Upload From Device'}</span>
+                            <input
+                              type="file"
+                              accept="image/*,.svg"
+                              disabled={templateBackUploading}
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  handleTemplateImageUpload(e.target.files[0], "back");
+                                }
+                              }}
+                              className="hidden"
+                            />
+                          </label>
+                          <span className="text-xs font-bold text-secondary">OR</span>
+                          <input
+                            type="text"
+                            required
+                            value={templateForm.backImage}
+                            onChange={(e) => setTemplateForm({ ...templateForm, backImage: e.target.value })}
+                            placeholder="Paste direct URL (https://... or data:image/...)"
+                            className="flex-1 min-w-[200px] px-3 py-2 rounded-lg border border-outline-variant bg-surface text-on-surface text-xs focus:outline-none focus:border-primary font-mono"
+                          />
+                        </div>
                         {templateForm.backImage && (
                           <div
                             style={{ aspectRatio: parseMmAspectRatio(templateForm.size) }}
@@ -2265,19 +2443,7 @@ export default function AdminDashboardPage() {
                   {editingTemplateId ? (
                     <button
                       type="button"
-                      onClick={() => {
-                        const params = new URLSearchParams({
-                          adminMode: 'true',
-                          templateId: editingTemplateId,
-                          templateTitle: templateForm.title || '',
-                          bgImage: templateForm.frontImage || '',
-                          backBgImage: templateForm.backImage || templateForm.frontImage || '',
-                          size: templateForm.size || '85mm x 55mm',
-                          orientation: templateForm.orientation || 'Standard',
-                          category: templateForm.categorySlug || 'visiting-cards'
-                        });
-                        window.open(`/Editer?${params.toString()}`, '_blank');
-                      }}
+                      onClick={() => openAdminStudio(editingTemplateId, templateForm)}
                       className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold text-xs shrink-0 transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
                     >
                       <span>Launch Studio Editor</span>
