@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense, useMemo, useRef } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useDatabaseData } from '../lib/useDatabaseData'
-import { addToCart, addToWishlist } from '../lib/cartWishlist'
+import { addToCart, addToWishlist, compressImageForStorage } from '../lib/cartWishlist'
 
 const singleProductCache = new Map()
 const inFlightSingleProduct = new Map()
@@ -174,7 +174,11 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
   const [selectedQuality, setSelectedQuality] = useState(() => (Array.isArray(catInfo.defaultQualityOptions) && catInfo.defaultQualityOptions[0]?.id) || '')
   const [selectedStyle, setSelectedStyle] = useState(() => (Array.isArray(catInfo.defaultStyleOptions) && catInfo.defaultStyleOptions[0]?.id) || '')
   const [selectedCustomOptions, setSelectedCustomOptions] = useState({})
-  const [uploadedGraphicFile, setUploadedGraphicFile] = useState(null)
+  const [uploadedFiles, setUploadedFiles] = useState([]) // Up to 2 File objects
+  const [uploadedImageUrls, setUploadedImageUrls] = useState([]) // Up to 2 preview data URLs
+  const uploadedGraphicFile = uploadedFiles[0] || null
+  const uploadedImageUrl = uploadedImageUrls[0] || null
+  const [orderPathway, setOrderPathway] = useState('choose') // 'choose' | 'upload'
   const fileInputRef = useRef(null)
   const [activeTab, setActiveTab] = useState('Description')
   const [openFaqIndex, setOpenFaqIndex] = useState(0)
@@ -291,58 +295,77 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
   }
 
   const handleAddToCart = () => {
-    if (!currentUser) {
-      alert('Please log in to add items to your Shopping Cart.')
-      return
+    if (orderPathway === 'upload' && uploadedFiles.length === 0 && !isGraphicCategory) {
+      if (!confirm('You have not attached a custom design file yet. Do you want to continue adding this item to your cart?')) {
+        return
+      }
     }
+    const userId = currentUser ? currentUser.id : null
     const qualityObj = effectiveQualityOptions.find((q) => q.id === selectedQuality)
     const styleObj = effectiveStyleOptions.find((s) => s.id === selectedStyle)
     const customSelectionsList = effectiveCustomOptions.map((opt, idx) => ({
       name: opt.name || 'Option',
       choice: selectedCustomOptions[idx] || (opt.choices?.[0]?.label || '')
     }))
-    addToCart(currentUser.id, {
+    const itemPayload = {
       productId: product.id || product.numericId || '1',
       title: product.title,
       price: `₹${calculatedTotalPrice.toLocaleString('en-IN')}`,
       numericPrice: calculatedTotalPrice,
-      image: product.image,
+      image: uploadedImageUrl || product.image,
       category: categoryKey,
       qtyOption: isGraphicCategory ? '1 Custom Design Service' : selectedQty,
-      quality: isGraphicCategory ? (uploadedGraphicFile ? `Uploaded File: ${uploadedGraphicFile.name}` : 'Custom Artwork Requirement') : (qualityObj ? qualityObj.title : selectedQuality),
+      quality: isGraphicCategory ? (uploadedFiles.length > 0 ? `Uploaded Files (${uploadedFiles.length}): ${uploadedFiles.map(f => f.name).join(', ')}` : 'Custom Artwork Requirement') : (qualityObj ? qualityObj.title : selectedQuality),
       style: isGraphicCategory ? 'Custom Design Requirement' : (styleObj ? styleObj.title : selectedStyle),
       customSelections: customSelectionsList,
       quantity: 1,
-      uploadedFile: uploadedGraphicFile ? uploadedGraphicFile.name : null,
-    })
-    showProductToast('Added to Cart!')
+      uploadedFile: uploadedFiles.length > 0 ? uploadedFiles.map(f => f.name).join(' | ') : null,
+      uploadedFiles: uploadedFiles.map(f => f.name),
+      uploadedImageUrl: uploadedImageUrl || null,
+      uploadedImageUrls: uploadedImageUrls.filter(Boolean),
+      orderPathway: uploadedFiles.length > 0 || orderPathway === 'upload' ? 'Upload Custom Design' : 'Browse Studio Templates'
+    }
+    addToCart(userId, itemPayload)
+    if (userId !== null) {
+      addToCart(null, itemPayload)
+    }
+    showProductToast('Added to Cart! Redirecting...')
+    setTimeout(() => {
+      router.push('/cart')
+    }, 700)
   }
 
   const handleAddToWishlistAction = () => {
-    if (!currentUser) {
-      alert('Please log in to save items to your Wishlist.')
-      return
-    }
+    const userId = currentUser ? currentUser.id : null
     const qualityObj = effectiveQualityOptions.find((q) => q.id === selectedQuality)
     const styleObj = effectiveStyleOptions.find((s) => s.id === selectedStyle)
     const customSelectionsList = effectiveCustomOptions.map((opt, idx) => ({
       name: opt.name || 'Option',
       choice: selectedCustomOptions[idx] || (opt.choices?.[0]?.label || '')
     }))
-    addToWishlist(currentUser.id, {
+    addToWishlist(userId, {
       productId: product.id || product.numericId || '1',
       title: product.title,
       price: `₹${calculatedTotalPrice.toLocaleString('en-IN')}`,
       numericPrice: calculatedTotalPrice,
-      image: product.image,
+      image: uploadedImageUrl || product.image,
       category: categoryKey,
       qtyOption: selectedQty,
       quality: qualityObj ? qualityObj.title : selectedQuality,
       style: styleObj ? styleObj.title : selectedStyle,
       customSelections: customSelectionsList,
+      uploadedFile: uploadedFiles.length > 0 ? uploadedFiles.map(f => f.name).join(' | ') : null,
+      uploadedFiles: uploadedFiles.map(f => f.name),
+      uploadedImageUrl: uploadedImageUrl || null,
+      uploadedImageUrls: uploadedImageUrls.filter(Boolean)
     })
     setIsWishlisted(true)
     showProductToast('Saved to Wishlist!')
+  }
+
+  const handleRemoveFile = (indexToRemove) => {
+    setUploadedFiles((prev) => prev.filter((_, idx) => idx !== indexToRemove))
+    setUploadedImageUrls((prev) => prev.filter((_, idx) => idx !== indexToRemove))
   }
 
   const handleUpload = () => {
@@ -354,6 +377,35 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
   }
 
   const handleOnlineEditor = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        const qualityObj = effectiveQualityOptions.find((q) => q.id === selectedQuality)
+        const styleObj = effectiveStyleOptions.find((s) => s.id === selectedStyle)
+        const customSelectionsObj = {}
+        effectiveCustomOptions.forEach((opt, idx) => {
+          const name = opt.name || `Option_${idx}`
+          customSelectionsObj[name] = selectedCustomOptions[idx] || (opt.choices?.[0]?.label || '')
+        })
+
+        sessionStorage.setItem('a2v_product_options', JSON.stringify({
+          productId: product.id || product.numericId || '1',
+          productTitle: product.title,
+          categoryKey,
+          qualityLabel: catInfo.qualityLabel || 'Quality / Stock',
+          styleLabel: catInfo.styleLabel || 'Style / Printing',
+          effectiveQtyOptions,
+          effectiveQualityOptions,
+          effectiveStyleOptions,
+          effectiveCustomOptions,
+          selectedQty,
+          selectedQuality: qualityObj ? (qualityObj.title || qualityObj.id) : selectedQuality,
+          selectedStyle: styleObj ? (styleObj.title || styleObj.id) : selectedStyle,
+          customSelections: customSelectionsObj,
+          selectedPrice: calculatedTotalPrice,
+          formattedPrice: `₹${calculatedTotalPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        }))
+      }
+    } catch (e) {}
     router.push(`/template/${categoryKey || 'visiting-cards'}`)
   }
 
@@ -503,26 +555,72 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
 
             {isGraphicCategory ? (
               <div className="mb-8">
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  Upload Custom Design & Requirement Brief
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Upload Custom Design & Requirement Brief (Up to 2 Photos/Files)
+                  </label>
+                  <span className="text-[11px] font-extrabold text-[#F06800] bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-200">
+                    {uploadedFiles.length}/2 Photos Added
+                  </span>
+                </div>
                 <div className="bg-slate-50/80 border-2 border-dashed border-[#F06800]/40 rounded-2xl p-6 text-center transition-all hover:border-[#F06800]">
-                  {uploadedGraphicFile ? (
-                    <div className="flex items-center justify-between bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <span className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-base shrink-0">✓</span>
-                        <div className="text-left truncate">
-                          <p className="text-sm font-bold text-slate-800 truncate">{uploadedGraphicFile.name}</p>
-                          <p className="text-xs text-slate-400">Ready to attach with your order</p>
-                        </div>
+                  {uploadedFiles.length > 0 ? (
+                    <div className="space-y-3.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {uploadedFiles.map((file, idx) => {
+                          const imgUrl = uploadedImageUrls[idx]
+                          return (
+                            <div key={idx} className="flex items-center justify-between bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs hover:border-orange-300 transition-all">
+                              <div className="flex items-center gap-3 min-w-0">
+                                {imgUrl ? (
+                                  <img src={imgUrl} alt={`Photo ${idx + 1}`} className="w-14 h-14 object-cover rounded-xl border border-slate-200 shrink-0 shadow-2xs" />
+                                ) : (
+                                  <span className="w-12 h-12 rounded-xl bg-orange-100 text-[#F06800] flex items-center justify-center font-bold text-base shrink-0">📄</span>
+                                )}
+                                <div className="text-left min-w-0 truncate">
+                                  <span className="inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-orange-100 text-[#F06800] mb-0.5">
+                                    {idx === 0 ? 'Photo #1 (Front)' : 'Photo #2 (Back)'}
+                                  </span>
+                                  <p className="text-sm font-bold text-slate-800 truncate">{file.name}</p>
+                                  <p className="text-xs text-emerald-600 font-bold">✓ Attached</p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveFile(idx)}
+                                className="text-rose-500 hover:text-rose-700 text-xs font-extrabold px-2.5 py-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          )
+                        })}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setUploadedGraphicFile(null)}
-                        className="text-rose-500 hover:text-rose-700 text-xs font-extrabold px-2.5 py-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
-                      >
-                        Remove
-                      </button>
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200/80">
+                        {uploadedFiles.length < 2 ? (
+                          <button
+                            type="button"
+                            onClick={handleUpload}
+                            className="flex items-center gap-1.5 text-xs font-extrabold bg-[#F06800] hover:bg-[#d55c00] text-white px-3.5 py-2 rounded-xl transition-all shadow-2xs cursor-pointer"
+                          >
+                            <span>+ Add 2nd Photo / File</span>
+                          </button>
+                        ) : (
+                          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+                            ✓ Maximum 2 photos attached
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUploadedFiles([])
+                            setUploadedImageUrls([])
+                          }}
+                          className="text-xs font-extrabold text-slate-500 hover:text-rose-600 px-3 py-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                        >
+                          Clear All
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div
@@ -534,88 +632,258 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                         </svg>
                       </div>
-                      <span className="text-sm font-extrabold text-slate-800 block">Click or Browse to Upload Custom Design Files</span>
-                      <span className="text-xs text-slate-500 block mt-1">Supports PDF, AI, PSD, PNG, JPG, ZIP or DOCX requirement brief</span>
+                      <span className="text-sm font-extrabold text-slate-800 block">Click or Browse to Upload Up to 2 Photos/Files</span>
+                      <span className="text-xs text-slate-500 block mt-1">Supports Front & Back photos, PDF, AI, PSD, PNG, JPG or ZIP requirement brief</span>
                     </div>
                   )}
                 </div>
               </div>
             ) : (
               <>
-                {/* Quantity Dropdown */}
-                <div className="mb-6">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                    Quantity
-                  </label>
-                  <select
-                    value={selectedQty}
-                    onChange={(e) => setSelectedQty(e.target.value)}
-                    className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#F06800] focus:border-[#F06800] transition-all shadow-xs cursor-pointer"
-                  >
-                    {effectiveQtyOptions.map((qty, idx) => {
-                      const label = typeof qty === 'object' ? qty.label : qty
-                      const mod = (typeof qty === 'object' && qty.priceModifier) ? Number(qty.priceModifier) : 0
-                      return (
-                        <option key={idx} value={label}>
-                          {label} {mod > 0 ? `(+₹${mod})` : ''}
-                        </option>
-                      )
-                    })}
-                  </select>
-                </div>
+                {orderPathway === 'choose' ? (
+                  /* STEP 1: CHOOSE PATHWAY (Upload Custom Design vs Browse Studio Templates) */
+                  <div className="space-y-4 mb-8">
+                    <label className="block text-xs font-black text-slate-900 uppercase tracking-wider mb-3 flex items-center justify-between">
+                      <span>Choose Your Order Pathway</span>
+                      <span className="text-[11px] font-bold text-[#F06800] bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">2 Options Available</span>
+                    </label>
 
-                {/* Dynamic Custom Variables & Selected Details */}
-                {effectiveCustomOptions.length > 0 && (
-                  <div className="space-y-6 mb-8 pt-4 border-t border-slate-200/80">
-                    {effectiveCustomOptions.map((opt, optIdx) => (
-                      <div key={optIdx}>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
-                          <span>{opt.name || `Custom Option ${optIdx + 1}`}</span>
-                          {opt.required && <span className="text-[10px] text-[#F06800] font-bold">Required</span>}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* OPTION 1: Upload Custom Design Card */}
+                      <div
+                        onClick={() => setOrderPathway('upload')}
+                        className="group bg-white hover:bg-orange-50/40 border-2 border-slate-200 hover:border-[#F06800] rounded-3xl p-6 transition-all duration-300 cursor-pointer shadow-xs hover:shadow-lg flex flex-col justify-between relative overflow-hidden"
+                      >
+                        <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-orange-100/50 group-hover:bg-orange-200/50 transition-all pointer-events-none" />
+                        <div>
+                          <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-[#F06800] to-[#ff520a] text-white flex items-center justify-center mb-4 shadow-md group-hover:scale-110 transition-transform">
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                          </div>
+                          <h3 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-[#F06800] transition-colors">
+                            Upload Custom Design
+                          </h3>
+                          <p className="text-xs text-slate-600 mt-2 leading-relaxed font-medium">
+                            Already have your artwork ready? Upload your print-ready files (PDF, AI, PSD, PNG, JPG), select your quantity and card specifications, and add directly to your cart.
+                          </p>
+                        </div>
+                        <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between font-extrabold text-xs text-[#F06800]">
+                          <span>Select & Upload Artwork</span>
+                          <span className="transform group-hover:translate-x-1.5 transition-transform text-sm">→</span>
+                        </div>
+                      </div>
+
+                      {/* OPTION 2: Browse Studio Templates Card */}
+                      <div
+                        onClick={handleOnlineEditor}
+                        className="group bg-white hover:bg-sky-50/40 border-2 border-slate-200 hover:border-[#0070e0] rounded-3xl p-6 transition-all duration-300 cursor-pointer shadow-xs hover:shadow-lg flex flex-col justify-between relative overflow-hidden"
+                      >
+                        <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-sky-100/50 group-hover:bg-sky-200/50 transition-all pointer-events-none" />
+                        <div>
+                          <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-[#0070e0] to-[#38bdf8] text-white flex items-center justify-center mb-4 shadow-md group-hover:scale-110 transition-transform">
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 73h6m-6 4h6m-6 4h6" />
+                            </svg>
+                          </div>
+                          <h3 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-[#0070e0] transition-colors">
+                            Browse Studio Templates
+                          </h3>
+                          <p className="text-xs text-slate-600 mt-2 leading-relaxed font-medium">
+                            Create or customize your design using our interactive online studio and professional pre-made templates. Review your design and finalize quantity before adding to cart.
+                          </p>
+                        </div>
+                        <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between font-extrabold text-xs text-[#0070e0]">
+                          <span>Explore Studio & Templates</span>
+                          <span className="transform group-hover:translate-x-1.5 transition-transform text-sm">→</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* PATHWAY 1: UPLOAD CUSTOM DESIGN FORM (Shows upload area + quantity + all options + Add to Cart) */
+                  <div className="space-y-6 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between bg-orange-50/80 border border-orange-200/80 p-4 rounded-2xl">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-8 h-8 rounded-xl bg-[#F06800] text-white flex items-center justify-center font-bold text-sm">1</span>
+                        <div>
+                          <h4 className="text-sm font-extrabold text-slate-900">Upload Custom Design Mode</h4>
+                          <p className="text-[11px] text-slate-600">Attach files below, pick quantity, and add to cart.</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setOrderPathway('choose')}
+                        className="text-xs font-extrabold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 transition-all cursor-pointer"
+                      >
+                        ← Change Option
+                      </button>
+                    </div>
+
+                    {/* Upload Dropzone & Live Image Preview */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                          Upload Your Print-Ready Artwork (Up to 2 Photos/Files)*
                         </label>
-                        {opt.type === 'dropdown' ? (
-                          <select
-                            value={selectedCustomOptions[optIdx] || ''}
-                            onChange={(e) => setSelectedCustomOptions((prev) => ({ ...prev, [optIdx]: e.target.value }))}
-                            className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#F06800] focus:border-[#F06800] transition-all cursor-pointer"
-                          >
-                            {(opt.choices || []).map((c, cIdx) => (
-                              <option key={cIdx} value={c.label}>
-                                {c.label} {c.priceModifier ? `(+₹${c.priceModifier})` : ''}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                            {(opt.choices || []).map((c, cIdx) => {
-                              const isSelected = selectedCustomOptions[optIdx] === c.label
-                              const mod = Number(c.priceModifier) || 0
-                              return (
+                        <span className="text-[11px] font-extrabold text-[#F06800] bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-200">
+                          {uploadedFiles.length}/2 Photos Added
+                        </span>
+                      </div>
+                      <div className="bg-slate-50/80 border-2 border-dashed border-[#F06800]/50 rounded-3xl p-6 text-center transition-all hover:border-[#F06800]">
+                        {uploadedFiles.length > 0 ? (
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                              {uploadedFiles.map((file, idx) => {
+                                const imgUrl = uploadedImageUrls[idx]
+                                return (
+                                  <div key={idx} className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-orange-300 transition-all">
+                                    <div className="flex items-center gap-3.5 min-w-0">
+                                      {imgUrl ? (
+                                        <img src={imgUrl} alt={`Photo ${idx + 1}`} className="w-16 h-16 object-cover rounded-xl border border-slate-200 shrink-0 shadow-2xs" />
+                                      ) : (
+                                        <span className="w-14 h-14 rounded-xl bg-orange-100 text-[#F06800] flex items-center justify-center font-black text-xl shrink-0">📄</span>
+                                      )}
+                                      <div className="text-left min-w-0 truncate">
+                                        <span className="inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-orange-100 text-[#F06800] mb-1">
+                                          {idx === 0 ? 'Photo #1 (Front)' : 'Photo #2 (Back)'}
+                                        </span>
+                                        <p className="text-sm font-extrabold text-slate-900 truncate">{file.name}</p>
+                                        <p className="text-xs text-emerald-600 font-bold flex items-center gap-1 mt-0.5">
+                                          <span>✓ Attached</span>
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveFile(idx)}
+                                      className="text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 text-xs font-extrabold px-3 py-2 rounded-xl transition-colors cursor-pointer shrink-0"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200/80">
+                              {uploadedFiles.length < 2 ? (
                                 <button
-                                  key={cIdx}
                                   type="button"
-                                  onClick={() => setSelectedCustomOptions((prev) => ({ ...prev, [optIdx]: c.label }))}
-                                  className={`p-3 rounded-xl text-center cursor-pointer transition-all duration-200 flex items-center justify-between px-4 border-2 select-none ${
-                                    isSelected
-                                      ? 'bg-[#fff3ec] border-[#F06800] text-[#c84b00] shadow-xs font-bold'
-                                      : 'bg-slate-50/50 hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 font-medium'
-                                  }`}
+                                  onClick={handleUpload}
+                                  className="flex items-center gap-2 text-xs font-extrabold bg-[#F06800] hover:bg-[#d55c00] text-white px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer"
                                 >
-                                  <span className="text-sm">{c.label}</span>
-                                  {mod > 0 ? (
-                                    <span className={`text-xs font-extrabold ${isSelected ? 'text-[#F06800]' : 'text-slate-500'}`}>
-                                      +₹{mod}
-                                    </span>
-                                  ) : (
-                                    <span className="text-[11px] text-slate-400">Included</span>
-                                  )}
+                                  <span>+ Add 2nd Photo / File (Optional)</span>
                                 </button>
-                              )
-                            })}
+                              ) : (
+                                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200">
+                                  ✓ Maximum 2 photos / files added
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setUploadedFiles([])
+                                  setUploadedImageUrls([])
+                                }}
+                                className="text-xs font-extrabold text-slate-500 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
+                              >
+                                Clear All
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            onClick={handleUpload}
+                            className="cursor-pointer flex flex-col items-center justify-center py-6"
+                          >
+                            <div className="w-14 h-14 rounded-2xl bg-orange-100 text-[#F06800] flex items-center justify-center mb-3 shadow-sm transform hover:scale-105 transition-transform">
+                              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                              </svg>
+                            </div>
+                            <span className="text-base font-extrabold text-slate-900 block">Click or Browse to Upload Up to 2 Photos/Files</span>
+                            <span className="text-xs text-slate-500 font-medium block mt-1.5">You can attach 2 photos (Front & Back or reference images). Supports PNG, JPG, PDF, AI, PSD</span>
                           </div>
                         )}
                       </div>
-                    ))}
+                    </div>
+
+                    {/* Quantity Dropdown */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                        Select Quantity
+                      </label>
+                      <select
+                        value={selectedQty}
+                        onChange={(e) => setSelectedQty(e.target.value)}
+                        className="w-full bg-slate-50/80 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#F06800] focus:border-[#F06800] transition-all shadow-xs cursor-pointer"
+                      >
+                        {effectiveQtyOptions.map((qty, idx) => {
+                          const label = typeof qty === 'object' ? qty.label : qty
+                          const mod = (typeof qty === 'object' && qty.priceModifier) ? Number(qty.priceModifier) : 0
+                          return (
+                            <option key={idx} value={label}>
+                              {label} {mod > 0 ? `(+₹${mod})` : ''}
+                            </option>
+                          )
+                        })}
+                      </select>
+                    </div>
+
+                    {/* Dynamic Custom Variables & Selected Details */}
+                    {effectiveCustomOptions.length > 0 && (
+                      <div className="space-y-6 pt-4 border-t border-slate-200/80">
+                        {effectiveCustomOptions.map((opt, optIdx) => (
+                          <div key={optIdx}>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
+                              <span>{opt.name || `Custom Option ${optIdx + 1}`}</span>
+                              {opt.required && <span className="text-[10px] text-[#F06800] font-bold">Required</span>}
+                            </label>
+                            {opt.type === 'dropdown' ? (
+                              <select
+                                value={selectedCustomOptions[optIdx] || ''}
+                                onChange={(e) => setSelectedCustomOptions((prev) => ({ ...prev, [optIdx]: e.target.value }))}
+                                className="w-full bg-slate-50/80 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#F06800] focus:border-[#F06800] transition-all cursor-pointer"
+                              >
+                                {(opt.choices || []).map((c, cIdx) => (
+                                  <option key={cIdx} value={c.label}>
+                                    {c.label} {c.priceModifier ? `(+₹${c.priceModifier})` : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                {(opt.choices || []).map((c, cIdx) => {
+                                  const isSelected = selectedCustomOptions[optIdx] === c.label
+                                  const mod = Number(c.priceModifier) || 0
+                                  return (
+                                    <button
+                                      key={cIdx}
+                                      type="button"
+                                      onClick={() => setSelectedCustomOptions((prev) => ({ ...prev, [optIdx]: c.label }))}
+                                      className={`p-3 rounded-xl text-center cursor-pointer transition-all duration-200 flex items-center justify-between px-4 border-2 select-none ${
+                                        isSelected
+                                          ? 'bg-[#fff3ec] border-[#F06800] text-[#c84b00] shadow-xs font-bold'
+                                          : 'bg-slate-50/50 hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 font-medium'
+                                      }`}
+                                    >
+                                      <span className="text-sm">{c.label}</span>
+                                      {mod > 0 ? (
+                                        <span className={`text-xs font-extrabold ${isSelected ? 'text-[#F06800]' : 'text-slate-500'}`}>
+                                          +₹{mod}
+                                        </span>
+                                      ) : (
+                                        <span className="text-[11px] text-slate-400">Included</span>
+                                      )}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </>
@@ -624,11 +892,35 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
             <input
               type="file"
               ref={fileInputRef}
+              multiple
+              accept="image/*,.pdf,.ai,.psd,.png,.jpg,.jpeg,.zip,.doc,.docx"
               className="hidden"
               onChange={(e) => {
-                if (e.target.files?.[0]) {
-                  setUploadedGraphicFile(e.target.files[0])
-                  showProductToast(`Attached "${e.target.files[0].name}" to your order!`)
+                const files = Array.from(e.target.files || [])
+                if (files.length > 0) {
+                  setUploadedFiles((prevFiles) => {
+                    const combined = files.length >= 2 ? files.slice(0, 2) : [...prevFiles, ...files].slice(0, 2)
+                    combined.forEach((file, idx) => {
+                      if (file.type && file.type.startsWith('image/')) {
+                        compressImageForStorage(file, 600, 600, 0.65).then((compressedUrl) => {
+                          setUploadedImageUrls((prevUrls) => {
+                            const updated = [...(prevUrls || [])]
+                            updated[idx] = compressedUrl
+                            return updated
+                          })
+                        })
+                      } else {
+                        setUploadedImageUrls((prevUrls) => {
+                          const updated = [...(prevUrls || [])]
+                          updated[idx] = null
+                          return updated
+                        })
+                      }
+                    })
+                    return combined
+                  })
+                  const names = files.slice(0, 2).map(f => f.name).join(', ')
+                  showProductToast(`Attached "${names}" to your order!`)
                 }
               }}
             />
@@ -643,7 +935,7 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                   </svg>
-                  {uploadedGraphicFile ? 'Change Uploaded File' : 'Upload Custom Design'}
+                  {uploadedFiles.length > 0 ? `Add / Change Photos (${uploadedFiles.length}/2)` : 'Upload Custom Design (Up to 2 Photos)'}
                 </button>
                 <button
                   type="button"
@@ -657,37 +949,20 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
                 </button>
               </div>
             ) : (
-              <>
-                <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
+              orderPathway === 'upload' && (
+                <div className="flex flex-col sm:flex-row justify-center items-center gap-3 mt-8">
                   <button
                     type="button"
                     onClick={handleAddToCart}
-                    className="bg-linear-to-r from-[#F06800] via-[#f54278] to-[#9842dc] hover:opacity-95 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-95 text-sm cursor-pointer w-full sm:flex-1 flex items-center justify-center gap-2"
+                    className="bg-linear-to-r from-[#F06800] via-[#ff520a] to-[#f54278] hover:opacity-95 text-white font-extrabold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-95 text-base cursor-pointer w-full flex items-center justify-center gap-2.5"
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
-                    Add to Cart
+                    <span>Add to Cart with Uploaded Design</span>
                   </button>
                 </div>
-
-                <div className="flex flex-col sm:flex-row justify-center items-center gap-2 mt-2">
-                  <button
-                    type="button"
-                    onClick={handleUpload}
-                    className="bg-[linear-gradient(90deg,#ff520a_0%,#ff0a6c_100%)] hover:opacity-95 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-md transition-all transform hover:scale-[1.01] active:scale-95 text-sm cursor-pointer w-full sm:flex-1"
-                  >
-                    Upload Custom Design
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleOnlineEditor}
-                    className="bg-[#221712] hover:bg-black text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-md transition-all transform hover:scale-[1.01] active:scale-95 text-sm cursor-pointer w-full sm:flex-1"
-                  >
-                    Browse Studio Templates
-                  </button>
-                </div>
-              </>
+              )
             )}
 
             {/* Product Toast */}

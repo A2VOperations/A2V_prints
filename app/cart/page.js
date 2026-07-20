@@ -731,6 +731,60 @@ export default function CartPage() {
                           </div>
                         )}
 
+                        {/* Uploaded Custom Design Specifications & Visual Preview */}
+                        {(item.uploadedFile || item.uploadedImageUrl || (item.uploadedFiles && item.uploadedFiles.length > 0)) && !item.customDesign && (
+                          <div className="mt-4 pt-4 border-t border-gray-200/70 bg-orange-50/60 rounded-2xl p-4 space-y-4 border border-orange-200/60 shadow-2xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="text-sm">📄</span> Uploaded Artwork & Order Specifications
+                              </span>
+                              <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-orange-100 text-[#F06800] border border-orange-200">
+                                ✓ Custom File{(item.uploadedFiles?.length > 1 || item.uploadedImageUrls?.length > 1) ? 's (2)' : ''} Attached
+                              </span>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                              <div className="flex items-center gap-2 shrink-0">
+                                {(item.uploadedImageUrls && item.uploadedImageUrls.length > 0) ? (
+                                  item.uploadedImageUrls.map((url, iIndex) => (
+                                    <img
+                                      key={iIndex}
+                                      src={url}
+                                      alt={`Preview ${iIndex + 1}`}
+                                      className="w-16 h-16 object-cover rounded-xl border border-slate-200 bg-slate-50 shrink-0 shadow-2xs"
+                                      title={`Photo #${iIndex + 1}`}
+                                    />
+                                  ))
+                                ) : item.uploadedImageUrl ? (
+                                  <img
+                                    src={item.uploadedImageUrl}
+                                    alt="Uploaded Artwork Preview"
+                                    className="w-20 h-20 object-contain rounded-xl border border-slate-200 bg-slate-50 shrink-0 shadow-2xs"
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 rounded-xl bg-orange-100 text-[#F06800] flex items-center justify-center font-black text-2xl shrink-0">
+                                    📄
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Attached File Name(s)</p>
+                                <p className="text-sm font-extrabold text-slate-900 truncate mt-0.5">
+                                  {(item.uploadedFiles && item.uploadedFiles.length > 0) ? item.uploadedFiles.join(' | ') : (item.uploadedFile || 'Custom Print Artwork File')}
+                                </p>
+                                <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                  <span className="bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg font-bold">
+                                    Quantity: {item.qtyOption || 'Standard'}
+                                  </span>
+                                  <span className="bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg font-bold">
+                                    Quality: {item.quality?.replace(/Uploaded File[s]?(\s*\([0-9]+\))?: .*$/, 'Custom Print Quality') || 'Standard'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="mt-3 flex items-center gap-4 text-xs font-semibold">
                           <button
                             type="button"

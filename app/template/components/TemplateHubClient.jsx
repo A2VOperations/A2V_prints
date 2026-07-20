@@ -61,7 +61,7 @@ export default function TemplateHubClient() {
   return (
     <div className="min-h-screen bg-[#FFFBF8] text-slate-800 font-sans pb-24">
       {/* Hero Header */}
-      <section className="bg-gradient-to-b from-white to-[#FFFBF8] border-b border-slate-200/80 pt-12 pb-16">
+      <section className="bg-linear-to-b from-white to-[#FFFBF8] border-b border-slate-200/80 pt-12 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-50 text-[#CC3B10] text-xs font-extrabold tracking-wide uppercase border border-orange-100 mb-4">
             <span className="w-2 h-2 rounded-full bg-[#CC3B10] animate-pulse" />
@@ -206,16 +206,6 @@ export default function TemplateHubClient() {
                 <h3 className="text-base font-extrabold text-slate-900 group-hover:text-[#CC3B10] transition-colors leading-snug line-clamp-1 mb-1.5">
                   {t.title}
                 </h3>
-                <div className="flex flex-col gap-0.5 text-xs font-bold text-slate-800 mb-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500 font-semibold text-[11px]">Base Price:</span>
-                    <span className="font-black text-slate-900">{t.price || '₹200.00'}</span>
-                  </div>
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-100">
-                    <span className="text-[#CC3B10] font-extrabold text-[11px]">Pricing As Per Unit:</span>
-                    <span className="text-[#CC3B10] font-black text-xs">{t.unitPrice || '₹2.00 each / 100 units'}</span>
-                  </div>
-                </div>
               </div>
 
               <div className="w-full bg-[#031A30] group-hover:bg-[#CC3B10] text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors">

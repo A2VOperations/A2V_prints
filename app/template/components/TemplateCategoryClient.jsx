@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { categoryTemplateMap, getAllTemplates, getCategoryTemplates } from '../../lib/templatesData';
+import { useDatabaseData } from '../../lib/useDatabaseData';
 
 const parseAspectRatio = (sizeStr) => {
   if (!sizeStr) return "1.75 / 1";
@@ -18,22 +19,44 @@ const parseAspectRatio = (sizeStr) => {
   return "1.75 / 1";
 };
 
-const getEditerParams = (templateObj, formState = {}, fallbackCategory = 'visiting-cards') => {
+const getEditerParams = (templateObj, formState = {}, fallbackCategory = 'visiting-cards', categoryInfo = null) => {
   if (!templateObj) return '';
   const bgImg = templateObj.frontImage || templateObj.image || '';
   const backBgImg = templateObj.backImage || templateObj.frontImage || templateObj.image || '';
 
   try {
     if (typeof window !== 'undefined') {
+      const existingOptsRaw = sessionStorage.getItem('a2v_product_options');
+      let existingOpts = {};
+      try { existingOpts = existingOptsRaw ? JSON.parse(existingOptsRaw) : {}; } catch(e) {}
+      
+      const mergedOpts = {
+        ...existingOpts,
+        productId: templateObj.id || existingOpts.productId || '1',
+        categoryKey: fallbackCategory || existingOpts.categoryKey || 'visiting-cards',
+        qualityLabel: existingOpts.qualityLabel || categoryInfo?.qualityLabel || 'Quality / Stock',
+        styleLabel: existingOpts.styleLabel || categoryInfo?.styleLabel || 'Style / Printing',
+        effectiveQtyOptions: existingOpts.effectiveQtyOptions && existingOpts.effectiveQtyOptions.length > 0 ? existingOpts.effectiveQtyOptions : (Array.isArray(categoryInfo?.defaultQtyOptions) ? categoryInfo.defaultQtyOptions : []),
+        effectiveQualityOptions: existingOpts.effectiveQualityOptions && existingOpts.effectiveQualityOptions.length > 0 ? existingOpts.effectiveQualityOptions : (Array.isArray(categoryInfo?.defaultQualityOptions) ? categoryInfo.defaultQualityOptions : []),
+        effectiveStyleOptions: existingOpts.effectiveStyleOptions && existingOpts.effectiveStyleOptions.length > 0 ? existingOpts.effectiveStyleOptions : (Array.isArray(categoryInfo?.defaultStyleOptions) ? categoryInfo.defaultStyleOptions : []),
+        effectiveCustomOptions: existingOpts.effectiveCustomOptions && existingOpts.effectiveCustomOptions.length > 0 ? existingOpts.effectiveCustomOptions : (Array.isArray(categoryInfo?.customOptions) ? categoryInfo.customOptions : [])
+      };
+      sessionStorage.setItem('a2v_product_options', JSON.stringify(mergedOpts));
+
       sessionStorage.setItem('a2v_editor_session', JSON.stringify({
         templateId: templateObj.id || '',
         frontBackground: bgImg,
-        backBackground: backBgImg,
+        backBackground: '#ffffff',
+        templateBackBackground: backBgImg,
+        templateBackElements: templateObj.backElements || [],
         productOptions: {
-          size: templateObj.size || '85mm x 55mm',
-          orientation: templateObj.orientation || 'Standard',
+          size: templateObj.size || existingOpts.selectedSize || '85mm x 55mm',
+          orientation: templateObj.orientation || existingOpts.selectedOrientation || 'Standard',
           category: templateObj.categoryName || templateObj.categorySlug || fallbackCategory,
-          quantity: templateObj.price ? `${templateObj.unitPrice || ''} - ${templateObj.price}` : undefined
+          quantity: existingOpts.selectedQty || (templateObj.price ? `${templateObj.unitPrice || ''} - ${templateObj.price}` : (mergedOpts.effectiveQtyOptions?.[0]?.label || undefined)),
+          stock: existingOpts.selectedQuality || undefined,
+          style: existingOpts.selectedStyle || undefined,
+          customSelections: existingOpts.customSelections || undefined
         }
       }));
     }
@@ -133,27 +156,127 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
     selectedColor: ''
   });
 
-  // Upload own design modal/file simulation
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [customUploadFile, setCustomUploadFile] = useState(null);
+  const [userProductSelection, setUserProductSelection] = useState(null);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = sessionStorage.getItem('a2v_product_options');
+        if (raw) setUserProductSelection(JSON.parse(raw) || null);
+      } catch (e) {}
+    }
+  }, []);
 
   // Determine current category info or fallback
+  const { printingCategories, graphicCategories, printingServicesList, graphicServicesList } = useDatabaseData();
+
   const categorySlug = categoryId?.toLowerCase() || 'visiting-cards';
-  const categoryInfo = categoryTemplateMap[categorySlug] || {
-    name: categorySlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-    description: `Browse stunning customizable templates and designs for ${categorySlug.replace(/-/g, ' ')}.`,
-    basePrice: '₹200.00',
-    unitPriceText: '₹2.00 each / 100 units',
-    rating: '4.8 (1,240)',
-    filterOptions: categoryTemplateMap['visiting-cards'].filterOptions,
-    templates: getAllTemplates().filter(t => t.categorySlug === categorySlug || categorySlug === 'all')
-  };
+
+  const matchedService = useMemo(() => {
+    const allServices = [...(printingServicesList || []), ...(graphicServicesList || [])];
+    return allServices.find(s => 
+      String(s.categorySlug || s.categoryName || s.id || '').toLowerCase() === categorySlug.toLowerCase() ||
+      String(s.title || '').toLowerCase() === categorySlug.replace(/-/g, ' ').toLowerCase()
+    ) || null;
+  }, [printingServicesList, graphicServicesList, categorySlug]);
+
+  const matchedCategoryDb = useMemo(() => {
+    const allCategories = [...(printingCategories || []), ...(graphicCategories || [])];
+    return allCategories.find(c => 
+      String(c.slug || c.name || c.id || '').toLowerCase() === categorySlug.toLowerCase() ||
+      (matchedService && String(c.slug || c.name || '').toLowerCase() === String(matchedService.categorySlug || matchedService.categoryName || '').toLowerCase())
+    ) || null;
+  }, [printingCategories, graphicCategories, categorySlug, matchedService]);
+
+  const dynamicPricing = useMemo(() => {
+    const baseCat = categoryTemplateMap[categorySlug] || {};
+    const qtyOptions = matchedService?.quantityTiers || matchedService?.defaultQtyOptions || matchedCategoryDb?.defaultQtyOptions || baseCat.defaultQtyOptions || [];
+    let derivedBasePrice = baseCat.basePrice || matchedService?.price || matchedService?.startingPrice || matchedCategoryDb?.startingPrice || '₹200.00';
+    let derivedUnitPrice = baseCat.unitPriceText || matchedService?.unitPrice || '₹2.00 each / 100 units';
+
+    if (Array.isArray(qtyOptions) && qtyOptions.length > 0) {
+      const firstOpt = qtyOptions[0];
+      const labelStr = typeof firstOpt === 'string' ? firstOpt : (firstOpt?.label || '');
+      const priceMatch = labelStr.match(/₹([0-9,.]+)/);
+      if (priceMatch) {
+        derivedBasePrice = `₹${priceMatch[1]}`;
+      }
+      const parts = labelStr.split(' - ');
+      if (parts.length >= 2 && parts[0] && parts[1]) {
+        const countMatch = parts[0].match(/([0-9,]+)/);
+        const count = countMatch ? parseFloat(countMatch[1].replace(/,/g, '')) : 100;
+        const priceNum = parseFloat(parts[1].replace(/[^0-9.]/g, '')) || 200;
+        if (count > 0) {
+          derivedUnitPrice = `₹${(priceNum / count).toFixed(2)} each / ${parts[0]}`;
+        }
+      }
+    }
+    return {
+      basePrice: derivedBasePrice,
+      unitPriceText: derivedUnitPrice,
+      qtyOptions: Array.isArray(qtyOptions) ? qtyOptions : []
+    };
+  }, [categorySlug, matchedService, matchedCategoryDb]);
+
+  const categoryInfo = useMemo(() => {
+    const baseCat = categoryTemplateMap[categorySlug] || {};
+    return {
+      ...baseCat,
+      name: baseCat.name || matchedService?.title || matchedCategoryDb?.name || categorySlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      description: baseCat.description || matchedService?.description || matchedCategoryDb?.description || `Browse stunning customizable templates and designs for ${categorySlug.replace(/-/g, ' ')}.`,
+      basePrice: dynamicPricing.basePrice,
+      unitPriceText: dynamicPricing.unitPriceText,
+      rating: baseCat.rating || '4.8 (1,240)',
+      filterOptions: baseCat.filterOptions || categoryTemplateMap['visiting-cards'].filterOptions,
+      defaultQtyOptions: dynamicPricing.qtyOptions.length > 0 ? dynamicPricing.qtyOptions : (baseCat.defaultQtyOptions || []),
+      defaultQualityOptions: matchedService?.qualityOptions || matchedCategoryDb?.defaultQualityOptions || baseCat.defaultQualityOptions || [],
+      defaultStyleOptions: matchedService?.styleOptions || matchedCategoryDb?.defaultStyleOptions || baseCat.defaultStyleOptions || [],
+      customOptions: matchedService?.customOptions || matchedCategoryDb?.customOptions || baseCat.customOptions || [],
+      templates: getAllTemplates().filter(t => t.categorySlug === categorySlug || categorySlug === 'all')
+    };
+  }, [categorySlug, dynamicPricing, matchedService, matchedCategoryDb]);
 
   const allCategoryTemplates = useMemo(() => {
-    const fallbackList = getCategoryTemplates(categorySlug);
-    const matchingDb = dbTemplates.filter(t => categorySlug === 'all' || t.categorySlug === categorySlug);
-    return [...matchingDb, ...fallbackList];
-  }, [categorySlug, dbTemplates]);
+    const fallbackList = getCategoryTemplates(categorySlug) || [];
+    const initialList = Array.isArray(initialData?.templates)
+      ? initialData.templates
+      : (Array.isArray(initialData?.data)
+        ? initialData.data
+        : (Array.isArray(initialData) ? initialData : []));
+
+    const matchesCategory = (t) => {
+      if (categorySlug === 'all') return true;
+      const target = categorySlug.toLowerCase().trim();
+      const tSlug = String(t?.categorySlug || '').toLowerCase().trim();
+      const tName = String(t?.categoryName || t?.category || '').toLowerCase().trim().replace(/\s+/g, '-');
+      const tId = String(t?.categoryId || '').toLowerCase().trim();
+      return tSlug === target || tName === target || tId === target || tSlug.replace(/\s+/g, '-') === target;
+    };
+
+    const matchingDb = (dbTemplates || []).filter(matchesCategory);
+    const matchingInitial = initialList.filter(matchesCategory);
+
+    const combined = [...matchingDb, ...matchingInitial, ...fallbackList];
+    const seen = new Set();
+    const deduplicated = [];
+
+    for (const t of combined) {
+      if (!t) continue;
+      const key = t.id || t._id || t.numericId || t.title;
+      if (key && !seen.has(String(key))) {
+        seen.add(String(key));
+        deduplicated.push(t);
+      } else if (!key) {
+        deduplicated.push(t);
+      }
+    }
+
+    return deduplicated.map(t => ({
+      ...t,
+      price: t.price || categoryInfo.basePrice || '₹200.00',
+      unitPrice: t.unitPrice || categoryInfo.unitPriceText || '₹2.00 each / 100 units'
+    }));
+  }, [categorySlug, dbTemplates, initialData, categoryInfo]);
 
   const toggleFilter = (section, value) => {
     setActiveFilters(prev => {
@@ -462,28 +585,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
             </div>
 
             {/* Templates Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-
-              {/* Card 1: Upload your own design */}
-              <div
-                onClick={() => setShowUploadModal(true)}
-                className="group bg-[#FFFBF8] hover:bg-white rounded-3xl p-6 border-2 border-dashed border-[#CC3B10]/40 hover:border-[#CC3B10] shadow-2xs hover:shadow-xl transition-all duration-300 flex flex-col items-center justify-center text-center cursor-pointer min-h-[340px]"
-              >
-                <div className="w-16 h-16 rounded-full bg-orange-100/80 group-hover:bg-[#CC3B10] text-[#CC3B10] group-hover:text-white flex items-center justify-center mb-4 transition-all duration-300 shadow-sm">
-                  <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                </div>
-                <h3 className="text-base font-extrabold text-slate-900 group-hover:text-[#CC3B10] transition-colors mb-1">
-                  Upload your own design
-                </h3>
-                <p className="text-xs text-slate-600 max-w-[200px] leading-relaxed mb-4">
-                  Already have print-ready artwork? Upload PDF, AI, PSD, PNG or JPG files directly.
-                </p>
-                <div className="text-xs font-bold text-slate-800 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-2xs">
-                  {categoryInfo.basePrice} <span className="text-[11px] font-normal text-slate-500">({categoryInfo.unitPriceText})</span>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">  
 
               {/* Template Cards */}
               {filteredTemplates.map((template) => {
@@ -587,7 +689,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                           personName: '',
                           jobTitle: brandTaglineInput || '',
                           selectedColor: template.colors?.[0] || '#2563EB'
-                        }, categoryInfo?.name || categorySlug);
+                        }, categoryInfo?.name || categorySlug, categoryInfo);
                         router.push(`/Editer?${queryString}`);
                       }}
                       className="w-full bg-[#031A30] hover:bg-[#0A2D4E] text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
@@ -624,7 +726,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                 </div>
 
                 <Link
-                  href="/logo-identity-design"
+                  href="/graphic-design"
                   className="w-full bg-[#CC3B10] hover:bg-[#E55B2B] text-white font-extrabold py-3 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-md"
                 >
                   <span>Get a Design From Scratch</span>
@@ -637,65 +739,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
         </div>
       </div>
 
-      {/* Upload Own Design Modal */}
-      {showUploadModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 space-y-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-lg font-black text-slate-900">Upload Your Print File</h3>
-              <button onClick={() => setShowUploadModal(false)} className="text-slate-400 hover:text-slate-700 font-bold text-lg">×</button>
-            </div>
-
-            <div className="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:border-[#CC3B10] transition-colors bg-slate-50/50">
-              <div className="w-12 h-12 rounded-full bg-orange-100 text-[#CC3B10] flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-              </div>
-              <p className="text-sm font-bold text-slate-800 mb-1">Drag & drop print artwork here</p>
-              <p className="text-xs text-slate-500 mb-4">Support PDF, AI, PSD, PNG, JPG (High Resolution 300 DPI)</p>
-
-              <label className="inline-block bg-[#031A30] hover:bg-[#0A2D4E] text-white text-xs font-bold px-5 py-2.5 rounded-xl cursor-pointer shadow-sm transition-colors">
-                Select File from Computer
-                <input
-                  type="file"
-                  accept=".pdf,.ai,.psd,.png,.jpg,.jpeg"
-                  onChange={(e) => {
-                    if (e.target.files?.[0]) setCustomUploadFile(e.target.files[0]);
-                  }}
-                  className="hidden"
-                />
-              </label>
-              {customUploadFile && (
-                <div className="mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-between">
-                  <span>✓ {customUploadFile.name}</span>
-                  <button onClick={() => setCustomUploadFile(null)} className="text-rose-500 hover:underline ml-2">Remove</button>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowUploadModal(false)}
-                className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  setShowUploadModal(false);
-                  router.push(`/${categorySlug}/1?uploaded=true&fileName=${encodeURIComponent(customUploadFile?.name || 'Custom Artwork')}`);
-                }}
-                disabled={!customUploadFile}
-                className={`flex-1 px-4 py-3 rounded-xl text-xs font-extrabold text-white transition-all shadow-md ${customUploadFile ? 'bg-[#CC3B10] hover:bg-[#E55B2B]' : 'bg-slate-300 cursor-not-allowed'
-                  }`}
-              >
-                Proceed to Checkout →
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      
 
       {/* Interactive 3D Card Preview & Customizer Modal */}
       {selectedTemplate && (
@@ -845,17 +889,37 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                     </h3>
 
                     <div className="mt-4 bg-orange-50/60 border border-orange-100 rounded-2xl p-4">
-                      <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Base Package Price</div>
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                        {userProductSelection?.productTitle || selectedTemplate.title || 'Base Package Price'}
+                      </div>
                       <div className="text-2xl sm:text-3xl font-black text-slate-900">
-                        {selectedTemplate.price || categoryInfo.basePrice || '₹200.00'}
+                        {userProductSelection?.formattedPrice || (userProductSelection?.selectedPrice ? `₹${Number(userProductSelection.selectedPrice).toFixed(2)}` : (selectedTemplate.price || categoryInfo.basePrice || '₹200.00'))}
                       </div>
                       <div className="mt-3 pt-3 border-t border-orange-200/60 flex items-center justify-between text-xs font-black text-[#CC3B10]">
-                        <span>Pricing As Per Unit:</span>
-                        <span>{selectedTemplate.unitPrice || categoryInfo.unitPriceText || '₹2.00 each / 100 units'}</span>
+                        <span>{userProductSelection?.selectedQty ? 'Selected Quantity:' : 'Pricing As Per Unit:'}</span>
+                        <span>{userProductSelection?.selectedQty || selectedTemplate.unitPrice || categoryInfo.unitPriceText || '₹2.00 each / 100 units'}</span>
                       </div>
+                      {userProductSelection?.selectedQuality && (
+                        <div className="mt-2 pt-2 border-t border-orange-200/60 flex items-center justify-between text-xs font-bold text-slate-700">
+                          <span>{userProductSelection.qualityLabel || 'Quality / Stock'}:</span>
+                          <span className="font-black text-slate-900 text-right">{userProductSelection.selectedQuality}</span>
+                        </div>
+                      )}
+                      {userProductSelection?.selectedStyle && (
+                        <div className="mt-2 pt-2 border-t border-orange-200/60 flex items-center justify-between text-xs font-bold text-slate-700">
+                          <span>{userProductSelection.styleLabel || 'Style / Printing'}:</span>
+                          <span className="font-black text-slate-900 text-right">{userProductSelection.selectedStyle}</span>
+                        </div>
+                      )}
+                      {userProductSelection?.customSelections && Object.entries(userProductSelection.customSelections).map(([k, v], idx) => (
+                        <div key={idx} className="mt-2 pt-2 border-t border-orange-200/60 flex items-center justify-between text-xs font-bold text-slate-700">
+                          <span>{k}:</span>
+                          <span className="font-black text-slate-900 text-right">{v}</span>
+                        </div>
+                      ))}
                       <div className="mt-2 pt-2 border-t border-orange-200/60 flex items-center justify-between text-xs font-bold text-slate-700">
                         <span>Template Size (Dimensions):</span>
-                        <span className="font-black text-slate-900 text-right">{selectedTemplate.size || '85mm x 55mm'}</span>
+                        <span className="font-black text-slate-900 text-right">{selectedTemplate.size || categoryInfo.size || '85mm x 55mm'}</span>
                       </div>
                     </div>
 
@@ -873,7 +937,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                     <button
                       type="button"
                       onClick={() => {
-                        const queryString = getEditerParams(selectedTemplate, customizerForm, categoryInfo?.name || categorySlug);
+                        const queryString = getEditerParams(selectedTemplate, customizerForm, categoryInfo?.name || categorySlug, categoryInfo);
                         router.push(`/Editer?${queryString}`);
                       }}
                       className="w-full bg-[#031A30] hover:bg-[#0A2D4E] text-white font-extrabold py-3.5 rounded-xl text-xs sm:text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer border border-slate-700"
@@ -977,7 +1041,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                     <button
                       type="button"
                       onClick={() => {
-                        const queryString = getEditerParams(selectedTemplate, customizerForm, categoryInfo?.name || categorySlug);
+                        const queryString = getEditerParams(selectedTemplate, customizerForm, categoryInfo?.name || categorySlug, categoryInfo);
                         router.push(`/Editer?${queryString}`);
                       }}
                       className="w-full bg-slate-900 hover:bg-black text-white font-extrabold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs"

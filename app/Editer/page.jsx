@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { addToCart } from '../lib/cartWishlist';
+import { addToCart, compressImageForStorage } from '../lib/cartWishlist';
+import { useDatabaseData } from '../lib/useDatabaseData';
 
 // Initial default elements for Front and Back sides
 const DEFAULT_FRONT_ELEMENTS = [];
@@ -378,14 +379,144 @@ function StudioEditorContent() {
     corners: 'Standard Square Corners',
     stock: 'Standard Matte (300 gsm)',
     finish: 'Smooth Uncoated',
-    quantity: '100 cards - ₹200.00'
+    quantity: '100 cards - ₹200.00',
+    customSelections: {}
   });
+
+  const { printingCategories, graphicCategories, printingServicesList, graphicServicesList } = useDatabaseData();
+  const [sessionOpts, setSessionOpts] = useState({});
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = sessionStorage.getItem('a2v_product_options');
+        if (raw) setSessionOpts(JSON.parse(raw) || {});
+      } catch (e) { }
+    }
+  }, []);
+
+  const categoryParam = searchParams?.get('category') || productOptions.category || sessionOpts.categoryKey || 'visiting-cards';
+  const templateIdParam = searchParams?.get('templateId') || productOptions.templateId || sessionOpts.productId || '';
+
+  const matchedService = useMemo(() => {
+    const allServices = [...(printingServicesList || []), ...(graphicServicesList || [])];
+    return allServices.find(s =>
+      (templateIdParam && (String(s.id) === String(templateIdParam) || String(s.numericId) === String(templateIdParam))) ||
+      String(s.categorySlug || s.categoryName || '').toLowerCase() === String(categoryParam).toLowerCase()
+    ) || null;
+  }, [printingServicesList, graphicServicesList, templateIdParam, categoryParam]);
+
+  const matchedCategory = useMemo(() => {
+    const allCategories = [...(printingCategories || []), ...(graphicCategories || [])];
+    return allCategories.find(c =>
+      String(c.slug || c.name || c.id || '').toLowerCase() === String(categoryParam).toLowerCase() ||
+      (matchedService && String(c.slug || c.name || '').toLowerCase() === String(matchedService.categorySlug || matchedService.categoryName || '').toLowerCase())
+    ) || null;
+  }, [printingCategories, graphicCategories, categoryParam, matchedService]);
+
+  const effectiveQtyOptions = useMemo(() => {
+    if (Array.isArray(sessionOpts.effectiveQtyOptions) && sessionOpts.effectiveQtyOptions.length > 0) {
+      return sessionOpts.effectiveQtyOptions.map(q => typeof q === 'string' ? { label: q, priceModifier: 0 } : q);
+    }
+    const fromProd = matchedService?.quantityTiers || matchedService?.defaultQtyOptions;
+    const fromCat = matchedCategory?.defaultQtyOptions;
+    const list = Array.isArray(fromProd) && fromProd.length > 0 ? fromProd : (Array.isArray(fromCat) && fromCat.length > 0 ? fromCat : [
+      '100 cards - ₹200.00',
+      '250 cards - ₹450.00 (Save 10%)',
+      '500 cards - ₹800.00 (Save 20%)',
+      '1,000 cards - ₹1,400.00 (Save 30%)'
+    ]);
+    return list.map(q => typeof q === 'string' ? { label: q, priceModifier: 0 } : q);
+  }, [sessionOpts.effectiveQtyOptions, matchedService, matchedCategory]);
+
+  const effectiveQualityOptions = useMemo(() => {
+    if (Array.isArray(sessionOpts.effectiveQualityOptions) && sessionOpts.effectiveQualityOptions.length > 0) {
+      return sessionOpts.effectiveQualityOptions.map(q => typeof q === 'string' ? { id: q, title: q, subtitle: '', priceModifier: 0 } : q);
+    }
+    const fromProd = matchedService?.qualityOptions;
+    const fromCat = matchedCategory?.defaultQualityOptions;
+    const list = Array.isArray(fromProd) && fromProd.length > 0 ? fromProd : (Array.isArray(fromCat) && fromCat.length > 0 ? fromCat : [
+      { id: 'standard', title: 'Standard Matte (300 gsm)', subtitle: 'Smooth uncoated feel', priceModifier: 0 },
+      { id: 'premium', title: 'Premium Gloss Coated (350 gsm)', subtitle: 'Rich glossy sheen', priceModifier: 75 }
+    ]);
+    return list.map(q => typeof q === 'string' ? { id: q, title: q, subtitle: '', priceModifier: 0 } : q);
+  }, [sessionOpts.effectiveQualityOptions, matchedService, matchedCategory]);
+
+  const effectiveStyleOptions = useMemo(() => {
+    if (Array.isArray(sessionOpts.effectiveStyleOptions) && sessionOpts.effectiveStyleOptions.length > 0) {
+      return sessionOpts.effectiveStyleOptions.map(s => typeof s === 'string' ? { id: s, title: s, subtitle: '', priceModifier: 0 } : s);
+    }
+    const fromProd = matchedService?.styleOptions;
+    const fromCat = matchedCategory?.defaultStyleOptions;
+    const list = Array.isArray(fromProd) && fromProd.length > 0 ? fromProd : (Array.isArray(fromCat) && fromCat.length > 0 ? fromCat : []);
+    return list.map(s => typeof s === 'string' ? { id: s, title: s, subtitle: '', priceModifier: 0 } : s);
+  }, [sessionOpts.effectiveStyleOptions, matchedService, matchedCategory]);
+
+  const effectiveCustomOptions = useMemo(() => {
+    if (Array.isArray(sessionOpts.effectiveCustomOptions) && sessionOpts.effectiveCustomOptions.length > 0) {
+      return sessionOpts.effectiveCustomOptions;
+    }
+    return Array.isArray(matchedService?.customOptions) ? matchedService.customOptions : (Array.isArray(matchedCategory?.customOptions) ? matchedCategory.customOptions : []);
+  }, [sessionOpts.effectiveCustomOptions, matchedService, matchedCategory]);
+
+  const qualityLabel = sessionOpts.qualityLabel || matchedService?.qualityLabel || matchedCategory?.qualityLabel || 'Quality / Stock';
+  const styleLabel = sessionOpts.styleLabel || matchedService?.styleLabel || matchedCategory?.styleLabel || 'Style / Printing';
+
+  useEffect(() => {
+    setProductOptions(prev => {
+      const updated = { ...prev };
+      let changed = false;
+      if (sessionOpts.selectedQty && prev.quantity !== sessionOpts.selectedQty) {
+        updated.quantity = sessionOpts.selectedQty;
+        changed = true;
+      } else if (effectiveQtyOptions.length > 0 && (!prev.quantity || !effectiveQtyOptions.some(q => q.label === prev.quantity))) {
+        updated.quantity = effectiveQtyOptions[0].label;
+        changed = true;
+      }
+      if (sessionOpts.selectedQuality && prev.stock !== sessionOpts.selectedQuality) {
+        updated.stock = sessionOpts.selectedQuality;
+        updated.quality = sessionOpts.selectedQuality;
+        changed = true;
+      } else if (effectiveQualityOptions.length > 0 && (!prev.stock || !effectiveQualityOptions.some(q => (q.title || q.id) === prev.stock || (q.title || q.id) === prev.quality))) {
+        const firstQ = effectiveQualityOptions[0];
+        updated.stock = firstQ.title || firstQ.id;
+        updated.quality = firstQ.title || firstQ.id;
+        changed = true;
+      }
+      if (sessionOpts.selectedStyle && prev.style !== sessionOpts.selectedStyle) {
+        updated.style = sessionOpts.selectedStyle;
+        changed = true;
+      } else if (effectiveStyleOptions.length > 0 && !prev.style) {
+        const firstS = effectiveStyleOptions[0];
+        updated.style = firstS.title || firstS.id;
+        changed = true;
+      }
+      if (effectiveCustomOptions.length > 0) {
+        const cs = { ...(sessionOpts.customSelections || prev.customSelections || {}) };
+        effectiveCustomOptions.forEach(opt => {
+          const optName = typeof opt === 'string' ? opt : opt.name;
+          const choices = typeof opt === 'object' && Array.isArray(opt.choices) ? opt.choices : [];
+          if (optName && choices.length > 0 && !cs[optName]) {
+            const firstChoice = choices[0];
+            cs[optName] = typeof firstChoice === 'object' ? (firstChoice.label || firstChoice.name || '') : firstChoice;
+            changed = true;
+          }
+        });
+        if (changed || JSON.stringify(cs) !== JSON.stringify(prev.customSelections)) {
+          updated.customSelections = cs;
+          changed = true;
+        }
+      }
+      return changed ? updated : prev;
+    });
+  }, [effectiveQtyOptions, effectiveQualityOptions, effectiveStyleOptions, effectiveCustomOptions, sessionOpts]);
 
   // Elements state per side
   const [frontElements, setFrontElements] = useState(DEFAULT_FRONT_ELEMENTS);
   const [backElements, setBackElements] = useState(DEFAULT_BACK_ELEMENTS);
   const [frontBackground, setFrontBackground] = useState('#ffffff');
   const [backBackground, setBackBackground] = useState('#ffffff');
+  const [availableBackTemplate, setAvailableBackTemplate] = useState(null);
 
   // Selected element & uploaded images
   const [selectedId, setSelectedId] = useState(null);
@@ -452,9 +583,13 @@ function StudioEditorContent() {
           if (parsedAdmin.templateId === templateId || searchParams?.get('adminMode') === 'true' || !templateId) {
             localSessionBg = parsedAdmin.bgImage || parsedAdmin.frontBackground;
             localSessionBackBg = parsedAdmin.backBgImage || parsedAdmin.backBackground;
+            setAvailableBackTemplate({
+              backBackground: parsedAdmin.templateBackBackground || parsedAdmin.backBgImage || parsedAdmin.backBackground,
+              backElements: parsedAdmin.templateBackElements || parsedAdmin.backElements || []
+            });
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     if (bgImage && bgImage.trim() !== '') {
@@ -467,6 +602,8 @@ function StudioEditorContent() {
       setBackBackground(backBgImage);
     } else if (localSessionBackBg) {
       setBackBackground(localSessionBackBg);
+    } else {
+      setBackBackground('#ffffff');
     }
 
     if (orientation || size || category || price) {
@@ -507,6 +644,11 @@ function StudioEditorContent() {
             const currentUrlBg = searchParams?.get('bgImage');
             const currentUrlBackBg = searchParams?.get('backBgImage');
 
+            setAvailableBackTemplate(prev => ({
+              backBackground: tpl.backBackground || tpl.backImage || (tpl.backElements && tpl.backElements.length > 0 ? (tpl.frontImage || tpl.image) : null) || prev?.backBackground,
+              backElements: (tpl.backElements && Array.isArray(tpl.backElements) && tpl.backElements.length > 0) ? tpl.backElements : (prev?.backElements || [])
+            }));
+
             if (!currentUrlBg || currentUrlBg.trim() === '') {
               if (localSessionBg) {
                 setFrontBackground(localSessionBg);
@@ -518,10 +660,14 @@ function StudioEditorContent() {
             }
 
             if (!currentUrlBackBg || currentUrlBackBg.trim() === '') {
-              if (localSessionBackBg) {
+              if (localSessionBackBg && localSessionBackBg !== '#ffffff') {
                 setBackBackground(localSessionBackBg);
-              } else if (tpl.backBackground || tpl.backImage || tpl.frontImage || tpl.image) {
-                setBackBackground(tpl.backBackground || tpl.backImage || tpl.frontImage || tpl.image);
+              } else if (searchParams?.get('adminMode') === 'true') {
+                if (tpl.backBackground || tpl.backImage || tpl.frontImage || tpl.image) {
+                  setBackBackground(tpl.backBackground || tpl.backImage || tpl.frontImage || tpl.image);
+                }
+              } else {
+                setBackBackground('#ffffff');
               }
             } else {
               setBackBackground(currentUrlBackBg);
@@ -532,8 +678,10 @@ function StudioEditorContent() {
             } else if (customCompany || customPerson || customTitle || selectedColor) {
               setFrontElements(prev => applyOverrides(prev));
             }
-            if (tpl.backElements && Array.isArray(tpl.backElements) && tpl.backElements.length > 0) {
+            if (searchParams?.get('adminMode') === 'true' && tpl.backElements && Array.isArray(tpl.backElements) && tpl.backElements.length > 0) {
               setBackElements(tpl.backElements);
+            } else if (!localSessionBackBg || localSessionBackBg === '#ffffff') {
+              setBackElements([]);
             }
           } else if (customCompany || customPerson || customTitle || selectedColor) {
             setFrontElements(prev => applyOverrides(prev));
@@ -627,11 +775,38 @@ function StudioEditorContent() {
   const selectedElement = currentElements.find(el => el.id === selectedId) || null;
 
   // Calculate dynamic pricing: 50% add-on if back side has any custom elements or background color
-  const priceMatch = productOptions.quantity.match(/₹([0-9,.]+)/);
-  const frontPrice = priceMatch ? parseFloat(priceMatch[1].replace(/,/g, '')) : 200;
+  const priceMatch = (productOptions.quantity || '').match(/₹([0-9,.]+)/);
+  let frontPrice = 200;
+  if (priceMatch) {
+    frontPrice = parseFloat(priceMatch[1].replace(/,/g, ''));
+  } else if (sessionOpts.selectedPrice || sessionOpts.numericPrice) {
+    frontPrice = Number(sessionOpts.selectedPrice || sessionOpts.numericPrice) || 200;
+  } else if (Array.isArray(sessionOpts.effectiveQtyOptions)) {
+    const matchedQtyOpt = sessionOpts.effectiveQtyOptions.find(q => (typeof q === 'string' ? q : q.label)?.includes(productOptions.quantity));
+    if (matchedQtyOpt) {
+      const labelMatch = (typeof matchedQtyOpt === 'string' ? matchedQtyOpt : matchedQtyOpt.label).match(/₹([0-9,.]+)/);
+      if (labelMatch) frontPrice = parseFloat(labelMatch[1].replace(/,/g, ''));
+    }
+  }
   const isBackCustomized = backElements.length > 0 || (backBackground && backBackground !== '#ffffff' && backBackground !== 'transparent');
   const backAddonPrice = isBackCustomized ? frontPrice * 0.5 : 0;
   const totalPrice = frontPrice + backAddonPrice;
+
+  const qualityObj = effectiveQualityOptions.find(q => (q.title || q.id) === productOptions.stock || (q.title || q.id) === productOptions.quality);
+  const qualityModifier = qualityObj && qualityObj.priceModifier ? Number(qualityObj.priceModifier) : (productOptions.stock?.includes('Premium') ? 75 : 0);
+
+  const styleObj = effectiveStyleOptions.find(s => (s.title || s.id) === productOptions.style);
+  const styleModifier = styleObj && styleObj.priceModifier ? Number(styleObj.priceModifier) : 0;
+
+  const customModifiers = effectiveCustomOptions.reduce((sum, opt) => {
+    const optName = typeof opt === 'string' ? opt : opt.name;
+    const choices = typeof opt === 'object' && Array.isArray(opt.choices) ? opt.choices : [];
+    const selChoiceLabel = productOptions.customSelections?.[optName];
+    const foundChoice = choices.find(c => (c.label || c) === selChoiceLabel);
+    return sum + (foundChoice && foundChoice.priceModifier ? Number(foundChoice.priceModifier) : 0);
+  }, 0);
+
+  const calculatedFinalPrice = totalPrice + qualityModifier + styleModifier + customModifiers;
 
   // Save snapshot for undo/redo
   const saveToHistory = () => {
@@ -891,8 +1066,8 @@ function StudioEditorContent() {
           <button
             onClick={() => setIsPreviewMode(!isPreviewMode)}
             className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition-all border ${isPreviewMode
-                ? 'bg-slate-900 text-white border-slate-900 shadow-md'
-                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+              ? 'bg-slate-900 text-white border-slate-900 shadow-md'
+              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
               }`}
           >
             <span>👁</span>
@@ -902,7 +1077,7 @@ function StudioEditorContent() {
           {!isAdminMode && (
             <div className="text-right hidden md:block">
               <div className="text-sm font-black text-slate-900 leading-none flex items-center justify-end gap-1.5">
-                <span>₹{totalPrice.toFixed(2)}</span>
+                <span>₹{calculatedFinalPrice.toFixed(2)}</span>
                 {isBackCustomized && (
                   <span className="text-[9px] font-extrabold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full uppercase tracking-wider" title="Back side custom design (+50%)">
                     +50% Back
@@ -1001,8 +1176,8 @@ function StudioEditorContent() {
                       if (tab.id !== 'Graphics') setGraphicsCategory(null);
                     }}
                     className={`w-16 py-2.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all group relative cursor-pointer ${isActive
-                        ? 'bg-sky-50 text-[#0070e0] font-black shadow-2xs border border-sky-200/60'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-semibold'
+                      ? 'bg-sky-50 text-[#0070e0] font-black shadow-2xs border border-sky-200/60'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-semibold'
                       }`}
                   >
                     <span className="text-lg leading-none">{tab.icon}</span>
@@ -1064,8 +1239,8 @@ function StudioEditorContent() {
                               key={el.id}
                               onClick={() => setSelectedId(el.id)}
                               className={`p-3 rounded-2xl border transition-all cursor-pointer ${isSelected
-                                  ? 'bg-sky-50/70 border-sky-400 shadow-2xs'
-                                  : 'bg-slate-50/60 border-slate-200 hover:border-slate-300'
+                                ? 'bg-sky-50/70 border-sky-400 shadow-2xs'
+                                : 'bg-slate-50/60 border-slate-200 hover:border-slate-300'
                                 }`}
                             >
                               <div className="flex items-center justify-between mb-1">
@@ -1133,8 +1308,8 @@ function StudioEditorContent() {
                         <button
                           onClick={() => updateSelectedProperty('effect', 'original')}
                           className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${!selectedElement?.effect || selectedElement.effect === 'original' || selectedElement.effect === 'none'
-                              ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
-                              : 'border-slate-200 hover:border-slate-300'
+                            ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
+                            : 'border-slate-200 hover:border-slate-300'
                             }`}
                         >
                           <span className="text-2xl font-black text-slate-800">A</span>
@@ -1145,8 +1320,8 @@ function StudioEditorContent() {
                         <button
                           onClick={() => updateSelectedProperty('effect', 'shadow')}
                           className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${selectedElement?.effect === 'shadow'
-                              ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
-                              : 'border-slate-200 hover:border-slate-300'
+                            ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
+                            : 'border-slate-200 hover:border-slate-300'
                             }`}
                         >
                           <span className="text-2xl font-black text-blue-500 drop-shadow-[2px_2px_3px_rgba(0,112,224,0.5)]">A</span>
@@ -1160,8 +1335,8 @@ function StudioEditorContent() {
                         <button
                           onClick={() => updateSelectedProperty('effect', 'highlight')}
                           className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${selectedElement?.effect === 'highlight'
-                              ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
-                              : 'border-slate-200 hover:border-slate-300'
+                            ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
+                            : 'border-slate-200 hover:border-slate-300'
                             }`}
                         >
                           <span className="text-2xl font-black text-blue-900 bg-sky-200/90 px-1.5 rounded">A</span>
@@ -1178,8 +1353,8 @@ function StudioEditorContent() {
                         <button
                           onClick={() => updateSelectedProperty('effect', 'glitch')}
                           className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${selectedElement?.effect === 'glitch'
-                              ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
-                              : 'border-slate-200 hover:border-slate-300'
+                            ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
+                            : 'border-slate-200 hover:border-slate-300'
                             }`}
                         >
                           <span className="text-2xl font-black text-slate-900 tracking-wider [text-shadow:-2px_0_0_#06b6d4,2px_0_0_#ec4899]">A</span>
@@ -1193,8 +1368,8 @@ function StudioEditorContent() {
                         <button
                           onClick={() => updateSelectedProperty('effect', 'echo')}
                           className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${selectedElement?.effect === 'echo'
-                              ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
-                              : 'border-slate-200 hover:border-slate-300'
+                            ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
+                            : 'border-slate-200 hover:border-slate-300'
                             }`}
                         >
                           <span className="text-2xl font-black text-slate-800 [text-shadow:2px_2px_0px_#94a3b8,4px_4px_0px_#cbd5e1]">A</span>
@@ -1343,8 +1518,8 @@ function StudioEditorContent() {
                         <button
                           onClick={() => updateSelectedProperty('textShape', 'none')}
                           className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${!selectedElement?.textShape || selectedElement.textShape === 'none'
-                              ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
-                              : 'border-slate-200 hover:border-slate-300'
+                            ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
+                            : 'border-slate-200 hover:border-slate-300'
                             }`}
                         >
                           <span className="text-xl font-black text-slate-800 border-b-2 border-slate-700 pb-0.5">A</span>
@@ -1358,8 +1533,8 @@ function StudioEditorContent() {
                         <button
                           onClick={() => updateSelectedProperty('textShape', 'curve')}
                           className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative bg-white ${selectedElement?.textShape === 'curve'
-                              ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
-                              : 'border-slate-200 hover:border-slate-300'
+                            ? 'border-blue-600 ring-1 ring-blue-600 shadow-2xs'
+                            : 'border-slate-200 hover:border-slate-300'
                             }`}
                         >
                           <span className="text-xs font-black text-slate-800 tracking-wider transform -rotate-6">ABCD</span>
@@ -1414,8 +1589,8 @@ function StudioEditorContent() {
                             key={c}
                             onClick={() => setProductOptions({ ...productOptions, corners: c })}
                             className={`p-2.5 rounded-xl text-xs font-bold border text-center transition-all ${productOptions.corners === c
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                               }`}
                           >
                             {c.split(' ')[0]}
@@ -1471,9 +1646,8 @@ function StudioEditorContent() {
                         onChange={(e) => {
                           if (e.target.files?.[0]) {
                             const file = e.target.files[0];
-                            const reader = new FileReader();
-                            reader.onload = (event) => {
-                              const imgUrl = event.target.result;
+                            compressImageForStorage(file, 800, 800, 0.70).then((imgUrl) => {
+                              if (!imgUrl) return;
                               const img = new Image();
                               img.onload = () => {
                                 const natW = img.naturalWidth || 200;
@@ -1519,8 +1693,7 @@ function StudioEditorContent() {
                                 setSelectedId(newId);
                               };
                               img.src = imgUrl;
-                            };
-                            reader.readAsDataURL(file);
+                            });
                           }
                         }}
                         className="hidden"
@@ -1650,7 +1823,7 @@ function StudioEditorContent() {
                         {/* Search bar */}
                         <div className="relative">
                           <input
-                            type="text" 
+                            type="text"
                             value={graphicsSearch}
                             onChange={(e) => setGraphicsSearch(e.target.value)}
                             placeholder="Search for content"
@@ -1711,247 +1884,247 @@ function StudioEditorContent() {
                         )}
 
 
-                    {/* Images Section */}
-                    {(!graphicsSearch || 'images photo flowers business craft workshop'.includes(graphicsSearch.toLowerCase())) && (
-                      <div>
-                        <div className="flex items-center justify-between mb-2.5 cursor-pointer group">
-                          <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600">Images</h4>
-                          <span className="text-sm font-black text-slate-700 group-hover:translate-x-0.5 transition-transform">›</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2.5">
-                          {[
-                            { url: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=300&q=80', label: 'Flowers Florist' },
-                            { url: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=300&q=80', label: 'Business Meeting' },
-                            { url: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=300&q=80', label: 'Crafting Beads' },
-                            ...adminGraphicAssets.filter(g => g.category === 'image').map(g => ({ url: g.url, label: g.title, svgContent: g.svgContent }))
-                          ].map((img, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => {
-                                const newId = `el-img-${Date.now()}`;
-                                setCurrentElements(prev => [
-                                  ...prev,
-                                  {
-                                    id: newId,
-                                    type: img.svgContent ? 'svg' : 'image',
-                                    url: img.url,
-                                    svgContent: img.svgContent,
-                                    label: img.label,
-                                    x: 100 + (idx % 4) * 20,
-                                    y: 60 + (idx % 4) * 20,
-                                    width: 130,
-                                    height: 130,
-                                    naturalWidth: 300,
-                                    naturalHeight: 300
-                                  }
-                                ]);
-                                setSelectedId(newId);
-                              }}
-                              className="aspect-square bg-white border border-slate-200 hover:border-blue-500 rounded-2xl overflow-hidden shadow-2xs transition-all cursor-pointer group relative"
-                              title={img.label}
-                            >
-                              <img src={img.url} alt={img.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                            </button>
-                          ))}
-                        </div>
-                        <div className="flex justify-center items-center gap-1.5 mt-2.5">
-                          <span className="w-3.5 h-1.5 bg-[#0070e0] rounded-full" />
-                          <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                          <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                          <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                        </div>
-                      </div>
-                    )}
+                        {/* Images Section */}
+                        {(!graphicsSearch || 'images photo flowers business craft workshop'.includes(graphicsSearch.toLowerCase())) && (
+                          <div>
+                            <div className="flex items-center justify-between mb-2.5 cursor-pointer group">
+                              <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600">Images</h4>
+                              <span className="text-sm font-black text-slate-700 group-hover:translate-x-0.5 transition-transform">›</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2.5">
+                              {[
+                                { url: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=300&q=80', label: 'Flowers Florist' },
+                                { url: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=300&q=80', label: 'Business Meeting' },
+                                { url: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=300&q=80', label: 'Crafting Beads' },
+                                ...adminGraphicAssets.filter(g => g.category === 'image').map(g => ({ url: g.url, label: g.title, svgContent: g.svgContent }))
+                              ].map((img, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => {
+                                    const newId = `el-img-${Date.now()}`;
+                                    setCurrentElements(prev => [
+                                      ...prev,
+                                      {
+                                        id: newId,
+                                        type: img.svgContent ? 'svg' : 'image',
+                                        url: img.url,
+                                        svgContent: img.svgContent,
+                                        label: img.label,
+                                        x: 100 + (idx % 4) * 20,
+                                        y: 60 + (idx % 4) * 20,
+                                        width: 130,
+                                        height: 130,
+                                        naturalWidth: 300,
+                                        naturalHeight: 300
+                                      }
+                                    ]);
+                                    setSelectedId(newId);
+                                  }}
+                                  className="aspect-square bg-white border border-slate-200 hover:border-blue-500 rounded-2xl overflow-hidden shadow-2xs transition-all cursor-pointer group relative"
+                                  title={img.label}
+                                >
+                                  <img src={img.url} alt={img.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                </button>
+                              ))}
+                            </div>
+                            <div className="flex justify-center items-center gap-1.5 mt-2.5">
+                              <span className="w-3.5 h-1.5 bg-[#0070e0] rounded-full" />
+                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
+                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
+                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
+                            </div>
+                          </div>
+                        )}
 
-                    {/* Icons Section */}
-                    {(!graphicsSearch || 'icons globe picture mountains landscape badge outline circle'.includes(graphicsSearch.toLowerCase())) && (
-                      <div>
-                        <div className="flex items-center justify-between mb-2.5 cursor-pointer group">
-                          <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600">Icons</h4>
-                          <span className="text-sm font-black text-slate-700 group-hover:translate-x-0.5 transition-transform">›</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2.5">
-                          {/* Globe */}
-                          <button
-                            onClick={() => {
-                              const newId = `el-shape-${Date.now()}`;
-                              setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'icon-globe', x: 140, y: 80, width: 80, height: 80, fill: '#000000' }]);
-                              setSelectedId(newId);
-                            }}
-                            className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
-                          >
-                            <svg viewBox="0 0 100 100" className="w-full h-full">
-                              <circle cx="50" cy="50" r="44" fill="none" stroke="black" strokeWidth="8" />
-                              <ellipse cx="50" cy="50" rx="20" ry="44" fill="none" stroke="black" strokeWidth="8" />
-                              <path d="M 6 50 L 94 50 M 15 25 L 85 25 M 15 75 L 85 75" fill="none" stroke="black" strokeWidth="6" />
-                            </svg>
-                          </button>
+                        {/* Icons Section */}
+                        {(!graphicsSearch || 'icons globe picture mountains landscape badge outline circle'.includes(graphicsSearch.toLowerCase())) && (
+                          <div>
+                            <div className="flex items-center justify-between mb-2.5 cursor-pointer group">
+                              <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600">Icons</h4>
+                              <span className="text-sm font-black text-slate-700 group-hover:translate-x-0.5 transition-transform">›</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2.5">
+                              {/* Globe */}
+                              <button
+                                onClick={() => {
+                                  const newId = `el-shape-${Date.now()}`;
+                                  setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'icon-globe', x: 140, y: 80, width: 80, height: 80, fill: '#000000' }]);
+                                  setSelectedId(newId);
+                                }}
+                                className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
+                              >
+                                <svg viewBox="0 0 100 100" className="w-full h-full">
+                                  <circle cx="50" cy="50" r="44" fill="none" stroke="black" strokeWidth="8" />
+                                  <ellipse cx="50" cy="50" rx="20" ry="44" fill="none" stroke="black" strokeWidth="8" />
+                                  <path d="M 6 50 L 94 50 M 15 25 L 85 25 M 15 75 L 85 75" fill="none" stroke="black" strokeWidth="6" />
+                                </svg>
+                              </button>
 
-                          {/* Picture Outline Badge */}
-                          <button
-                            onClick={() => {
-                              const newId = `el-shape-${Date.now()}`;
-                              setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'icon-badge', x: 150, y: 80, width: 80, height: 80, fill: '#000000' }]);
-                              setSelectedId(newId);
-                            }}
-                            className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
-                          >
-                            <svg viewBox="0 0 100 100" className="w-full h-full">
-                              <circle cx="50" cy="50" r="44" fill="none" stroke="black" strokeWidth="8" />
-                              <polygon points="25,70 50,45 75,70" fill="black" />
-                              <circle cx="35" cy="35" r="8" fill="black" />
-                            </svg>
-                          </button>
+                              {/* Picture Outline Badge */}
+                              <button
+                                onClick={() => {
+                                  const newId = `el-shape-${Date.now()}`;
+                                  setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'icon-badge', x: 150, y: 80, width: 80, height: 80, fill: '#000000' }]);
+                                  setSelectedId(newId);
+                                }}
+                                className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
+                              >
+                                <svg viewBox="0 0 100 100" className="w-full h-full">
+                                  <circle cx="50" cy="50" r="44" fill="none" stroke="black" strokeWidth="8" />
+                                  <polygon points="25,70 50,45 75,70" fill="black" />
+                                  <circle cx="35" cy="35" r="8" fill="black" />
+                                </svg>
+                              </button>
 
-                          {/* Picture Solid Circle */}
-                          <button
-                            onClick={() => {
-                              const newId = `el-shape-${Date.now()}`;
-                              setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'icon-circle', x: 160, y: 80, width: 80, height: 80, fill: '#000000' }]);
-                              setSelectedId(newId);
-                            }}
-                            className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
-                          >
-                            <svg viewBox="0 0 100 100" className="w-full h-full">
-                              <circle cx="50" cy="50" r="48" fill="black" />
-                              <polygon points="28,70 50,48 72,70" fill="white" />
-                              <circle cx="36" cy="36" r="7" fill="white" />
-                            </svg>
-                          </button>
+                              {/* Picture Solid Circle */}
+                              <button
+                                onClick={() => {
+                                  const newId = `el-shape-${Date.now()}`;
+                                  setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'icon-circle', x: 160, y: 80, width: 80, height: 80, fill: '#000000' }]);
+                                  setSelectedId(newId);
+                                }}
+                                className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
+                              >
+                                <svg viewBox="0 0 100 100" className="w-full h-full">
+                                  <circle cx="50" cy="50" r="48" fill="black" />
+                                  <polygon points="28,70 50,48 72,70" fill="white" />
+                                  <circle cx="36" cy="36" r="7" fill="white" />
+                                </svg>
+                              </button>
 
-                          {adminGraphicAssets.filter(g => g.category === 'icon').map((icon, idx) => (
-                            <button
-                              key={icon.id || idx}
-                              onClick={() => {
-                                const newId = `el-icon-${Date.now()}`;
-                                setCurrentElements(prev => [
-                                  ...prev,
-                                  {
-                                    id: newId,
-                                    type: icon.svgContent ? 'svg' : 'image',
-                                    url: icon.url,
-                                    svgContent: icon.svgContent,
-                                    label: icon.title,
-                                    x: 140 + (idx % 4) * 15,
-                                    y: 80 + (idx % 4) * 15,
-                                    width: 80,
-                                    height: 80
-                                  }
-                                ]);
-                                setSelectedId(newId);
-                              }}
-                              className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-2 shadow-2xs transition-all cursor-pointer overflow-hidden group"
-                              title={icon.title}
-                            >
-                              {icon.svgContent ? (
-                                <div dangerouslySetInnerHTML={{ __html: icon.svgContent }} className="w-full h-full flex items-center justify-center group-hover:scale-105 transition-transform [&>svg]:max-w-full [&>svg]:max-h-full" />
-                              ) : (
-                                <img src={icon.url} alt={icon.title} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform" />
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="flex justify-center items-center gap-1.5 mt-2.5">
-                          <span className="w-3.5 h-1.5 bg-[#0070e0] rounded-full" />
-                          <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                          <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                          <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                        </div>
-                      </div>
-                    )}
+                              {adminGraphicAssets.filter(g => g.category === 'icon').map((icon, idx) => (
+                                <button
+                                  key={icon.id || idx}
+                                  onClick={() => {
+                                    const newId = `el-icon-${Date.now()}`;
+                                    setCurrentElements(prev => [
+                                      ...prev,
+                                      {
+                                        id: newId,
+                                        type: icon.svgContent ? 'svg' : 'image',
+                                        url: icon.url,
+                                        svgContent: icon.svgContent,
+                                        label: icon.title,
+                                        x: 140 + (idx % 4) * 15,
+                                        y: 80 + (idx % 4) * 15,
+                                        width: 80,
+                                        height: 80
+                                      }
+                                    ]);
+                                    setSelectedId(newId);
+                                  }}
+                                  className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-2 shadow-2xs transition-all cursor-pointer overflow-hidden group"
+                                  title={icon.title}
+                                >
+                                  {icon.svgContent ? (
+                                    <div dangerouslySetInnerHTML={{ __html: icon.svgContent }} className="w-full h-full flex items-center justify-center group-hover:scale-105 transition-transform [&>svg]:max-w-full [&>svg]:max-h-full" />
+                                  ) : (
+                                    <img src={icon.url} alt={icon.title} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="flex justify-center items-center gap-1.5 mt-2.5">
+                              <span className="w-3.5 h-1.5 bg-[#0070e0] rounded-full" />
+                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
+                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
+                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
+                            </div>
+                          </div>
+                        )}
 
-                    {/* Illustrations Section */}
-                    {(!graphicsSearch || 'illustrations stars starburst badge diamond spark outline'.includes(graphicsSearch.toLowerCase())) && (
-                      <div>
-                        <div className="flex items-center justify-between mb-2.5 cursor-pointer group">
-                          <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600">Illustrations</h4>
-                          <span className="text-sm font-black text-slate-700 group-hover:translate-x-0.5 transition-transform">›</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2.5">
-                          {/* Twin Stars */}
-                          <button
-                            onClick={() => {
-                              const newId = `el-shape-${Date.now()}`;
-                              setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'illust-stars', x: 140, y: 80, width: 100, height: 70, fill: '#cbd5e1' }]);
-                              setSelectedId(newId);
-                            }}
-                            className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
-                          >
-                            <svg viewBox="0 0 140 100" className="w-full h-full">
-                              <polygon points="35,10 43,30 65,30 47,43 54,65 35,51 16,65 23,43 5,30 27,30" fill="none" stroke="#cbd5e1" strokeWidth="5" strokeLinejoin="round" />
-                              <polygon points="95,25 101,41 118,41 104,51 109,68 95,58 81,68 86,51 72,41 89,41" fill="none" stroke="#cbd5e1" strokeWidth="4" strokeLinejoin="round" />
-                            </svg>
-                          </button>
+                        {/* Illustrations Section */}
+                        {(!graphicsSearch || 'illustrations stars starburst badge diamond spark outline'.includes(graphicsSearch.toLowerCase())) && (
+                          <div>
+                            <div className="flex items-center justify-between mb-2.5 cursor-pointer group">
+                              <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600">Illustrations</h4>
+                              <span className="text-sm font-black text-slate-700 group-hover:translate-x-0.5 transition-transform">›</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2.5">
+                              {/* Twin Stars */}
+                              <button
+                                onClick={() => {
+                                  const newId = `el-shape-${Date.now()}`;
+                                  setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'illust-stars', x: 140, y: 80, width: 100, height: 70, fill: '#cbd5e1' }]);
+                                  setSelectedId(newId);
+                                }}
+                                className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
+                              >
+                                <svg viewBox="0 0 140 100" className="w-full h-full">
+                                  <polygon points="35,10 43,30 65,30 47,43 54,65 35,51 16,65 23,43 5,30 27,30" fill="none" stroke="#cbd5e1" strokeWidth="5" strokeLinejoin="round" />
+                                  <polygon points="95,25 101,41 118,41 104,51 109,68 95,58 81,68 86,51 72,41 89,41" fill="none" stroke="#cbd5e1" strokeWidth="4" strokeLinejoin="round" />
+                                </svg>
+                              </button>
 
-                          {/* 12-point Starburst Badge */}
-                          <button
-                            onClick={() => {
-                              const newId = `el-shape-${Date.now()}`;
-                              setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'illust-starburst', x: 150, y: 80, width: 85, height: 85, fill: '#556b2f' }]);
-                              setSelectedId(newId);
-                            }}
-                            className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
-                          >
-                            <svg viewBox="0 0 100 100" className="w-full h-full">
-                              <polygon points="50,2 62,22 84,14 80,38 100,50 80,62 84,86 62,78 50,98 38,78 16,86 20,62 0,50 20,38 16,14 38,22" fill="#556b2f" />
-                            </svg>
-                          </button>
+                              {/* 12-point Starburst Badge */}
+                              <button
+                                onClick={() => {
+                                  const newId = `el-shape-${Date.now()}`;
+                                  setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'illust-starburst', x: 150, y: 80, width: 85, height: 85, fill: '#556b2f' }]);
+                                  setSelectedId(newId);
+                                }}
+                                className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
+                              >
+                                <svg viewBox="0 0 100 100" className="w-full h-full">
+                                  <polygon points="50,2 62,22 84,14 80,38 100,50 80,62 84,86 62,78 50,98 38,78 16,86 20,62 0,50 20,38 16,14 38,22" fill="#556b2f" />
+                                </svg>
+                              </button>
 
-                          {/* Diamond Spark */}
-                          <button
-                            onClick={() => {
-                              const newId = `el-shape-${Date.now()}`;
-                              setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'illust-spark', x: 160, y: 80, width: 85, height: 85, fill: '#475569' }]);
-                              setSelectedId(newId);
-                            }}
-                            className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
-                          >
-                            <svg viewBox="0 0 100 100" className="w-full h-full">
-                              <path d="M 50,5 Q 50,50 95,50 Q 50,50 50,95 Q 50,50 5,50 Q 50,50 50,5" fill="none" stroke="#475569" strokeWidth="5" />
-                            </svg>
-                          </button>
+                              {/* Diamond Spark */}
+                              <button
+                                onClick={() => {
+                                  const newId = `el-shape-${Date.now()}`;
+                                  setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'illust-spark', x: 160, y: 80, width: 85, height: 85, fill: '#475569' }]);
+                                  setSelectedId(newId);
+                                }}
+                                className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
+                              >
+                                <svg viewBox="0 0 100 100" className="w-full h-full">
+                                  <path d="M 50,5 Q 50,50 95,50 Q 50,50 50,95 Q 50,50 5,50 Q 50,50 50,5" fill="none" stroke="#475569" strokeWidth="5" />
+                                </svg>
+                              </button>
 
-                          {adminGraphicAssets.filter(g => g.category === 'illustration').map((illust, idx) => (
-                            <button
-                              key={illust.id || idx}
-                              onClick={() => {
-                                const newId = `el-illust-${Date.now()}`;
-                                setCurrentElements(prev => [
-                                  ...prev,
-                                  {
-                                    id: newId,
-                                    type: illust.svgContent ? 'svg' : 'image',
-                                    url: illust.url,
-                                    svgContent: illust.svgContent,
-                                    label: illust.title,
-                                    x: 140 + (idx % 4) * 15,
-                                    y: 80 + (idx % 4) * 15,
-                                    width: 100,
-                                    height: 100
-                                  }
-                                ]);
-                                setSelectedId(newId);
-                              }}
-                              className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-2 shadow-2xs transition-all cursor-pointer overflow-hidden group"
-                              title={illust.title}
-                            >
-                              {illust.svgContent ? (
-                                <div dangerouslySetInnerHTML={{ __html: illust.svgContent }} className="w-full h-full flex items-center justify-center group-hover:scale-105 transition-transform [&>svg]:max-w-full [&>svg]:max-h-full" />
-                              ) : (
-                                <img src={illust.url} alt={illust.title} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform" />
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="flex justify-center items-center gap-1.5 mt-2.5">
-                          <span className="w-3.5 h-1.5 bg-[#0070e0] rounded-full" />
-                          <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                          <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                          <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                        </div>
-                      </div>
-                    )}
-                    </>
+                              {adminGraphicAssets.filter(g => g.category === 'illustration').map((illust, idx) => (
+                                <button
+                                  key={illust.id || idx}
+                                  onClick={() => {
+                                    const newId = `el-illust-${Date.now()}`;
+                                    setCurrentElements(prev => [
+                                      ...prev,
+                                      {
+                                        id: newId,
+                                        type: illust.svgContent ? 'svg' : 'image',
+                                        url: illust.url,
+                                        svgContent: illust.svgContent,
+                                        label: illust.title,
+                                        x: 140 + (idx % 4) * 15,
+                                        y: 80 + (idx % 4) * 15,
+                                        width: 100,
+                                        height: 100
+                                      }
+                                    ]);
+                                    setSelectedId(newId);
+                                  }}
+                                  className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-2 shadow-2xs transition-all cursor-pointer overflow-hidden group"
+                                  title={illust.title}
+                                >
+                                  {illust.svgContent ? (
+                                    <div dangerouslySetInnerHTML={{ __html: illust.svgContent }} className="w-full h-full flex items-center justify-center group-hover:scale-105 transition-transform [&>svg]:max-w-full [&>svg]:max-h-full" />
+                                  ) : (
+                                    <img src={illust.url} alt={illust.title} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="flex justify-center items-center gap-1.5 mt-2.5">
+                              <span className="w-3.5 h-1.5 bg-[#0070e0] rounded-full" />
+                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
+                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
+                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
@@ -2055,8 +2228,8 @@ function StudioEditorContent() {
                       <button
                         onClick={() => setBgTab('Swatches')}
                         className={`pb-2 px-1 text-xs mr-4 cursor-pointer transition-all ${bgTab === 'Swatches'
-                            ? 'font-extrabold text-slate-900 border-b-2 border-blue-600 -mb-px'
-                            : 'font-bold text-slate-400 hover:text-slate-700'
+                          ? 'font-extrabold text-slate-900 border-b-2 border-blue-600 -mb-px'
+                          : 'font-bold text-slate-400 hover:text-slate-700'
                           }`}
                       >
                         Swatches
@@ -2064,8 +2237,8 @@ function StudioEditorContent() {
                       <button
                         onClick={() => setBgTab('Images')}
                         className={`pb-2 px-1 text-xs mr-4 cursor-pointer transition-all ${bgTab === 'Images'
-                            ? 'font-extrabold text-slate-900 border-b-2 border-blue-600 -mb-px'
-                            : 'font-bold text-slate-400 hover:text-slate-700'
+                          ? 'font-extrabold text-slate-900 border-b-2 border-blue-600 -mb-px'
+                          : 'font-bold text-slate-400 hover:text-slate-700'
                           }`}
                       >
                         Images & Textures
@@ -2073,8 +2246,8 @@ function StudioEditorContent() {
                       <button
                         onClick={() => setBgTab('CMYK')}
                         className={`pb-2 px-1 text-xs cursor-pointer transition-all ${bgTab === 'CMYK'
-                            ? 'font-extrabold text-slate-900 border-b-2 border-blue-600 -mb-px'
-                            : 'font-bold text-slate-400 hover:text-slate-700'
+                          ? 'font-extrabold text-slate-900 border-b-2 border-blue-600 -mb-px'
+                          : 'font-bold text-slate-400 hover:text-slate-700'
                           }`}
                       >
                         CMYK
@@ -2100,8 +2273,8 @@ function StudioEditorContent() {
                                     onClick={() => handleBackgroundChange(color)}
                                     style={{ backgroundColor: color }}
                                     className={`w-7 h-7 rounded-full transition-all cursor-pointer ${isSelected
-                                        ? 'border-2 border-blue-600 ring-2 ring-blue-600/30 ring-offset-2'
-                                        : 'border border-slate-300 hover:scale-105 shadow-2xs'
+                                      ? 'border-2 border-blue-600 ring-2 ring-blue-600/30 ring-offset-2'
+                                      : 'border border-slate-300 hover:scale-105 shadow-2xs'
                                       }`}
                                     title={`Design color: ${color}`}
                                   />
@@ -2123,8 +2296,8 @@ function StudioEditorContent() {
                                   onClick={() => handleBackgroundChange(color)}
                                   style={{ backgroundColor: color }}
                                   className={`w-7 h-7 rounded-full transition-all cursor-pointer ${isSelected
-                                      ? 'border-2 border-blue-600 ring-2 ring-blue-600/30 ring-offset-2'
-                                      : 'border border-slate-300 hover:scale-105'
+                                    ? 'border-2 border-blue-600 ring-2 ring-blue-600/30 ring-offset-2'
+                                    : 'border border-slate-300 hover:scale-105'
                                     }`}
                                   title={color}
                                 />
@@ -2209,8 +2382,8 @@ function StudioEditorContent() {
                                   key={idx}
                                   onClick={() => handleBackgroundChange(item.url)}
                                   className={`h-20 rounded-xl relative overflow-hidden border transition-all text-left group cursor-pointer ${isSelected
-                                      ? 'border-blue-600 ring-2 ring-blue-600/30 shadow-md scale-102'
-                                      : 'border-slate-200 hover:border-slate-400 shadow-2xs hover:scale-101'
+                                    ? 'border-blue-600 ring-2 ring-blue-600/30 shadow-md scale-102'
+                                    : 'border-slate-200 hover:border-slate-400 shadow-2xs hover:scale-101'
                                     }`}
                                 >
                                   <img src={item.url} alt={item.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -2346,8 +2519,8 @@ function StudioEditorContent() {
                                     key={style.id}
                                     onClick={() => setQrStyle(style.id)}
                                     className={`p-2 rounded-xl border flex items-center gap-2.5 text-left transition-all cursor-pointer ${isSelected
-                                        ? 'border-blue-600 bg-blue-50/40 ring-2 ring-blue-600/20 shadow-2xs'
-                                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                                      ? 'border-blue-600 bg-blue-50/40 ring-2 ring-blue-600/20 shadow-2xs'
+                                      : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                                       }`}
                                   >
                                     <div
@@ -2546,8 +2719,8 @@ function StudioEditorContent() {
               <button
                 onClick={() => setShowSafetyArea(!showSafetyArea)}
                 className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all border ${showSafetyArea
-                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                   }`}
               >
                 Safety Area
@@ -2555,8 +2728,8 @@ function StudioEditorContent() {
               <button
                 onClick={() => setShowBleed(!showBleed)}
                 className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all border ${showBleed
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                   }`}
               >
                 Bleed
@@ -2785,8 +2958,8 @@ function StudioEditorContent() {
                                 setShowFormatMenu(!showFormatMenu);
                               }}
                               className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg transition-colors cursor-pointer ${showFormatMenu || (el.textCase && el.textCase !== 'none')
-                                  ? 'bg-blue-100 text-blue-700 font-extrabold border border-blue-300 shadow-2xs'
-                                  : 'hover:bg-slate-100 text-slate-700 border border-slate-200/60 bg-white'
+                                ? 'bg-blue-100 text-blue-700 font-extrabold border border-blue-300 shadow-2xs'
+                                : 'hover:bg-slate-100 text-slate-700 border border-slate-200/60 bg-white'
                                 }`}
                               title="Format Case (Uppercase, Lowercase, Normal)"
                             >
@@ -2811,8 +2984,8 @@ function StudioEditorContent() {
                                       setShowFormatMenu(false);
                                     }}
                                     className={`px-3 py-1.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center cursor-pointer ${!el.textCase || el.textCase === 'none'
-                                        ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
-                                        : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
+                                      ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
+                                      : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
                                       }`}
                                     title="Normal / As Typed"
                                   >
@@ -2827,8 +3000,8 @@ function StudioEditorContent() {
                                       setShowFormatMenu(false);
                                     }}
                                     className={`px-3 py-1.5 rounded-xl font-bold text-sm transition-all flex items-center gap-0.5 justify-center cursor-pointer ${el.textCase === 'lowercase'
-                                        ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
-                                        : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
+                                      ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
+                                      : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
                                       }`}
                                     title="Lowercase"
                                   >
@@ -2844,8 +3017,8 @@ function StudioEditorContent() {
                                       setShowFormatMenu(false);
                                     }}
                                     className={`px-3 py-1.5 rounded-xl font-bold text-sm transition-all flex items-center gap-0.5 justify-center cursor-pointer ${el.textCase === 'uppercase'
-                                        ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
-                                        : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
+                                      ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
+                                      : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
                                       }`}
                                     title="Uppercase"
                                   >
@@ -2862,8 +3035,8 @@ function StudioEditorContent() {
                             type="button"
                             onClick={() => setActiveTab(activeTab === 'Effects' ? 'Text' : 'Effects')}
                             className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg transition-colors shrink-0 cursor-pointer ${activeTab === 'Effects' || (el.effect && el.effect !== 'none' && el.effect !== 'original') || (el.textShape && el.textShape !== 'none')
-                                ? 'bg-blue-100 text-blue-700 font-extrabold border border-blue-300 shadow-2xs'
-                                : 'hover:bg-slate-100 text-slate-700 border border-slate-200/60 bg-white'
+                              ? 'bg-blue-100 text-blue-700 font-extrabold border border-blue-300 shadow-2xs'
+                              : 'hover:bg-slate-100 text-slate-700 border border-slate-200/60 bg-white'
                               }`}
                             title="Text Effects & Shapes"
                           >
@@ -2943,7 +3116,7 @@ function StudioEditorContent() {
                     {el.type === 'image' ? (
                       <img
                         src={el.url}
-                        alt={el.label || 'Uploaded image'}
+                        alt={el.label}
                         draggable={false}
                         className="w-full h-full object-contain rounded-md pointer-events-none select-none"
                       />
@@ -3141,8 +3314,8 @@ function StudioEditorContent() {
         </main>
 
         {!isPreviewMode && (
-          /* 4. RIGHT SIDEBAR THUMBNAILS (Front / Back side switcher - Replicating screenshot right panel!) */
-          <aside className="w-44 bg-white border-l border-slate-200 p-4 flex flex-col justify-between shrink-0 z-30 shadow-xs">
+          /* 4. RIGHT SIDEBAR THUMBNAILS & OPTIONS (Front / Back side switcher + Back side options) */
+          <aside className="w-52 bg-white border-l border-slate-200 p-4 flex flex-col justify-between shrink-0 z-30 shadow-xs overflow-y-auto max-h-screen">
             <div className="space-y-4">
               <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
                 Card Sides
@@ -3181,6 +3354,66 @@ function StudioEditorContent() {
                   {activeSide === 'Back' && <span className="w-2 h-2 rounded-full bg-[#0070e0]" />}
                 </div>
               </div>
+
+              {/* Back Side Options Panel in Right Sidebar */}
+              {activeSide === 'Back' && (
+                <div className="mt-5 pt-5 border-t border-slate-200 space-y-3 animate-fadeIn">
+                  <div className="text-[11px] font-black text-slate-900 uppercase tracking-wider flex items-center justify-between">
+                    <span>Back Side Options</span>
+                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                      {isBackCustomized ? '+50%' : '+₹0'}
+                    </span>
+                  </div>
+
+                  {!isBackCustomized ? (
+                    <div className="space-y-2.5">
+                      <div className="flex justify-center items-center gap-2 p-2.5 bg-sky-50/80 rounded-xl border border-sky-200/80 text-[11px] font-bold text-sky-900 leading-snug">
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+                        <span>Single Sided currently <br /> (+₹0.00 add-on).</span>
+                      </div>
+
+                      {(availableBackTemplate?.backBackground || availableBackTemplate?.backElements?.length > 0 || frontBackground) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (availableBackTemplate?.backBackground) {
+                              setBackBackground(availableBackTemplate.backBackground);
+                            } else if (frontBackground) {
+                              setBackBackground(frontBackground);
+                            }
+                            if (availableBackTemplate?.backElements && availableBackTemplate.backElements.length > 0) {
+                              setBackElements(availableBackTemplate.backElements);
+                            }
+                          }}
+                          className="w-full py-2.5 px-3 rounded-xl font-extrabold text-xs text-white bg-[#0070e0] hover:bg-blue-600 transition-all shadow-sm cursor-pointer flex items-center justify-start gap-2 text-left leading-tight"
+                        >
+                          <span className="text-base shrink-0">📄</span>
+                          <span>Add Template Back (+50%)</span>
+                        </button>
+                      )}
+
+
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] font-bold text-emerald-800 leading-snug flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                        <span>Double Sided Active (+50% price applied)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBackElements([]);
+                          setBackBackground('#ffffff');
+                        }}
+                        className="w-full py-2.5 px-3 rounded-xl font-extrabold text-xs text-red-600 hover:bg-red-50 border border-red-200 transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center leading-tight shadow-2xs"
+                      >
+                        <span>🗑 Make Single Sided (+₹0)</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </aside>
         )}
@@ -3301,55 +3534,154 @@ function StudioEditorContent() {
               ) : (
                 /* STEP 2: FINAL STEPS */
                 <>
-                  <div>
+                  <div className="flex-1 overflow-y-auto max-h-[60vh] pr-1">
                     <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-1">Final Steps</h2>
-                    <p className="text-xs font-semibold text-slate-600 mb-6 leading-relaxed">
+                    <p className="text-xs font-semibold text-slate-600 mb-5 leading-relaxed">
                       Almost done! Make selections below to finalize your design. Have questions? Call us at 02522-669393.
                     </p>
 
                     {/* Quantity Field */}
-                    <div className="mb-6">
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Quantity*</label>
+                    <div className="mb-5">
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Select Quantity*</label>
                       <select
-                        value={productOptions.quantity}
+                        value={productOptions.quantity || (effectiveQtyOptions[0]?.label || '')}
                         onChange={(e) => setProductOptions({ ...productOptions, quantity: e.target.value })}
                         className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#38bdf8] focus:border-transparent cursor-pointer shadow-2xs"
                       >
-                        <option>100 cards - ₹200.00</option>
-                        <option>250 cards - ₹450.00 (Save 10%)</option>
-                        <option>500 cards - ₹800.00 (Save 20%)</option>
-                        <option>1,000 cards - ₹1,400.00 (Save 30%)</option>
+                        {effectiveQtyOptions.map((qty, idx) => {
+                          const label = qty.label;
+                          const mod = Number(qty.priceModifier || 0);
+                          return (
+                            <option key={idx} value={label}>
+                              {label} {mod > 0 ? `(+₹${mod})` : ''}
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
 
-                    {/* Stock Field */}
-                    <div className="mb-6">
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Stock*</label>
-                      <div className="grid grid-cols-2 gap-3">
-                        {[
-                          { name: 'Standard Matte (300 gsm)', label: 'Standard', priceLabel: 'Included' },
-                          { name: 'Premium Gloss Coated (350 gsm)', label: 'Premium', priceLabel: '+₹75.00' }
-                        ].map((stockOption) => {
-                          const isSelected = productOptions.stock === stockOption.name || (stockOption.label === 'Standard' && productOptions.stock.includes('Standard')) || (stockOption.label === 'Premium' && productOptions.stock.includes('Premium'));
-                          return (
-                            <button
-                              key={stockOption.name}
-                              type="button"
-                              onClick={() => setProductOptions({ ...productOptions, stock: stockOption.name })}
-                              className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${isSelected
+                    {/* Quality / Stock Field */}
+                    {effectiveQualityOptions.length > 0 && (
+                      <div className="mb-5">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">{qualityLabel}*</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          {effectiveQualityOptions.map((opt, idx) => {
+                            const optTitle = opt.title || opt.id;
+                            const isSelected = productOptions.stock === optTitle || productOptions.quality === optTitle || (opt.id && productOptions.quality === opt.id);
+                            const mod = Number(opt.priceModifier || 0);
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setProductOptions({ ...productOptions, stock: optTitle, quality: optTitle })}
+                                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${isSelected
                                   ? 'bg-sky-50/70 border-2 border-[#38bdf8] text-slate-900 shadow-2xs'
                                   : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
-                                }`}
-                            >
-                              <span className="font-extrabold text-xs block">{stockOption.label}</span>
-                              <span className={`text-[11px] block mt-0.5 ${isSelected ? 'text-slate-600 font-semibold' : 'text-slate-400 font-normal'}`}>
-                                {stockOption.priceLabel}
-                              </span>
-                            </button>
+                                  }`}
+                              >
+                                <span className="font-extrabold text-xs block">{optTitle}</span>
+                                {opt.subtitle && <span className="text-[10px] text-slate-500 block mt-0.5">{opt.subtitle}</span>}
+                                <span className={`text-[11px] block mt-0.5 ${isSelected ? 'text-slate-700 font-bold' : 'text-slate-400 font-medium'}`}>
+                                  {mod > 0 ? `+₹${mod.toFixed(2)}` : 'Included'}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Style / Printing Field */}
+                    {effectiveStyleOptions.length > 0 && (
+                      <div className="mb-5">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">{styleLabel}*</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          {effectiveStyleOptions.map((opt, idx) => {
+                            const optTitle = opt.title || opt.id;
+                            const isSelected = productOptions.style === optTitle || (opt.id && productOptions.style === opt.id);
+                            const mod = Number(opt.priceModifier || 0);
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setProductOptions({ ...productOptions, style: optTitle })}
+                                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${isSelected
+                                  ? 'bg-sky-50/70 border-2 border-[#38bdf8] text-slate-900 shadow-2xs'
+                                  : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
+                                  }`}
+                              >
+                                <span className="font-extrabold text-xs block">{optTitle}</span>
+                                {opt.subtitle && <span className="text-[10px] text-slate-500 block mt-0.5">{opt.subtitle}</span>}
+                                <span className={`text-[11px] block mt-0.5 ${isSelected ? 'text-slate-700 font-bold' : 'text-slate-400 font-medium'}`}>
+                                  {mod > 0 ? `+₹${mod.toFixed(2)}` : 'Included'}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Dynamic Custom Options */}
+                    {effectiveCustomOptions.length > 0 && (
+                      <div className="space-y-5 pt-3 border-t border-slate-100">
+                        {effectiveCustomOptions.map((opt, optIdx) => {
+                          const optName = typeof opt === 'string' ? opt : opt.name;
+                          const choices = typeof opt === 'object' && Array.isArray(opt.choices) ? opt.choices : [];
+                          const currentSel = productOptions.customSelections?.[optName];
+                          return (
+                            <div key={optIdx}>
+                              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
+                                <span>{optName || `Option ${optIdx + 1}`}</span>
+                                {opt.required && <span className="text-[10px] text-[#F06800] font-bold">Required</span>}
+                              </label>
+                              {opt.type === 'dropdown' ? (
+                                <select
+                                  value={currentSel || ''}
+                                  onChange={(e) => setProductOptions({
+                                    ...productOptions,
+                                    customSelections: { ...(productOptions.customSelections || {}), [optName]: e.target.value }
+                                  })}
+                                  className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#38bdf8] transition-all cursor-pointer shadow-2xs"
+                                >
+                                  {choices.map((c, cIdx) => (
+                                    <option key={cIdx} value={c.label}>
+                                      {c.label} {c.priceModifier ? `(+₹${c.priceModifier})` : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                  {choices.map((c, cIdx) => {
+                                    const isSelected = currentSel === c.label;
+                                    const mod = Number(c.priceModifier) || 0;
+                                    return (
+                                      <button
+                                        key={cIdx}
+                                        type="button"
+                                        onClick={() => setProductOptions({
+                                          ...productOptions,
+                                          customSelections: { ...(productOptions.customSelections || {}), [optName]: c.label }
+                                        })}
+                                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${isSelected
+                                          ? 'bg-sky-50/70 border-2 border-[#38bdf8] text-slate-900 shadow-2xs font-bold'
+                                          : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 font-medium'
+                                          }`}
+                                      >
+                                        <span className="text-xs block">{c.label}</span>
+                                        <span className={`text-[11px] block mt-0.5 ${isSelected ? 'text-slate-700 font-bold' : 'text-slate-400 font-normal'}`}>
+                                          {mod > 0 ? `+₹${mod}` : 'Included'}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
                           );
                         })}
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* Bottom Price Summary & Add to Cart */}
@@ -3357,10 +3689,10 @@ function StudioEditorContent() {
                     <div>
                       <div className="flex items-baseline gap-2">
                         <span className="text-xl font-black text-slate-900">
-                          ₹{(totalPrice + (productOptions.stock.includes('Premium') ? 75 : 0)).toFixed(2)}
+                          ₹{calculatedFinalPrice.toFixed(2)}
                         </span>
                         <span className="text-xs font-semibold text-slate-500">
-                          {productOptions.quantity.split(' -')[0]}
+                          {(productOptions.quantity || '').split(' -')[0]}
                         </span>
                       </div>
                       <div className="text-[11px] text-slate-400 mt-0.5">No setup fee</div>
@@ -3373,14 +3705,22 @@ function StudioEditorContent() {
                     <button
                       type="button"
                       onClick={() => {
-                        const finalPrice = totalPrice + (productOptions.stock.includes('Premium') ? 75 : 0);
+                        const customSelectionsList = effectiveCustomOptions.map(opt => {
+                          const optName = typeof opt === 'string' ? opt : opt.name;
+                          return {
+                            name: optName || 'Option',
+                            choice: productOptions.customSelections?.[optName] || (opt.choices?.[0]?.label || '')
+                          };
+                        });
                         const cartItem = {
                           productId: `custom_studio_${Date.now()}`,
                           title: `Custom Studio Design (${isBackCustomized ? 'Double Sided' : 'Single Sided'})`,
-                          price: finalPrice,
-                          qtyOption: productOptions.quantity.split(' -')[0],
-                          quality: `${productOptions.stock.includes('Premium') ? 'Premium Gloss Coated (350 gsm)' : 'Standard Matte (300 gsm)'} • ${productOptions.corners}`,
-                          style: isBackCustomized ? 'Double Sided Custom Print' : 'Single Sided Custom Print',
+                          price: calculatedFinalPrice,
+                          numericPrice: calculatedFinalPrice,
+                          qtyOption: (productOptions.quantity || '').split(' -')[0],
+                          quality: productOptions.quality || productOptions.stock || 'Standard Matte (300 gsm)',
+                          style: productOptions.style || (isBackCustomized ? 'Double Sided Custom Print' : 'Single Sided Custom Print'),
+                          customSelections: customSelectionsList,
                           image: frontElements.find(e => e.type === 'image')?.url || '/home/visiting-cards/card-stack.png',
                           quantity: 1,
                           customDesign: {
@@ -3392,7 +3732,7 @@ function StudioEditorContent() {
                               ...productOptions,
                               size: searchParams?.get('size') || productOptions.size || '91.8mm x 53.8mm',
                               orientation: productOptions.orientation || 'Horizontal',
-                              stock: productOptions.stock.includes('Premium') ? 'Premium Gloss Coated (350 gsm)' : 'Standard Matte (300 gsm)'
+                              stock: productOptions.stock || 'Standard Matte (300 gsm)'
                             },
                             isBackCustomized,
                             corners: productOptions.corners

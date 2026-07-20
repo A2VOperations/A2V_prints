@@ -17,8 +17,8 @@ function AllCategoriesContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('recommended');
   const [selectedService, setSelectedService] = useState(null);
-  const [packageTier, setPackageTier] = useState('standard');
-  const [uploadedFile, setUploadedFile] = useState(null);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const uploadedFile = uploadedFiles[0] || null;
   const [toastMessage, setToastMessage] = useState(null);
 
   const [filters, setFilters] = useState({
@@ -550,24 +550,62 @@ function AllCategoriesContent() {
 
               {/* Upload Custom Requirement & Artwork Box */}
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Upload Custom Requirement & Artwork</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Upload Custom Requirement & Artwork (Up to 2 Photos/Files)</h4>
+                  <span className="text-[10px] font-extrabold text-[#5348e2] bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+                    {uploadedFiles.length}/2 Photos
+                  </span>
+                </div>
                 <div className="bg-slate-50 border-2 border-dashed border-[#5348e2]/40 rounded-2xl p-5 text-center transition-all hover:border-[#5348e2]">
-                  {uploadedFile ? (
-                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200">
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <span className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm shrink-0">✓</span>
-                        <div className="text-left truncate">
-                          <p className="text-xs font-bold text-slate-800 truncate">{uploadedFile.name}</p>
-                          <p className="text-[10px] text-slate-400">Ready for order</p>
-                        </div>
+                  {uploadedFiles.length > 0 ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {uploadedFiles.map((file, idx) => (
+                          <div key={idx} className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+                            <div className="flex items-center gap-2 overflow-hidden">
+                              <span className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm shrink-0">✓</span>
+                              <div className="text-left truncate">
+                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600 mb-0.5 inline-block">
+                                  {idx === 0 ? 'Photo 1' : 'Photo 2'}
+                                </span>
+                                <p className="text-xs font-bold text-slate-800 truncate">{file.name}</p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setUploadedFiles((prev) => prev.filter((_, i) => i !== idx))}
+                              className="text-rose-500 hover:text-rose-700 text-xs font-extrabold px-2 py-1 rounded hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setUploadedFile(null)}
-                        className="text-rose-500 hover:text-rose-700 text-xs font-extrabold px-2 py-1 rounded hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
-                      >
-                        Remove
-                      </button>
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                        {uploadedFiles.length < 2 && (
+                          <label className="cursor-pointer text-xs font-extrabold text-[#5348e2] hover:underline flex items-center gap-1">
+                            <span>+ Add 2nd Photo / File</span>
+                            <input
+                              type="file"
+                              multiple
+                              className="hidden"
+                              onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                if (files.length > 0) {
+                                  setUploadedFiles((prev) => [...prev, ...files].slice(0, 2));
+                                }
+                              }}
+                            />
+                          </label>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setUploadedFiles([])}
+                          className="text-xs font-extrabold text-slate-400 hover:text-rose-600 ml-auto cursor-pointer"
+                        >
+                          Clear All
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <label className="cursor-pointer flex flex-col items-center justify-center py-2">
@@ -576,13 +614,17 @@ function AllCategoriesContent() {
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                         </svg>
                       </div>
-                      <span className="text-xs font-extrabold text-slate-800 block">Click to Upload Artwork or Brief</span>
-                      <span className="text-[11px] text-slate-500 block mt-0.5">Supports PDF, AI, PSD, PNG, JPG, ZIP or DOCX</span>
+                      <span className="text-xs font-extrabold text-slate-800 block">Click to Upload Up to 2 Photos/Files</span>
+                      <span className="text-[11px] text-slate-500 block mt-0.5">Supports Front & Back photos, PDF, AI, PSD, PNG, JPG</span>
                       <input
                         type="file"
+                        multiple
                         className="hidden"
                         onChange={(e) => {
-                          if (e.target.files?.[0]) setUploadedFile(e.target.files[0]);
+                          const files = Array.from(e.target.files || []);
+                          if (files.length > 0) {
+                            setUploadedFiles(files.slice(0, 2));
+                          }
                         }}
                       />
                     </label>
@@ -602,7 +644,7 @@ function AllCategoriesContent() {
                   onClick={() => {
                     const name = selectedService.name;
                     setSelectedService(null);
-                    setUploadedFile(null);
+                    setUploadedFiles([]);
                     showToast(`Uploaded design & added ${name} to your custom design order!`);
                   }}
                   className="px-6 py-2.5 rounded-xl bg-[#5348e2] hover:bg-[#4338ca] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all cursor-pointer"
