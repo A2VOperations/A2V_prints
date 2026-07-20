@@ -20,7 +20,7 @@ const parseMmAspectRatio = (sizeStr) => {
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("overview"); // overview | products | product-detail | orders | users | settings
+  const [activeTab, setActiveTab] = useState("overview");
   const [currentUser, setCurrentUser] = useState({
     name: "Admin Manager",
     email: "admin@a2vprints.com",
@@ -739,7 +739,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* FIXED SIDEBAR (260px) */}
-      <aside className="w-[260px] fixed top-0 left-0 h-screen bg-surface border-r border-outline-variant flex flex-col z-30 select-none">
+      <aside className="w-sidebar-width fixed top-0 left-0 h-screen bg-surface border-r border-outline-variant flex flex-col z-30 select-none">
         {/* Brand Header */}
         <div className="h-16 flex items-center px-6 border-b border-outline-variant gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary font-bold shadow-sm">
@@ -901,7 +901,7 @@ export default function AdminDashboardPage() {
       </aside>
 
       {/* TOP NAVBAR HEADER */}
-      <header className="h-16 fixed top-0 right-0 left-[260px] z-20 bg-surface border-b border-outline-variant flex justify-between items-center px-6">
+      <header className="h-16 fixed top-0 right-0 left-sidebar-width z-20 bg-surface border-b border-outline-variant flex justify-between items-center px-6">
         <div className="flex items-center gap-4 flex-1">
           <div className="relative w-full max-w-md">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">
@@ -946,7 +946,7 @@ export default function AdminDashboardPage() {
       </header>
 
       {/* MAIN CONTENT AREA */}
-      <main className="ml-[260px] pt-16 min-h-screen w-[calc(100%-260px)]">
+      <main className="ml-sidebar-width pt-16 min-h-screen w-[calc(100%-260px)]">
         <div className="p-6 max-w-[1440px] mx-auto">
           {/* TAB 1: DASHBOARD OVERVIEW */}
           {activeTab === "overview" && (
@@ -1085,7 +1085,7 @@ export default function AdminDashboardPage() {
                                 <p className="font-medium text-on-surface">{ord.customer?.name || "Customer"}</p>
                                 <p className="text-xs text-secondary">{ord.customer?.email || ""}</p>
                               </td>
-                              <td className="py-3.5 px-4 text-secondary max-w-[200px] truncate">
+                              <td className="py-3.5 px-4 text-secondary max-w-50 truncate">
                                 {(() => {
                                   let txt = ord.itemsSummary || "";
                                   if (txt.includes("undefined") || !txt) {
@@ -1954,7 +1954,7 @@ export default function AdminDashboardPage() {
                           }
                         }}
                         placeholder="Paste image URL (https://...)"
-                        className="flex-1 min-w-[180px] bg-surface-container-low border border-outline-variant rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:border-primary"
+                        className="flex-1 min-w-45 bg-surface-container-low border border-outline-variant rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:border-primary"
                       />
                       <button
                         type="button"
@@ -2431,30 +2431,7 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
-                <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div>
-                    <h4 className="text-sm font-extrabold text-indigo-950 flex items-center gap-2">
-                      <span>🎨 Admin Design Studio: Set Default Positions & Elements</span>
-                    </h4>
-                    <p className="text-xs text-indigo-800 mt-1">
-                      After creating or saving the template, open the Studio Editor in Admin Mode. You can add text fields, logo placeholders, shapes, and adjust their exact X/Y positions, fonts, and colors so users start with your exact layout when customizing.
-                    </p>
-                  </div>
-                  {editingTemplateId ? (
-                    <button
-                      type="button"
-                      onClick={() => openAdminStudio(editingTemplateId, templateForm)}
-                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold text-xs shrink-0 transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span>Launch Studio Editor</span>
-                      <span>↗</span>
-                    </button>
-                  ) : (
-                    <span className="text-xs font-bold text-indigo-700 bg-indigo-100 px-3 py-1.5 rounded-lg shrink-0">
-                      Save Template first to launch Studio
-                    </span>
-                  )}
-                </div>
+
               </form>
             </div>
           )}

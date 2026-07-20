@@ -612,15 +612,6 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                           loading="lazy"
                         />
 
-                        {/* Favourites Button Top Right */}
-                        <button
-                          onClick={(e) => toggleFavourite(template.id, e)}
-                          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-700 hover:text-rose-500 shadow-md flex items-center justify-center transition-colors"
-                        >
-                          <span className={`text-sm font-bold ${isFav ? 'text-rose-500' : ''}`}>
-                            {isFav ? '♥' : '♡'}
-                          </span>
-                        </button>
 
                         {/* Optional Badge Top Left */}
                         {template.badge && (
@@ -639,22 +630,6 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                         )}
                       </div>
 
-                      {/* Color Swatch Dots */}
-                      <div className="flex items-center justify-between mb-2.5 px-1">
-                        <div className="flex items-center gap-1.5">
-                          {(template.colors || ['#2563EB', '#1E293B', '#10B981']).slice(0, 5).map((colorHex, cIdx) => (
-                            <span
-                              key={cIdx}
-                              style={{ backgroundColor: colorHex }}
-                              className="w-3.5 h-3.5 rounded-full border border-slate-300/80 shadow-2xs block"
-                              title={colorHex}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-[11px] font-bold text-slate-400">
-                          {template.orientation || 'Standard'}
-                        </span>
-                      </div>
 
                       {/* Title & Pricing */}
                       <h3 className="text-sm sm:text-base font-extrabold text-slate-900 group-hover:text-[#CC3B10] transition-colors leading-snug line-clamp-2 mb-2">
@@ -662,16 +637,6 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                       </h3>
 
                       <div className="flex flex-col gap-0.5 text-xs font-bold text-slate-800 mb-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-500 font-semibold text-[11px]">Base Price:</span>
-                          <span className="font-black text-slate-900">{template.price || categoryInfo.basePrice || '₹200.00'}</span>
-                        </div>
-                        <div className="flex items-center justify-between pt-1 border-t border-slate-100">
-                          <span className="text-[#CC3B10] font-extrabold text-[11px]">Pricing As Per Unit:</span>
-                          <span className="text-[#CC3B10] font-black text-xs">
-                            {template.unitPrice || categoryInfo.unitPriceText || '₹2.00 each / 100 units'}
-                          </span>
-                        </div>
                         <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] text-slate-500 font-medium">
                           <span>Template Size:</span>
                           <span className="font-extrabold text-slate-800 truncate max-w-[140px]">{template.size || '85mm x 55mm'}</span>

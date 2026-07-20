@@ -129,7 +129,7 @@ export default function TemplateHubClient() {
               className="group bg-white rounded-3xl p-6 border border-slate-200/80 shadow-2xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
             >
               <div>
-                <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-slate-100 mb-4">
+                <div className="relative aspect-16/10 w-full rounded-2xl overflow-hidden bg-slate-100 mb-4">
                   <img
                     src={cat.templates?.[0]?.image || 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80'}
                     alt={cat.name}
@@ -175,7 +175,7 @@ export default function TemplateHubClient() {
               className="group bg-white rounded-3xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
             >
               <div>
-                <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-slate-100 mb-4">
+                <div className="relative aspect-16/10 w-full rounded-2xl overflow-hidden bg-slate-100 mb-4">
                   <img
                     src={t.frontImage || t.image}
                     alt={t.title}
