@@ -32,7 +32,7 @@ export default function DynamicTemplateCategoryLoading() {
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           
           {/* Left Sidebar Skeleton (Filters) */}
-          <div className="w-full lg:w-64 flex-shrink-0 bg-white rounded-2xl border border-slate-200/80 p-5 space-y-6 shadow-sm hidden lg:block">
+          <div className="w-full lg:w-64 shrink-0 bg-white rounded-2xl border border-slate-200/80 p-5 space-y-6 shadow-sm hidden lg:block">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div className="h-5 w-28 bg-slate-300 rounded-md" />
               <div className="h-4 w-12 bg-slate-200 rounded-md" />
@@ -67,10 +67,10 @@ export default function DynamicTemplateCategoryLoading() {
             <div className="flex items-center justify-between gap-4 bg-white p-3.5 rounded-xl border border-slate-200/70 shadow-sm">
               <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-8 w-24 bg-slate-100 rounded-lg flex-shrink-0" />
+                  <div key={i} className="h-8 w-24 bg-slate-100 rounded-lg shrink-0" />
                 ))}
               </div>
-              <div className="h-9 w-40 bg-slate-100 rounded-lg flex-shrink-0" />
+              <div className="h-9 w-40 bg-slate-100 rounded-lg shrink-0" />
             </div>
 
             {/* Templates Grid Skeleton */}
@@ -82,7 +82,7 @@ export default function DynamicTemplateCategoryLoading() {
                 >
                   {/* Template Card Preview Skeleton */}
                   <div className="p-4 space-y-3">
-                    <div className="aspect-[1.75/1] w-full rounded-xl bg-gradient-to-br from-slate-100 via-slate-200/70 to-slate-100 relative flex items-center justify-center border border-slate-100">
+                    <div className="aspect-1.75/1 w-full rounded-xl bg-linear-to-br from-slate-100 via-slate-200/70 to-slate-100 relative flex items-center justify-center border border-slate-100">
                       <div className="w-8 h-8 rounded-full bg-slate-200/80 flex items-center justify-center">
                         <span className="material-symbols-outlined text-sm text-slate-400">palette</span>
                       </div>

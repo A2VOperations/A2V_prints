@@ -589,7 +589,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                       <div className="flex flex-col gap-0.5 text-xs font-bold text-slate-800 mb-4">
                         <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] text-slate-500 font-medium">
                           <span>Template Size:</span>
-                          <span className="font-extrabold text-slate-800 truncate max-w-[140px]">{template.size || '85mm x 55mm'}</span>
+                          <span className="font-extrabold text-slate-800 truncate max-w-35">{template.size || '85mm x 55mm'}</span>
                         </div>
                       </div>
                     </div>
@@ -617,7 +617,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
               })}
 
               {/* Promotional Card: Work with a designer */}
-              <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#334155] rounded-3xl p-6 text-white shadow-xl flex flex-col justify-between min-h-[340px]">
+              <div className="bg-linear-to-br from-[#0F172A] via-[#1E293B] to-[#334155] rounded-3xl p-6 text-white shadow-xl flex flex-col justify-between min-h-85">
                 <div>
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-orange-400 text-[10px] font-extrabold uppercase tracking-wider mb-4 border border-white/10">
                     Design Services
@@ -659,7 +659,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
       {/* Interactive 3D Card Preview & Customizer Modal */}
       {selectedTemplate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-5xl w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col lg:flex-row min-h-[580px] relative my-6">
+          <div className="bg-white rounded-3xl max-w-5xl w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col lg:flex-row min-h-145 relative my-6">
 
             {/* Close Button Top Right */}
             <button
@@ -693,7 +693,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
 
               {/* Center: 3D Perspective Container */}
               <div
-                className="w-full max-w-md my-8 sm:my-12 flex items-center justify-center [perspective:1200px]"
+                className="w-full max-w-md my-8 sm:my-12 flex items-center justify-center perspective-distant"
                 onMouseMove={(e) => {
                   const rect = e.currentTarget.getBoundingClientRect();
                   const x = ((e.clientX - rect.left) / rect.width - 0.5) * 26; // max tilt 26 deg
@@ -879,7 +879,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                       </button>
                     </div>
 
-                    <div className="space-y-3.5 max-h-[380px] overflow-y-auto pr-1">
+                    <div className="space-y-3.5 max-h-95 overflow-y-auto pr-1">
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">Company / Brand Name</label>
                         <input
