@@ -367,6 +367,8 @@ function StudioEditorContent() {
   const [zoomLevel, setZoomLevel] = useState(100); // 75 | 100 | 125 | 150
   const [showSafetyArea, setShowSafetyArea] = useState(true);
   const [showBleed, setShowBleed] = useState(true);
+  const [showGridLines, setShowGridLines] = useState(false);
+  const [activeGuides, setActiveGuides] = useState([]);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [showNextModal, setShowNextModal] = useState(false);
   const [hasApprovedDesign, setHasApprovedDesign] = useState(false);
@@ -961,6 +963,119 @@ function StudioEditorContent() {
     newX = Math.max(-50, Math.min(newX, 600));
     newY = Math.max(-50, Math.min(newY, 330));
 
+    // Calculate smart alignment / snap guide lines
+    const draggedDom = document.getElementById(draggingEl);
+    const draggedElObj = currentElements.find(el => el.id === draggingEl);
+    const dragW = draggedDom ? draggedDom.offsetWidth : (draggedElObj?.width || 100);
+    const dragH = draggedDom ? draggedDom.offsetHeight : (draggedElObj?.height || 40);
+
+    const canvasW = canvasRef.current.clientWidth || 620;
+    const canvasH = canvasRef.current.clientHeight || 350;
+
+    const targetX = [
+      { pos: 0, label: '0px' },
+      { pos: Math.round(canvasW / 2), label: 'Center' },
+      { pos: Math.round(canvasW), label: 'Border' }
+    ];
+    const targetY = [
+      { pos: 0, label: '0px' },
+      { pos: Math.round(canvasH / 2), label: 'Middle' },
+      { pos: Math.round(canvasH), label: 'Border' }
+    ];
+
+    currentElements.forEach(other => {
+      if (other.id === draggingEl) return;
+      const otherDom = document.getElementById(other.id);
+      const otherW = otherDom ? otherDom.offsetWidth : (other.width || 100);
+      const otherH = otherDom ? otherDom.offsetHeight : (other.height || 40);
+
+      targetX.push({ pos: Math.round(other.x), label: '' });
+      targetX.push({ pos: Math.round(other.x + otherW / 2), label: '' });
+      targetX.push({ pos: Math.round(other.x + otherW), label: '' });
+
+      targetY.push({ pos: Math.round(other.y), label: '' });
+      targetY.push({ pos: Math.round(other.y + otherH / 2), label: '' });
+      targetY.push({ pos: Math.round(other.y + otherH), label: '' });
+    });
+
+    if (showGridLines) {
+      const step = 20;
+      for (let x = step; x < canvasW; x += step) {
+        targetX.push({ pos: x, label: `${x}px` });
+      }
+      for (let y = step; y < canvasH; y += step) {
+        targetY.push({ pos: y, label: `${y}px` });
+      }
+    }
+
+    const snapThreshold = 6;
+    let bestSnapX = null;
+    let minDiffX = snapThreshold + 1;
+    let matchedGuideX = null;
+
+    targetX.forEach(t => {
+      const diffLeft = Math.abs(newX - t.pos);
+      if (diffLeft < minDiffX) {
+        minDiffX = diffLeft;
+        bestSnapX = t.pos;
+        matchedGuideX = t.pos;
+      }
+      const diffCenter = Math.abs((newX + dragW / 2) - t.pos);
+      if (diffCenter < minDiffX) {
+        minDiffX = diffCenter;
+        bestSnapX = t.pos - dragW / 2;
+        matchedGuideX = t.pos;
+      }
+      const diffRight = Math.abs((newX + dragW) - t.pos);
+      if (diffRight < minDiffX) {
+        minDiffX = diffRight;
+        bestSnapX = t.pos - dragW;
+        matchedGuideX = t.pos;
+      }
+    });
+
+    if (bestSnapX !== null) {
+      newX = bestSnapX;
+    }
+
+    let bestSnapY = null;
+    let minDiffY = snapThreshold + 1;
+    let matchedGuideY = null;
+
+    targetY.forEach(t => {
+      const diffTop = Math.abs(newY - t.pos);
+      if (diffTop < minDiffY) {
+        minDiffY = diffTop;
+        bestSnapY = t.pos;
+        matchedGuideY = t.pos;
+      }
+      const diffMiddle = Math.abs((newY + dragH / 2) - t.pos);
+      if (diffMiddle < minDiffY) {
+        minDiffY = diffMiddle;
+        bestSnapY = t.pos - dragH / 2;
+        matchedGuideY = t.pos;
+      }
+      const diffBottom = Math.abs((newY + dragH) - t.pos);
+      if (diffBottom < minDiffY) {
+        minDiffY = diffBottom;
+        bestSnapY = t.pos - dragH;
+        matchedGuideY = t.pos;
+      }
+    });
+
+    if (bestSnapY !== null) {
+      newY = bestSnapY;
+    }
+
+    const newGuides = [];
+    if (matchedGuideX !== null) {
+      newGuides.push({ type: 'vertical', position: matchedGuideX });
+    }
+    if (matchedGuideY !== null) {
+      newGuides.push({ type: 'horizontal', position: matchedGuideY });
+    }
+    setActiveGuides(newGuides);
+
     setCurrentElements(prev =>
       prev.map(el => (el.id === draggingEl ? { ...el, x: Math.round(newX), y: Math.round(newY) } : el))
     );
@@ -970,6 +1085,7 @@ function StudioEditorContent() {
     if (draggingEl || resizingEl) {
       setDraggingEl(null);
       setResizingEl(null);
+      setActiveGuides([]);
       saveToHistory();
     }
   };
@@ -2700,6 +2816,14 @@ function StudioEditorContent() {
           className="flex-1 bg-[#E8ECEF] relative overflow-auto flex flex-col items-center justify-center p-6 sm:p-12"
           onMouseMove={handleMouseMoveOnCanvas}
           onMouseUp={handleMouseUpOnCanvas}
+          onMouseLeave={() => {
+            if (draggingEl || resizingEl) {
+              setDraggingEl(null);
+              setResizingEl(null);
+              setActiveGuides([]);
+              saveToHistory();
+            }
+          }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setSelectedId(null);
@@ -2716,6 +2840,15 @@ function StudioEditorContent() {
             </div>
 
             <div className="flex items-center gap-2 pointer-events-auto">
+              <button
+                onClick={() => setShowGridLines(!showGridLines)}
+                className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all border ${showGridLines
+                  ? 'bg-purple-600 text-white border-purple-600 shadow-2xs'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  }`}
+              >
+                Grid Lines
+              </button>
               <button
                 onClick={() => setShowSafetyArea(!showSafetyArea)}
                 className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all border ${showSafetyArea
@@ -2791,6 +2924,45 @@ function StudioEditorContent() {
                 </div>
               )}
 
+              {/* Background Grid Lines Overlay */}
+              {showGridLines && (
+                <div
+                  className="absolute inset-0 pointer-events-none z-0"
+                  style={{
+                    backgroundImage: `
+                      linear-gradient(to right, rgba(99, 102, 241, 0.18) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(99, 102, 241, 0.18) 1px, transparent 1px)
+                    `,
+                    backgroundSize: '20px 20px'
+                  }}
+                />
+              )}
+
+              {/* Dynamic Alignment / Snap Guide Lines when moving container */}
+              {activeGuides.map((guide, idx) => (
+                guide.type === 'vertical' ? (
+                  <div
+                    key={`guide-v-${idx}`}
+                    style={{ left: `${guide.position}px` }}
+                    className="absolute top-0 bottom-0 w-[1.5px] bg-pink-500 shadow-[0_0_4px_rgba(236,72,153,0.8)] pointer-events-none z-50 flex flex-col items-center justify-center"
+                  >
+                    <span className="bg-pink-600 text-white text-[9px] font-bold px-1 py-0.5 rounded shadow-xs -translate-y-6 whitespace-nowrap">
+                      {Math.round(guide.position)}px
+                    </span>
+                  </div>
+                ) : (
+                  <div
+                    key={`guide-h-${idx}`}
+                    style={{ top: `${guide.position}px` }}
+                    className="absolute left-0 right-0 h-[1.5px] bg-pink-500 shadow-[0_0_4px_rgba(236,72,153,0.8)] pointer-events-none z-50 flex items-center justify-center"
+                  >
+                    <span className="bg-pink-600 text-white text-[9px] font-bold px-1 py-0.5 rounded shadow-xs translate-x-12 whitespace-nowrap">
+                      {Math.round(guide.position)}px
+                    </span>
+                  </div>
+                )
+              ))}
+
               {/* Render All Elements on Canvas */}
               {currentElements.map((el) => {
                 const isSelected = selectedId === el.id;
@@ -2798,6 +2970,7 @@ function StudioEditorContent() {
                 return (
                   <div
                     key={el.id}
+                    id={el.id}
                     onMouseDown={(e) => handleMouseDownOnElement(e, el)}
                     onDoubleClick={(e) => {
                       e.stopPropagation();

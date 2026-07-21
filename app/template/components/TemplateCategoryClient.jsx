@@ -90,9 +90,6 @@ const getEditerParams = (templateObj, formState = {}, fallbackCategory = 'visiti
 export default function TemplateCategoryClient({ categoryId, initialData }) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('Recommended');
-  const [showOnlyFavourites, setShowOnlyFavourites] = useState(false);
-  const [favourites, setFavourites] = useState({});
   const [dbTemplates, setDbTemplates] = useState([]);
 
   React.useEffect(() => {
@@ -301,12 +298,6 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
       useCase: []
     });
     setSearchQuery('');
-    setShowOnlyFavourites(false);
-  };
-
-  const toggleFavourite = (id, e) => {
-    if (e) e.stopPropagation();
-    setFavourites(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   const toggleAccordion = (section) => {
@@ -349,10 +340,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
         const matchInd = (t.industry || '').toLowerCase().includes(q);
         if (!matchTitle && !matchStyle && !matchInd) return false;
       }
-      // Favourites filter
-      if (showOnlyFavourites && !favourites[t.id]) {
-        return false;
-      }
+  
       // Active facet filters
       if (activeFilters.color.length > 0) {
         // Simple color substring checking or attribute checking
@@ -374,24 +362,9 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
       return true;
     });
 
-    // Sorting
-    if (sortBy === 'Price: Low to High') {
-      list.sort((a, b) => {
-        const pA = parseFloat(String(a.price || '').replace(/[^0-9.]/g, '')) || 0;
-        const pB = parseFloat(String(b.price || '').replace(/[^0-9.]/g, '')) || 0;
-        return pA - pB;
-      });
-    } else if (sortBy === 'Price: High to Low') {
-      list.sort((a, b) => {
-        const pA = parseFloat(String(a.price || '').replace(/[^0-9.]/g, '')) || 0;
-        const pB = parseFloat(String(b.price || '').replace(/[^0-9.]/g, '')) || 0;
-        return pB - pA;
-      });
-    } else if (sortBy === 'Popular') {
-      list.sort((a, b) => (b.reviews || 0) - (a.reviews || 0));
-    }
+    
     return list;
-  }, [allCategoryTemplates, searchQuery, showOnlyFavourites, favourites, activeFilters, sortBy]);
+  }, [allCategoryTemplates, searchQuery,activeFilters]);
 
   return (
     <div className="min-h-screen bg-[#FDFBF9] text-slate-800 font-sans pb-24">
@@ -438,9 +411,9 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
             </div>
           </div>
 
-          {/* Search bar & Favourites Toggle Row */}
+          {/* Search bar Toggle Row */}
           <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-4 border-t border-slate-100">
-            <div className="relative flex-grow max-w-lg">
+            <div className="relative grow max-w-lg">
               <input
                 type="text"
                 placeholder={`Search templates in ${categoryInfo.name}...`}
@@ -458,16 +431,6 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
               )}
             </div>
 
-            <button
-              onClick={() => setShowOnlyFavourites(!showOnlyFavourites)}
-              className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${showOnlyFavourites
-                  ? 'bg-rose-500 text-white border-rose-600 shadow-md'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                }`}
-            >
-              <span className="text-base leading-none">{showOnlyFavourites ? '♥' : '♡'}</span>
-              <span>Favourites ({Object.values(favourites).filter(Boolean).length})</span>
-            </button>
           </div>
         </div>
       </div>
@@ -559,7 +522,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                 <span className="text-xs sm:text-sm font-medium text-slate-600">
                   Showing <strong className="text-slate-900 font-bold">{filteredTemplates.length}</strong> results
                 </span>
-                {(searchQuery || Object.values(activeFilters).some(a => a.length > 0) || showOnlyFavourites) && (
+                {(searchQuery || Object.values(activeFilters).some(a => a.length > 0)) && (
                   <button
                     onClick={clearAllFilters}
                     className="text-xs font-bold text-[#CC3B10] bg-orange-50 px-2.5 py-1 rounded-lg border border-orange-100 hover:bg-orange-100 transition-colors"
@@ -569,19 +532,7 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-slate-600">Sort by:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#CC3B10] cursor-pointer"
-                >
-                  <option value="Recommended">Recommended</option>
-                  <option value="Popular">Popular & Top Rated</option>
-                  <option value="Price: Low to High">Price: Low to High</option>
-                  <option value="Price: High to Low">Price: High to Low</option>
-                </select>
-              </div>
+              
             </div>
 
             {/* Templates Grid */}
@@ -589,7 +540,6 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
 
               {/* Template Cards */}
               {filteredTemplates.map((template) => {
-                const isFav = favourites[template.id];
                 const displayTitle = makeItYoursActive && brandNameInput ? `${brandNameInput} - ${template.style || 'Custom'} Design` : template.title;
                 const displayPerson = makeItYoursActive && brandTaglineInput ? brandTaglineInput : template.personName;
 
@@ -739,13 +689,6 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
                     ✨ {is3dFloating ? '3D Floating Active' : 'Enable 3D Floating'}
                   </button>
                 </div>
-
-                <button
-                  onClick={() => toggleFavourite(selectedTemplate.id)}
-                  className="w-9 h-9 rounded-full bg-white text-slate-600 hover:text-rose-500 shadow-sm flex items-center justify-center text-base transition-all"
-                >
-                  {favourites[selectedTemplate.id] ? '♥' : '♡'}
-                </button>
               </div>
 
               {/* Center: 3D Perspective Container */}
