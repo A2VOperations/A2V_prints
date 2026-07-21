@@ -947,7 +947,7 @@ export default function AdminDashboardPage() {
 
       {/* MAIN CONTENT AREA */}
       <main className="ml-sidebar-width pt-16 min-h-screen w-[calc(100%-260px)]">
-        <div className="p-6 max-w-[1440px] mx-auto">
+        <div className="p-6 max-w-max-content-width mx-auto">
           {/* TAB 1: DASHBOARD OVERVIEW */}
           {activeTab === "overview" && (
             <div className="space-y-8 animate-fadeIn">
@@ -1420,7 +1420,7 @@ export default function AdminDashboardPage() {
                         {productForm.customOptions.map((opt, optIdx) => (
                           <div key={optIdx} className="border border-outline-variant rounded-xl p-4 bg-surface-container-low/40 space-y-3">
                             <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-outline-variant">
-                              <div className="flex items-center gap-3 flex-1 min-w-[200px]">
+                              <div className="flex items-center gap-3 flex-1 min-w-50">
                                 <label className="text-xs font-bold text-secondary uppercase tracking-wider shrink-0">Column Name:</label>
                                 <input
                                   type="text"
@@ -2302,7 +2302,7 @@ export default function AdminDashboardPage() {
                           value={templateForm.unitPrice}
                           onChange={(e) => setTemplateForm({ ...templateForm, unitPrice: e.target.value })}
                           placeholder="e.g. ₹2.00 each / 100 units"
-                          className="w-full px-4 py-2.5 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm focus:outline-none focus:border-primary font-semibold text-primary"
+                          className="w-full px-4 py-2.5 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm focus:outline-none focus:border-primary font-semibold"
                         />
                       </div>
                     </div>

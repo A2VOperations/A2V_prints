@@ -143,15 +143,6 @@ export default function Topbar() {
             </div>
           </div>
 
-          {/* Design Templates */}
-          <Link
-            href="/template"
-            className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full font-bold text-yellow-200 hover:text-white transition-all cursor-pointer shadow-2xs"
-          >
-            <span>🎨</span>
-            <span>Design Templates</span>
-          </Link>
-
           {/* Order Tracking */}
           <a
             href="#"

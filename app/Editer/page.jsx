@@ -244,9 +244,7 @@ const renderDesignPreview = (elements = [], background = '#ffffff', corners = ''
       }}
       className={`relative overflow-hidden flex items-center justify-center border border-slate-200/80 transform hover:scale-105 transition-all duration-300 select-none bg-white max-w-[85vw] shrink-0 ${corners.includes('Rounded') ? (maxDim >= 300 ? 'rounded-3xl' : 'rounded-xl') : 'rounded-none'}`}
     >
-      {elements.length === 0 ? (
-        <span className="text-xs font-bold text-slate-400">No elements</span>
-      ) : (
+      {elements.length === 0 ? null : (
         elements.map((el, idx) => {
           let textShadow = 'none';
           let bgColor = 'transparent';
@@ -2800,7 +2798,7 @@ function StudioEditorContent() {
                       ⚡
                     </div>
                     <h4 className="text-sm font-black text-slate-900">Advanced Studio Tools</h4>
-                    <p className="text-xs text-slate-500 max-w-[220px] mx-auto leading-relaxed">
+                    <p className="text-xs text-slate-500 max-w-55 mx-auto leading-relaxed">
                       QR Code Generator, Foil & Spot UV texture previews, and bulk variable printing tools will be enabled here when you run follow-up commands!
                     </p>
                   </div>
@@ -3025,7 +3023,7 @@ function StudioEditorContent() {
                           <select
                             value={el.fontFamily || 'Fira Sans'}
                             onChange={(e) => updateSelectedProperty('fontFamily', e.target.value)}
-                            className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer w-28 max-w-[110px]"
+                            className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer w-28 max-w-27.5"
                           >
                             {FONT_FAMILIES.map(font => (
                               <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>
@@ -3144,7 +3142,7 @@ function StudioEditorContent() {
                             {showFormatMenu && (
                               <div
                                 onClick={(e) => e.stopPropagation()}
-                                className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 flex items-center gap-3.5 whitespace-nowrap min-w-[190px]"
+                                className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 flex items-center gap-3.5 whitespace-nowrap min-w-47.5"
                               >
                                 <span className="text-xs font-extrabold text-slate-800">Case</span>
 
@@ -3249,7 +3247,7 @@ function StudioEditorContent() {
                           }}
                           className="absolute bg-slate-900 text-white rounded-lg px-2.5 py-1.5 flex items-center gap-2 shadow-xl z-50 text-xs w-max pointer-events-auto"
                         >
-                          <span className="font-extrabold truncate max-w-[100px] text-[10px] text-sky-300">{el.label || el.type}</span>
+                          <span className="font-extrabold truncate max-w-25 text-[10px] text-sky-300">{el.label || el.type}</span>
                           {el.type === 'shape' && (
                             <div className="flex items-center gap-1.5 px-1 bg-slate-800 rounded">
                               <span className="text-[10px] text-slate-300 font-semibold">Fill:</span>
@@ -3392,7 +3390,7 @@ function StudioEditorContent() {
                               }}
                               rows={Math.max(1, (el.text || '').split('\n').length)}
                               placeholder="Type text right here..."
-                              className="break-words font-sans focus:outline-none focus:ring-0 cursor-text transition-none"
+                              className="wrap-break-word font-sans focus:outline-none focus:ring-0 cursor-text transition-none"
                             />
                           </div>
                         );
@@ -3417,7 +3415,7 @@ function StudioEditorContent() {
                             whiteSpace: 'pre-wrap',
                             transform: isCurved ? `perspective(400px) rotateX(${el.curveRadius !== undefined ? el.curveRadius : 30}deg)` : 'none'
                           }}
-                          className="w-full break-words transition-all"
+                          className="w-full wrap-break-word transition-all"
                         >
                           {isCurved ? (
                             <svg viewBox="0 0 300 120" className="w-full h-auto overflow-visible">
@@ -3467,7 +3465,7 @@ function StudioEditorContent() {
             >
               −
             </button>
-            <span className="text-xs font-black text-slate-800 min-w-[40px] text-center">
+            <span className="text-xs font-black text-slate-800 min-w-10 text-center">
               {zoomLevel}%
             </span>
             <button
@@ -3609,7 +3607,7 @@ function StudioEditorContent() {
             </button>
 
             {/* LEFT COLUMN: Visual Preview Cards (Front & Back) & Circular Zoom Bubble */}
-            <div className="w-full lg:w-3/5 bg-slate-100/80 p-6 sm:p-8 flex flex-col items-center justify-center relative min-h-[520px] sm:min-h-[660px] overflow-y-auto border-b lg:border-b-0 lg:border-r border-slate-200/60">
+            <div className="w-full lg:w-3/5 bg-slate-100/80 p-6 sm:p-8 flex flex-col items-center justify-center relative min-h-130 sm:min-h-165 overflow-y-auto border-b lg:border-b-0 lg:border-r border-slate-200/60">
 
               <div className="w-full flex-1 flex flex-col items-center justify-center gap-6 sm:gap-8 py-4 my-auto">
 

@@ -109,7 +109,6 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
 
   // "Make it yours" Brand Kit State
   const [makeItYoursActive, setMakeItYoursActive] = useState(false);
-
   const [brandNameInput, setBrandNameInput] = useState('');
   const [brandTaglineInput, setBrandTaglineInput] = useState('');
 
@@ -654,8 +653,6 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
         </div>
       </div>
 
-      
-
       {/* Interactive 3D Card Preview & Customizer Modal */}
       {selectedTemplate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
@@ -668,29 +665,8 @@ export default function TemplateCategoryClient({ categoryId, initialData }) {
             >
               ×
             </button>
-
             {/* Left Area: 3D Card Visual Studio & Front/Back Controls */}
             <div className="lg:w-[62%] bg-[#d4d2c0] p-6 sm:p-10 flex flex-col justify-between items-center relative overflow-hidden border-b lg:border-b-0 lg:border-r border-slate-200/80">
-
-              {/* Top Bar of Left Preview */}
-              <div className="w-full flex items-center justify-between z-10">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 text-slate-800 text-xs font-black shadow-xs border border-slate-200/60">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    {categorySlug === 'visiting-cards' || selectedTemplate.hasBackSide ? `3D Preview Mode (${cardSide})` : '3D Design Preview Mode'}
-                  </span>
-                  <button
-                    onClick={() => setIs3dFloating(!is3dFloating)}
-                    className={`text-xs font-bold px-3 py-1 rounded-full transition-all border ${is3dFloating
-                        ? 'bg-[#031A30] text-white border-transparent shadow-xs'
-                        : 'bg-white text-slate-600 border-slate-200/60 hover:bg-slate-50'
-                      }`}
-                  >
-                    ✨ {is3dFloating ? '3D Floating Active' : 'Enable 3D Floating'}
-                  </button>
-                </div>
-              </div>
-
               {/* Center: 3D Perspective Container */}
               <div
                 className="w-full max-w-md my-8 sm:my-12 flex items-center justify-center perspective-distant"

@@ -206,9 +206,7 @@ const renderDesignPreview = (elements = [], background = '#ffffff', corners = ''
       }}
       className={`relative overflow-hidden flex items-center justify-center border border-slate-200/80 transform hover:scale-105 transition-all duration-300 select-none bg-white max-w-[85vw] shrink-0 ${(corners || '').includes('Rounded') ? (maxDim >= 300 ? 'rounded-3xl' : 'rounded-xl') : 'rounded-none'}`}
     >
-      {(!elements || elements.length === 0) ? (
-        <span className="text-[9px] font-bold text-slate-400">No elements</span>
-      ) : (
+      {(!elements || elements.length === 0) ? null : (
         elements.map((el, idx) => {
           let textShadow = 'none';
           let bgColor = 'transparent';
