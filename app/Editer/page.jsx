@@ -5,6 +5,21 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { addToCart, compressImageForStorage } from '../lib/cartWishlist';
 import { useDatabaseData } from '../lib/useDatabaseData';
+import { BiText } from "react-icons/bi";
+import { FaCloudUploadAlt } from "react-icons/fa";
+import { SiTaichigraphics } from "react-icons/si";
+import { TbBackground } from "react-icons/tb";
+import { IoQrCode, IoImagesOutline } from "react-icons/io5";
+import { HiTemplate } from "react-icons/hi";
+import { TbPalette } from "react-icons/tb";
+import { MdDelete } from "react-icons/md";
+import { HiDocumentDuplicate } from "react-icons/hi2";
+import { VscTextSize } from "react-icons/vsc";
+import { FaArrowRight } from "react-icons/fa6";
+import { CiPickerHalf } from "react-icons/ci";
+import { FiCrop } from "react-icons/fi";
+
+
 
 // Initial default elements for Front and Back sides
 const DEFAULT_FRONT_ELEMENTS = [];
@@ -541,6 +556,10 @@ function StudioEditorContent() {
 
   const [recentColors, setRecentColors] = useState(['#751fb8', '#000000']);
   const [bgTab, setBgTab] = useState('Swatches');
+  const [gradientType, setGradientType] = useState('linear');
+  const [gradientAngle, setGradientAngle] = useState(135);
+  const [gradientColor1, setGradientColor1] = useState('#0070e0');
+  const [gradientColor2, setGradientColor2] = useState('#10b981');
   const [bgHue, setBgHue] = useState(280);
   const [pickerPos, setPickerPos] = useState({ x: 75, y: 30 });
   const [qrInput, setQrInput] = useState('');
@@ -548,6 +567,82 @@ function StudioEditorContent() {
   const [qrStyle, setQrStyle] = useState('classic');
   const [history, setHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+
+  // Image Cropping State
+  const [croppingElement, setCroppingElement] = useState(null);
+  const [cropBounds, setCropBounds] = useState({ top: 0, bottom: 0, left: 0, right: 0 });
+  const [cropShape, setCropShape] = useState('rect');
+
+  const handleApplyCrop = () => {
+    if (!croppingElement) return;
+    const targetId = croppingElement.id;
+    const srcUrl = croppingElement.originalUrl || croppingElement.url;
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const nw = img.naturalWidth || img.width || 300;
+      const nh = img.naturalHeight || img.height || 300;
+
+      const sx = (cropBounds.left / 100) * nw;
+      const sy = (cropBounds.top / 100) * nh;
+      const sw = Math.max(10, nw * (1 - (cropBounds.left + cropBounds.right) / 100));
+      const sh = Math.max(10, nh * (1 - (cropBounds.top + cropBounds.bottom) / 100));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(sw);
+      canvas.height = Math.round(sh);
+      const ctx = canvas.getContext('2d');
+
+      if (cropShape === 'circle') {
+        ctx.beginPath();
+        ctx.arc(sw / 2, sh / 2, Math.min(sw, sh) / 2, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+      }
+
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+      const croppedDataUrl = canvas.toDataURL('image/png');
+
+      setCurrentElements(prev =>
+        prev.map(el => {
+          if (el.id === targetId) {
+            return {
+              ...el,
+              originalUrl: el.originalUrl || el.url,
+              url: croppedDataUrl,
+              width: Math.max(20, Math.round(sw * ((el.width || 150) / nw))),
+              height: Math.max(20, Math.round(sh * ((el.height || 150) / nh)))
+            };
+          }
+          return el;
+        })
+      );
+      setCroppingElement(null);
+      setCropBounds({ top: 0, bottom: 0, left: 0, right: 0 });
+      saveToHistory();
+    };
+    img.src = srcUrl;
+  };
+
+  const handleResetCrop = () => {
+    if (!croppingElement) return;
+    if (croppingElement.originalUrl) {
+      setCurrentElements(prev =>
+        prev.map(el => {
+          if (el.id === croppingElement.id) {
+            return {
+              ...el,
+              url: el.originalUrl
+            };
+          }
+          return el;
+        })
+      );
+    }
+    setCropBounds({ top: 0, bottom: 0, left: 0, right: 0 });
+    setCroppingElement(null);
+  };
 
   // Dragging & Resizing state on canvas
   const [draggingEl, setDraggingEl] = useState(null);
@@ -1269,17 +1364,16 @@ function StudioEditorContent() {
         {!isPreviewMode && (
           <>
             {/* LEFTMOST VERTICAL TAB ICON STRIP (Exactly like Vistaprint leftmost strip) */}
-            <aside className="w-20 bg-white border-r border-slate-200 flex flex-col items-center py-4 gap-1 shrink-0 z-30 shadow-2xs overflow-y-auto no-scrollbar">
+            <aside className="w-25 bg-white border-r border-slate-200 flex flex-col items-center py-4 gap-1 shrink-0 z-30 shadow-2xs overflow-y-auto no-scrollbar">
               {[
-                { id: 'Product options', icon: '⚙', label: 'Product options' },
-                { id: 'Text', icon: 'T', label: 'Text' },
-                { id: 'Uploads', icon: '⬆', label: 'Uploads' },
-                { id: 'Graphics', icon: '⬠', label: 'Graphics' },
-                { id: 'Background', icon: '🎨', label: 'Background' },
-                { id: 'QR-codes', icon: '▦', label: 'QR-codes' },
-                { id: 'Template', icon: '❐', label: 'Template' },
-                { id: 'Template color', icon: '🖌', label: 'Template color' },
-                { id: 'More', icon: '+', label: 'More' }
+                { id: 'Text', icon: <BiText />, label: 'Text' },
+                { id: 'Uploads', icon: <FaCloudUploadAlt />, label: 'Uploads' },
+                { id: 'Graphics', icon: <SiTaichigraphics />, label: 'Graphics' },
+                { id: 'Images', icon: <IoImagesOutline />, label: 'Images' },
+                { id: 'Background', icon: <TbBackground />, label: 'Background' },
+                { id: 'QR-codes', icon: <IoQrCode />, label: 'QR-codes' },
+                { id: 'Template', icon: <HiTemplate />, label: 'Template' },
+                { id: 'Template color', icon: <TbPalette />, label: 'Template color' },
               ].map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -1290,14 +1384,14 @@ function StudioEditorContent() {
                       if (tab.id !== 'Graphics') setGraphicsCategory(null);
                     }}
                     className={`w-16 py-2.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all group relative cursor-pointer ${isActive
-                      ? 'bg-sky-50 text-[#0070e0] font-black shadow-2xs border border-sky-200/60'
+                      ? 'text-[#0070e0] font-bold'
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-semibold'
                       }`}
                   >
-                    <span className="text-lg leading-none">{tab.icon}</span>
-                    <span className="text-[10px] leading-tight text-center px-1 line-clamp-1">{tab.label}</span>
+                    <span className="text-2xl leading-none">{tab.icon}</span>
+                    <span className="text-[12px] leading-tight text-center px-1">{tab.label}</span>
                     {isActive && (
-                      <span className="absolute -right-2 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-[#0070e0] rounded-l-full" />
+                      <span className="absolute -right-2 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#0070e0] rounded-l-full" />
                     )}
                   </button>
                 );
@@ -1309,19 +1403,17 @@ function StudioEditorContent() {
 
               {/* Drawer Header */}
               <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                <h2 className="text-sm font-black text-slate-900 tracking-tight">
-                  {activeTab === 'Background' ? 'Background color' : activeTab === 'QR-codes' ? 'QR Code Generator' : activeTab}
+                <h2 className="text-md font-black text-slate-900 tracking-tight">
+                  {activeTab === 'Background' ? 'Background color' : activeTab === 'Images' ? 'Images & Textures' : activeTab === 'QR-codes' ? 'QR Code Generator' : activeTab}
                 </h2>
-                {activeTab === 'Effects' ? (
+                {activeTab === 'Effects' && (
                   <button
                     onClick={() => setActiveTab('Text')}
-                    className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center font-bold text-slate-600 text-sm"
+                    className="w-10 h-10 rounded-lg hover:bg-slate-100 flex items-center justify-center font-bold text-slate-600 text-2xl cursor-pointer"
                     title="Close Effects"
                   >
                     ×
                   </button>
-                ) : (
-                  <span className="text-xs text-slate-400 font-bold">↗↙</span>
                 )}
               </div>
 
@@ -1370,7 +1462,7 @@ function StudioEditorContent() {
                                     title="Duplicate layer"
                                     className="p-1 text-slate-400 hover:text-blue-600 rounded"
                                   >
-                                    ❐
+                                    <HiDocumentDuplicate className='w-5 h-5' />
                                   </button>
                                   <button
                                     onClick={(e) => {
@@ -1380,7 +1472,7 @@ function StudioEditorContent() {
                                     title="Delete layer"
                                     className="p-1 text-slate-400 hover:text-rose-600 rounded"
                                   >
-                                    🗑
+                                    <MdDelete className='w-6 h-6' />
                                   </button>
                                 </div>
                               </div>
@@ -1680,80 +1772,13 @@ function StudioEditorContent() {
                   </div>
                 )}
 
-                {/* --- TAB 2: PRODUCT OPTIONS --- */}
-                {activeTab === 'Product options' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Product Orientation</label>
-                      <select
-                        value={productOptions.orientation.toLowerCase().includes('vertical') ? 'Vertical' : 'Horizontal'}
-                        onChange={(e) => setProductOptions({ ...productOptions, orientation: e.target.value })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
-                      >
-                        <option value="Horizontal">Horizontal</option>
-                        <option value="Vertical">Vertical</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Corner Style</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {['Standard Square Corners', 'Rounded Corners'].map((c) => (
-                          <button
-                            key={c}
-                            onClick={() => setProductOptions({ ...productOptions, corners: c })}
-                            className={`p-2.5 rounded-xl text-xs font-bold border text-center transition-all ${productOptions.corners === c
-                              ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                              }`}
-                          >
-                            {c.split(' ')[0]}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Paper Stock</label>
-                      <select
-                        value={productOptions.stock}
-                        onChange={(e) => setProductOptions({ ...productOptions, stock: e.target.value })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
-                      >
-                        <option>Standard Matte (300 gsm)</option>
-                        <option>Premium Gloss Coated (350 gsm)</option>
-                        <option>Spot UV Textured (350 gsm)</option>
-                        <option>Ultra Thick Painted Edge (600 gsm)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Quantity & Pricing</label>
-                      <select
-                        value={productOptions.quantity}
-                        onChange={(e) => setProductOptions({ ...productOptions, quantity: e.target.value })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
-                      >
-                        <option>100 cards - ₹200.00</option>
-                        <option>250 cards - ₹450.00 (Save 10%)</option>
-                        <option>500 cards - ₹800.00 (Save 20%)</option>
-                        <option>1,000 cards - ₹1,400.00 (Save 30%)</option>
-                      </select>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-medium">
-                      💡 Changing orientation automatically adjusts canvas safety margin boundaries!
-                    </div>
-                  </div>
-                )}
-
                 {/* --- TAB 3: UPLOADS --- */}
                 {activeTab === 'Uploads' && (
                   <div className="space-y-4">
                     <label className="border-2 border-dashed border-blue-400/80 rounded-2xl p-6 flex flex-col items-center justify-center text-center bg-blue-50/40 hover:bg-blue-50 cursor-pointer transition-colors">
                       <span className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg font-bold mb-2">⬆</span>
-                      <span className="text-xs font-extrabold text-blue-900">Upload your image / logo</span>
-                      <span className="text-[10px] text-slate-500 mt-0.5">PNG, JPG, SVG up to 25MB</span>
+                      <span className="text-md font-extrabold text-blue-900">Upload your image / logo</span>
+                      <span className="text-[12px] text-slate-500 mt-0.5">PNG, JPG, SVG up to 25MB</span>
                       <input
                         type="file"
                         accept="image/*"
@@ -1932,6 +1957,271 @@ function StudioEditorContent() {
                           ))}
                         </div>
                       </div>
+                    ) : graphicsCategory === 'Images' ? (
+                      <div>
+                        {/* Header: < Images */}
+                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => setGraphicsCategory(null)}
+                            className="flex items-center gap-1.5 text-slate-900 font-extrabold text-sm hover:text-blue-600 cursor-pointer"
+                          >
+                            <span className="text-base font-black">‹</span>
+                            <span>Images</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setGraphicsCategory(null)}
+                            className="text-slate-500 hover:text-slate-800 text-xs font-bold cursor-pointer"
+                            title="Collapse"
+                          >
+                            ↗↙
+                          </button>
+                        </div>
+
+                        {/* All Images Grid */}
+                        <div className="grid grid-cols-3 gap-2.5">
+                          {[
+                            { url: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=300&q=80', label: 'Flowers Florist' },
+                            { url: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=300&q=80', label: 'Business Meeting' },
+                            { url: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=300&q=80', label: 'Crafting Beads' },
+                            ...adminGraphicAssets.filter(g => g.category === 'image').map(g => ({ url: g.url, label: g.title, svgContent: g.svgContent }))
+                          ].map((img, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                const newId = `el-img-${Date.now()}`;
+                                setCurrentElements(prev => [
+                                  ...prev,
+                                  {
+                                    id: newId,
+                                    type: img.svgContent ? 'svg' : 'image',
+                                    url: img.url,
+                                    svgContent: img.svgContent,
+                                    label: img.label,
+                                    x: 100 + (idx % 4) * 20,
+                                    y: 60 + (idx % 4) * 20,
+                                    width: 130,
+                                    height: 130,
+                                    naturalWidth: 300,
+                                    naturalHeight: 300
+                                  }
+                                ]);
+                                setSelectedId(newId);
+                              }}
+                              className="aspect-square bg-white border border-slate-200 hover:border-blue-500 rounded-2xl overflow-hidden shadow-2xs transition-all cursor-pointer group relative"
+                              title={img.label}
+                            >
+                              <img src={img.url} alt={img.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : graphicsCategory === 'Icons' ? (
+                      <div>
+                        {/* Header: < Icons */}
+                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => setGraphicsCategory(null)}
+                            className="flex items-center gap-1.5 text-slate-900 font-extrabold text-sm hover:text-blue-600 cursor-pointer"
+                          >
+                            <span className="text-base font-black">‹</span>
+                            <span>Icons</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setGraphicsCategory(null)}
+                            className="text-slate-500 hover:text-slate-800 text-xs font-bold cursor-pointer"
+                            title="Collapse"
+                          >
+                            ↗↙
+                          </button>
+                        </div>
+
+                        {/* All Icons Grid */}
+                        <div className="grid grid-cols-3 gap-2.5">
+                          {/* Globe */}
+                          <button
+                            onClick={() => {
+                              const newId = `el-shape-${Date.now()}`;
+                              setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'icon-globe', x: 140, y: 80, width: 80, height: 80, fill: '#000000' }]);
+                              setSelectedId(newId);
+                            }}
+                            className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
+                          >
+                            <svg viewBox="0 0 100 100" className="w-full h-full">
+                              <circle cx="50" cy="50" r="44" fill="none" stroke="black" strokeWidth="8" />
+                              <ellipse cx="50" cy="50" rx="20" ry="44" fill="none" stroke="black" strokeWidth="8" />
+                              <path d="M 6 50 L 94 50 M 15 25 L 85 25 M 15 75 L 85 75" fill="none" stroke="black" strokeWidth="6" />
+                            </svg>
+                          </button>
+
+                          {/* Picture Outline Badge */}
+                          <button
+                            onClick={() => {
+                              const newId = `el-shape-${Date.now()}`;
+                              setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'icon-badge', x: 150, y: 80, width: 80, height: 80, fill: '#000000' }]);
+                              setSelectedId(newId);
+                            }}
+                            className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
+                          >
+                            <svg viewBox="0 0 100 100" className="w-full h-full">
+                              <circle cx="50" cy="50" r="44" fill="none" stroke="black" strokeWidth="8" />
+                              <polygon points="25,70 50,45 75,70" fill="black" />
+                              <circle cx="35" cy="35" r="8" fill="black" />
+                            </svg>
+                          </button>
+
+                          {/* Picture Solid Circle */}
+                          <button
+                            onClick={() => {
+                              const newId = `el-shape-${Date.now()}`;
+                              setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'icon-circle', x: 160, y: 80, width: 80, height: 80, fill: '#000000' }]);
+                              setSelectedId(newId);
+                            }}
+                            className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
+                          >
+                            <svg viewBox="0 0 100 100" className="w-full h-full">
+                              <circle cx="50" cy="50" r="48" fill="black" />
+                              <polygon points="28,70 50,48 72,70" fill="white" />
+                              <circle cx="36" cy="36" r="7" fill="white" />
+                            </svg>
+                          </button>
+
+                          {adminGraphicAssets.filter(g => g.category === 'icon').map((icon, idx) => (
+                            <button
+                              key={icon.id || idx}
+                              onClick={() => {
+                                const newId = `el-icon-${Date.now()}`;
+                                setCurrentElements(prev => [
+                                  ...prev,
+                                  {
+                                    id: newId,
+                                    type: icon.svgContent ? 'svg' : 'image',
+                                    url: icon.url,
+                                    svgContent: icon.svgContent,
+                                    label: icon.title,
+                                    x: 140 + (idx % 4) * 15,
+                                    y: 80 + (idx % 4) * 15,
+                                    width: 80,
+                                    height: 80
+                                  }
+                                ]);
+                                setSelectedId(newId);
+                              }}
+                              className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-2 shadow-2xs transition-all cursor-pointer overflow-hidden group"
+                              title={icon.title}
+                            >
+                              {icon.svgContent ? (
+                                <div dangerouslySetInnerHTML={{ __html: icon.svgContent }} className="w-full h-full flex items-center justify-center group-hover:scale-105 transition-transform [&>svg]:max-w-full [&>svg]:max-h-full" />
+                              ) : (
+                                <img src={icon.url} alt={icon.title} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : graphicsCategory === 'Illustrations' ? (
+                      <div>
+                        {/* Header: < Illustrations */}
+                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => setGraphicsCategory(null)}
+                            className="flex items-center gap-1.5 text-slate-900 font-extrabold text-sm hover:text-blue-600 cursor-pointer"
+                          >
+                            <span className="text-base font-black">‹</span>
+                            <span>Illustrations</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setGraphicsCategory(null)}
+                            className="text-slate-500 hover:text-slate-800 text-xs font-bold cursor-pointer"
+                            title="Collapse"
+                          >
+                            ↗↙
+                          </button>
+                        </div>
+
+                        {/* All Illustrations Grid */}
+                        <div className="grid grid-cols-3 gap-2.5">
+                          {/* Twin Stars */}
+                          <button
+                            onClick={() => {
+                              const newId = `el-shape-${Date.now()}`;
+                              setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'illust-stars', x: 140, y: 80, width: 100, height: 70, fill: '#cbd5e1' }]);
+                              setSelectedId(newId);
+                            }}
+                            className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
+                          >
+                            <svg viewBox="0 0 140 100" className="w-full h-full">
+                              <polygon points="35,10 43,30 65,30 47,43 54,65 35,51 16,65 23,43 5,30 27,30" fill="none" stroke="#cbd5e1" strokeWidth="5" strokeLinejoin="round" />
+                              <polygon points="95,25 101,41 118,41 104,51 109,68 95,58 81,68 86,51 72,41 89,41" fill="none" stroke="#cbd5e1" strokeWidth="4" strokeLinejoin="round" />
+                            </svg>
+                          </button>
+
+                          {/* 12-point Starburst Badge */}
+                          <button
+                            onClick={() => {
+                              const newId = `el-shape-${Date.now()}`;
+                              setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'illust-starburst', x: 150, y: 80, width: 85, height: 85, fill: '#556b2f' }]);
+                              setSelectedId(newId);
+                            }}
+                            className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
+                          >
+                            <svg viewBox="0 0 100 100" className="w-full h-full">
+                              <polygon points="50,2 62,22 84,14 80,38 100,50 80,62 84,86 62,78 50,98 38,78 16,86 20,62 0,50 20,38 16,14 38,22" fill="#556b2f" />
+                            </svg>
+                          </button>
+
+                          {/* Diamond Spark */}
+                          <button
+                            onClick={() => {
+                              const newId = `el-shape-${Date.now()}`;
+                              setCurrentElements(prev => [...prev, { id: newId, type: 'shape', shapeType: 'illust-spark', x: 160, y: 80, width: 85, height: 85, fill: '#475569' }]);
+                              setSelectedId(newId);
+                            }}
+                            className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-3 shadow-2xs transition-all cursor-pointer"
+                          >
+                            <svg viewBox="0 0 100 100" className="w-full h-full">
+                              <path d="M 50,5 Q 50,50 95,50 Q 50,50 50,95 Q 50,50 5,50 Q 50,50 50,5" fill="none" stroke="#475569" strokeWidth="5" />
+                            </svg>
+                          </button>
+
+                          {adminGraphicAssets.filter(g => g.category === 'illustration').map((illust, idx) => (
+                            <button
+                              key={illust.id || idx}
+                              onClick={() => {
+                                const newId = `el-illust-${Date.now()}`;
+                                setCurrentElements(prev => [
+                                  ...prev,
+                                  {
+                                    id: newId,
+                                    type: illust.svgContent ? 'svg' : 'image',
+                                    url: illust.url,
+                                    svgContent: illust.svgContent,
+                                    label: illust.title,
+                                    x: 140 + (idx % 4) * 15,
+                                    y: 80 + (idx % 4) * 15,
+                                    width: 100,
+                                    height: 100
+                                  }
+                                ]);
+                                setSelectedId(newId);
+                              }}
+                              className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-2 shadow-2xs transition-all cursor-pointer overflow-hidden group"
+                              title={illust.title}
+                            >
+                              {illust.svgContent ? (
+                                <div dangerouslySetInnerHTML={{ __html: illust.svgContent }} className="w-full h-full flex items-center justify-center group-hover:scale-105 transition-transform [&>svg]:max-w-full [&>svg]:max-h-full" />
+                              ) : (
+                                <img src={illust.url} alt={illust.title} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     ) : (
                       <>
                         {/* Search bar */}
@@ -1953,8 +2243,8 @@ function StudioEditorContent() {
                               onClick={() => setGraphicsCategory('Shapes')}
                               className="flex items-center justify-between mb-2.5 cursor-pointer group"
                             >
-                              <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600">Shapes</h4>
-                              <span className="text-sm font-black text-slate-700 group-hover:translate-x-0.5 transition-transform">›</span>
+                              <h4 className="text-sm font-bold text-slate-900 group-hover:text-blue-600">Shapes</h4>
+                              <span className="text-sm font-black text-slate-700 group-hover:translate-x-0.5 transition-transform"><FaArrowRight /></span>
                             </div>
                             <div className="grid grid-cols-3 gap-2.5">
                               {GRAPHICS_SHAPES.slice(0, 3).map((shape) => (
@@ -1987,13 +2277,7 @@ function StudioEditorContent() {
                                 </button>
                               ))}
                             </div>
-                            {/* Pagination indicator */}
-                            <div className="flex justify-center items-center gap-1.5 mt-2.5">
-                              <span className="w-3.5 h-1.5 bg-[#0070e0] rounded-full" />
-                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                            </div>
+
                           </div>
                         )}
 
@@ -2001,9 +2285,12 @@ function StudioEditorContent() {
                         {/* Images Section */}
                         {(!graphicsSearch || 'images photo flowers business craft workshop'.includes(graphicsSearch.toLowerCase())) && (
                           <div>
-                            <div className="flex items-center justify-between mb-2.5 cursor-pointer group">
-                              <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600">Images</h4>
-                              <span className="text-sm font-black text-slate-700 group-hover:translate-x-0.5 transition-transform">›</span>
+                            <div
+                              onClick={() => setGraphicsCategory('Images')}
+                              className="flex items-center justify-between mb-2.5 cursor-pointer group"
+                            >
+                              <h4 className="text-sm font-bold text-slate-900 group-hover:text-blue-600">Images</h4>
+                              <span className="text-md font-black text-slate-700 group-hover:translate-x-0.5 transition-transform"><FaArrowRight /></span>
                             </div>
                             <div className="grid grid-cols-3 gap-2.5">
                               {[
@@ -2011,7 +2298,7 @@ function StudioEditorContent() {
                                 { url: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=300&q=80', label: 'Business Meeting' },
                                 { url: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=300&q=80', label: 'Crafting Beads' },
                                 ...adminGraphicAssets.filter(g => g.category === 'image').map(g => ({ url: g.url, label: g.title, svgContent: g.svgContent }))
-                              ].map((img, idx) => (
+                              ].slice(0, 3).map((img, idx) => (
                                 <button
                                   key={idx}
                                   onClick={() => {
@@ -2041,21 +2328,19 @@ function StudioEditorContent() {
                                 </button>
                               ))}
                             </div>
-                            <div className="flex justify-center items-center gap-1.5 mt-2.5">
-                              <span className="w-3.5 h-1.5 bg-[#0070e0] rounded-full" />
-                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                            </div>
+
                           </div>
                         )}
 
                         {/* Icons Section */}
                         {(!graphicsSearch || 'icons globe picture mountains landscape badge outline circle'.includes(graphicsSearch.toLowerCase())) && (
                           <div>
-                            <div className="flex items-center justify-between mb-2.5 cursor-pointer group">
-                              <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600">Icons</h4>
-                              <span className="text-sm font-black text-slate-700 group-hover:translate-x-0.5 transition-transform">›</span>
+                            <div
+                              onClick={() => setGraphicsCategory('Icons')}
+                              className="flex items-center justify-between mb-2.5 cursor-pointer group"
+                            >
+                              <h4 className="text-sm font-bold text-slate-900 group-hover:text-blue-600">Icons</h4>
+                              <span className="text-sm font-black text-slate-700 group-hover:translate-x-0.5 transition-transform"><FaArrowRight /></span>
                             </div>
                             <div className="grid grid-cols-3 gap-2.5">
                               {/* Globe */}
@@ -2105,54 +2390,20 @@ function StudioEditorContent() {
                                   <circle cx="36" cy="36" r="7" fill="white" />
                                 </svg>
                               </button>
+                            </div>
 
-                              {adminGraphicAssets.filter(g => g.category === 'icon').map((icon, idx) => (
-                                <button
-                                  key={icon.id || idx}
-                                  onClick={() => {
-                                    const newId = `el-icon-${Date.now()}`;
-                                    setCurrentElements(prev => [
-                                      ...prev,
-                                      {
-                                        id: newId,
-                                        type: icon.svgContent ? 'svg' : 'image',
-                                        url: icon.url,
-                                        svgContent: icon.svgContent,
-                                        label: icon.title,
-                                        x: 140 + (idx % 4) * 15,
-                                        y: 80 + (idx % 4) * 15,
-                                        width: 80,
-                                        height: 80
-                                      }
-                                    ]);
-                                    setSelectedId(newId);
-                                  }}
-                                  className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-2 shadow-2xs transition-all cursor-pointer overflow-hidden group"
-                                  title={icon.title}
-                                >
-                                  {icon.svgContent ? (
-                                    <div dangerouslySetInnerHTML={{ __html: icon.svgContent }} className="w-full h-full flex items-center justify-center group-hover:scale-105 transition-transform [&>svg]:max-w-full [&>svg]:max-h-full" />
-                                  ) : (
-                                    <img src={icon.url} alt={icon.title} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform" />
-                                  )}
-                                </button>
-                              ))}
-                            </div>
-                            <div className="flex justify-center items-center gap-1.5 mt-2.5">
-                              <span className="w-3.5 h-1.5 bg-[#0070e0] rounded-full" />
-                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                            </div>
                           </div>
                         )}
 
                         {/* Illustrations Section */}
                         {(!graphicsSearch || 'illustrations stars starburst badge diamond spark outline'.includes(graphicsSearch.toLowerCase())) && (
                           <div>
-                            <div className="flex items-center justify-between mb-2.5 cursor-pointer group">
-                              <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600">Illustrations</h4>
-                              <span className="text-sm font-black text-slate-700 group-hover:translate-x-0.5 transition-transform">›</span>
+                            <div
+                              onClick={() => setGraphicsCategory('Illustrations')}
+                              className="flex items-center justify-between mb-2.5 cursor-pointer group"
+                            >
+                              <h4 className="text-sm font-bold text-slate-900 group-hover:text-blue-600">Illustrations</h4>
+                              <span className="text-sm font-black text-slate-700 group-hover:translate-x-0.5 transition-transform"><FaArrowRight /></span>
                             </div>
                             <div className="grid grid-cols-3 gap-2.5">
                               {/* Twin Stars */}
@@ -2197,49 +2448,130 @@ function StudioEditorContent() {
                                   <path d="M 50,5 Q 50,50 95,50 Q 50,50 50,95 Q 50,50 5,50 Q 50,50 50,5" fill="none" stroke="#475569" strokeWidth="5" />
                                 </svg>
                               </button>
+                            </div>
 
-                              {adminGraphicAssets.filter(g => g.category === 'illustration').map((illust, idx) => (
-                                <button
-                                  key={illust.id || idx}
-                                  onClick={() => {
-                                    const newId = `el-illust-${Date.now()}`;
-                                    setCurrentElements(prev => [
-                                      ...prev,
-                                      {
-                                        id: newId,
-                                        type: illust.svgContent ? 'svg' : 'image',
-                                        url: illust.url,
-                                        svgContent: illust.svgContent,
-                                        label: illust.title,
-                                        x: 140 + (idx % 4) * 15,
-                                        y: 80 + (idx % 4) * 15,
-                                        width: 100,
-                                        height: 100
-                                      }
-                                    ]);
-                                    setSelectedId(newId);
-                                  }}
-                                  className="aspect-square bg-slate-50 border border-slate-200 hover:border-blue-500 rounded-2xl flex items-center justify-center p-2 shadow-2xs transition-all cursor-pointer overflow-hidden group"
-                                  title={illust.title}
-                                >
-                                  {illust.svgContent ? (
-                                    <div dangerouslySetInnerHTML={{ __html: illust.svgContent }} className="w-full h-full flex items-center justify-center group-hover:scale-105 transition-transform [&>svg]:max-w-full [&>svg]:max-h-full" />
-                                  ) : (
-                                    <img src={illust.url} alt={illust.title} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform" />
-                                  )}
-                                </button>
-                              ))}
-                            </div>
-                            <div className="flex justify-center items-center gap-1.5 mt-2.5">
-                              <span className="w-3.5 h-1.5 bg-[#0070e0] rounded-full" />
-                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                              <span className="w-1.5 h-1.5 border border-slate-400 rounded-full" />
-                            </div>
                           </div>
                         )}
                       </>
                     )}
+                  </div>
+                )}
+
+                {/* --- TAB 4.5: IMAGES & TEXTURES (Standalone Left Sidebar Drawer) --- */}
+                {activeTab === 'Images' && (
+                  <div className="space-y-5 pb-6">
+                    {/* Search Stock Photos / Textures */}
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Search textures & photos..."
+                          value={graphicsSearch}
+                          onChange={(e) => setGraphicsSearch(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-semibold focus:outline-none focus:border-blue-500 shadow-2xs"
+                        />
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+                        {graphicsSearch && (
+                          <button
+                            onClick={() => setGraphicsSearch('')}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-extrabold text-slate-400 hover:text-slate-600 cursor-pointer"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Upload Custom Background Image / Asset */}
+                    <div>
+                      <label className="border-2 border-dashed border-blue-400/80 rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-blue-50/40 hover:bg-blue-50 cursor-pointer transition-colors">
+                        <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-base font-bold mb-1.5">⬆</span>
+                        <span className="text-xs font-extrabold text-blue-900">Upload custom image or texture</span>
+                        <span className="text-[10px] text-slate-500 mt-0.5">PNG, JPG up to 25MB</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const url = URL.createObjectURL(file);
+                              handleBackgroundChange(url);
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    {/* Pre-set Background Textures & Stock Photos Grid */}
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 mb-2.5 flex items-center justify-between">
+                        <span>Background Textures & Photos</span>
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">8 Styles</span>
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        {[
+                          { name: 'White Luxury Marble', url: 'https://images.unsplash.com/photo-1533613220915-609f661a6fe1?w=600&auto=format&fit=crop&q=80' },
+                          { name: 'Dark Carbon Texture', url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=600&auto=format&fit=crop&q=80' },
+                          { name: 'Gold Foil Grain', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80' },
+                          { name: 'Soft Navy Watercolor', url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=600&auto=format&fit=crop&q=80' },
+                          { name: 'Modern Gradient Mesh', url: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=600&auto=format&fit=crop&q=80' },
+                          { name: 'Wood Grain Texture', url: 'https://images.unsplash.com/photo-1546484396-db3fcad888ee?w=600&auto=format&fit=crop&q=80' },
+                          { name: 'Slate Concrete', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80' },
+                          { name: 'Warm Sunset Aura', url: 'https://images.unsplash.com/photo-1579546929662-711aa81148cf?w=600&auto=format&fit=crop&q=80' }
+                        ].filter(item => !graphicsSearch || item.name.toLowerCase().includes(graphicsSearch.toLowerCase())).map((item, idx) => {
+                          const isSelected = currentBackground === item.url;
+                          return (
+                            <div
+                              key={idx}
+                              className={`rounded-xl border relative overflow-hidden transition-all text-left group shadow-2xs ${isSelected
+                                ? 'border-blue-600 ring-2 ring-blue-600/30 scale-102'
+                                : 'border-slate-200 hover:border-slate-400'
+                                }`}
+                            >
+                              <img src={item.url} alt={item.name} className="w-full h-24 object-cover group-hover:scale-105 transition-transform duration-300" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent p-2 flex flex-col justify-between">
+                                <span className="text-[10px] font-extrabold text-white leading-tight line-clamp-1">{item.name}</span>
+                                <div className="flex items-center gap-1 mt-auto pt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleBackgroundChange(item.url)}
+                                    className="flex-1 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[9px] font-bold transition-colors cursor-pointer text-center"
+                                    title="Set as background"
+                                  >
+                                    Background
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newId = `el-img-${Date.now()}`;
+                                      setCurrentElements(prev => [
+                                        ...prev,
+                                        {
+                                          id: newId,
+                                          type: 'image',
+                                          url: item.url,
+                                          label: item.name,
+                                          x: 100,
+                                          y: 100,
+                                          width: 160,
+                                          height: 120
+                                        }
+                                      ]);
+                                      setSelectedId(newId);
+                                    }}
+                                    className="flex-1 py-1 bg-slate-800 hover:bg-slate-900 text-white rounded text-[9px] font-bold transition-colors cursor-pointer text-center"
+                                    title="Add to canvas as image"
+                                  >
+                                    + Element
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -2304,7 +2636,7 @@ function StudioEditorContent() {
                     <div className="flex items-center gap-2 pt-1">
                       <input
                         type="text"
-                        value={currentBackground.startsWith('hsl') ? '#751FB8' : currentBackground.toUpperCase()}
+                        value={currentBackground.startsWith('#') ? currentBackground.toUpperCase() : (currentBackground.startsWith('hsl') ? '#751FB8' : '')}
                         onChange={(e) => handleBackgroundChange(e.target.value)}
                         placeholder="#751FB8"
                         className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 uppercase focus:outline-none focus:border-blue-500 shadow-2xs"
@@ -2317,7 +2649,8 @@ function StudioEditorContent() {
                         className="p-2 bg-white border border-slate-300 hover:bg-slate-50 hover:border-blue-500 rounded-xl text-slate-700 shadow-2xs cursor-pointer flex items-center justify-center w-9 h-9 transition-colors group relative"
                         title="Pick color from design"
                       >
-                        <span className="text-base leading-none group-hover:scale-110 transition-transform">🖍️</span>
+                        <span className="text-xl leading-none group-hover:scale-110 transition-transform"><CiPickerHalf className='w-7 h-7' />
+                        </span>
                         <input
                           id="fallback-bg-color-picker"
                           type="color"
@@ -2337,7 +2670,7 @@ function StudioEditorContent() {
                       </button>
                     </div>
 
-                    {/* Swatches vs CMYK vs Images Tabs */}
+                    {/* Swatches vs Gradients vs CMYK Tabs */}
                     <div className="flex border-b border-slate-200 pt-1">
                       <button
                         onClick={() => setBgTab('Swatches')}
@@ -2349,13 +2682,13 @@ function StudioEditorContent() {
                         Swatches
                       </button>
                       <button
-                        onClick={() => setBgTab('Images')}
-                        className={`pb-2 px-1 text-xs mr-4 cursor-pointer transition-all ${bgTab === 'Images'
+                        onClick={() => setBgTab('Gradients')}
+                        className={`pb-2 px-1 text-xs mr-4 cursor-pointer transition-all ${bgTab === 'Gradients'
                           ? 'font-extrabold text-slate-900 border-b-2 border-blue-600 -mb-px'
                           : 'font-bold text-slate-400 hover:text-slate-700'
                           }`}
                       >
-                        Images & Textures
+                        Gradients
                       </button>
                       <button
                         onClick={() => setBgTab('CMYK')}
@@ -2449,68 +2782,172 @@ function StudioEditorContent() {
                           </div>
                         </div>
                       </div>
-                    ) : bgTab === 'Images' ? (
-                      /* Images & Textures Tab Content */
+                    ) : bgTab === 'Gradients' ? (
+                      /* Gradients Tab Content */
                       <div className="space-y-5">
-                        {/* Upload Custom Background Image */}
-                        <div>
-                          <label className="border-2 border-dashed border-blue-400/80 rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-blue-50/40 hover:bg-blue-50 cursor-pointer transition-colors">
-                            <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-base font-bold mb-1.5">⬆</span>
-                            <span className="text-xs font-extrabold text-blue-900">Upload background image</span>
-                            <span className="text-[10px] text-slate-500 mt-0.5">PNG, JPG up to 25MB</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  const url = URL.createObjectURL(file);
-                                  handleBackgroundChange(url);
-                                }
-                              }}
-                              className="hidden"
-                            />
-                          </label>
-                        </div>
-
-                        {/* Pre-set Luxury Background Images & Textures Grid */}
+                        {/* Preset Gradients */}
                         <div>
                           <h4 className="text-xs font-bold text-slate-800 mb-2.5 flex items-center justify-between">
-                            <span>Pre-set Background Textures</span>
-                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">8</span>
+                            <span>Preset Gradients</span>
+                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">12 Styles</span>
                           </h4>
-                          <div className="grid grid-cols-2 gap-2.5">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                             {[
-                              { name: 'White Luxury Marble', url: 'https://images.unsplash.com/photo-1533613220915-609f661a6fe1?w=600&auto=format&fit=crop&q=80' },
-                              { name: 'Dark Carbon Texture', url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=600&auto=format&fit=crop&q=80' },
-                              { name: 'Gold Foil Grain', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80' },
-                              { name: 'Soft Navy Watercolor', url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=600&auto=format&fit=crop&q=80' },
-                              { name: 'Modern Gradient Mesh', url: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=600&auto=format&fit=crop&q=80' },
-                              { name: 'Wood Grain Texture', url: 'https://images.unsplash.com/photo-1546484396-db3fcad888ee?w=600&auto=format&fit=crop&q=80' },
-                              { name: 'Slate Concrete', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80' },
-                              { name: 'Warm Sunset Aura', url: 'https://images.unsplash.com/photo-1579546929662-711aa81148cf?w=600&auto=format&fit=crop&q=80' }
-                            ].map((item, idx) => {
-                              const isSelected = currentBackground === item.url;
+                              { name: 'Ocean Breeze', css: 'linear-gradient(135deg, #0070e0 0%, #10b981 100%)' },
+                              { name: 'Sunset Glow', css: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)' },
+                              { name: 'Purple Haze', css: 'linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)' },
+                              { name: 'Midnight Dark', css: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' },
+                              { name: 'Rose Gold', css: 'linear-gradient(135deg, #f43f5e 0%, #fb7185 50%, #fde047 100%)' },
+                              { name: 'Emerald Luxe', css: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)' },
+                              { name: 'Peach Sunrise', css: 'linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%)' },
+                              { name: 'Neon Cyber', css: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 50%, #06b6d4 100%)' },
+                              { name: 'Soft Gray', css: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' },
+                              { name: 'Dark Luxury', css: 'linear-gradient(135deg, #111827 0%, #374151 50%, #d97706 100%)' },
+                              { name: 'Radial Aura', css: 'radial-gradient(circle, #3b82f6 0%, #1e1b4b 100%)' },
+                              { name: 'Cosmic Violet', css: 'linear-gradient(135deg, #4c1d95 0%, #c026d3 100%)' }
+                            ].map((g, idx) => {
+                              const isSelected = currentBackground === g.css;
                               return (
                                 <button
                                   key={idx}
-                                  onClick={() => handleBackgroundChange(item.url)}
-                                  className={`h-20 rounded-xl relative overflow-hidden border transition-all text-left group cursor-pointer ${isSelected
-                                    ? 'border-blue-600 ring-2 ring-blue-600/30 shadow-md scale-102'
-                                    : 'border-slate-200 hover:border-slate-400 shadow-2xs hover:scale-101'
+                                  type="button"
+                                  onClick={() => handleBackgroundChange(g.css)}
+                                  style={{ backgroundImage: g.css }}
+                                  className={`h-16 rounded-xl border transition-all relative overflow-hidden group cursor-pointer shadow-2xs ${isSelected
+                                    ? 'border-blue-600 ring-2 ring-blue-600/30 scale-102 shadow-md'
+                                    : 'border-slate-300/80 hover:border-slate-400 hover:scale-101'
                                     }`}
                                 >
-                                  <img src={item.url} alt={item.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-2 flex items-end">
-                                    <span className="text-[10px] font-extrabold text-white leading-tight line-clamp-1">{item.name}</span>
+                                  <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-xs p-1.5 text-center">
+                                    <span className="text-[10px] font-extrabold text-white truncate block">{g.name}</span>
                                   </div>
                                 </button>
                               );
                             })}
                           </div>
                         </div>
+
+                        {/* Custom Gradient Generator */}
+                        <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-4 space-y-4 shadow-2xs">
+                          <div>
+                            <h4 className="text-xs font-extrabold text-slate-800">Custom Gradient Generator</h4>
+                            <p className="text-[11px] font-medium text-slate-500">Combine colors and angles to create custom gradients</p>
+                          </div>
+
+                          {/* Live Gradient Preview Swatch */}
+                          <div
+                            style={{ backgroundImage: gradientType === 'linear' ? `linear-gradient(${gradientAngle}deg, ${gradientColor1}, ${gradientColor2})` : `radial-gradient(circle, ${gradientColor1}, ${gradientColor2})` }}
+                            className="h-20 rounded-xl border border-slate-300 shadow-inner flex items-center justify-center transition-all relative overflow-hidden"
+                          >
+                            <span className="text-[10px] font-black text-white bg-black/50 px-2.5 py-1 rounded-lg backdrop-blur-xs shadow-xs">
+                              {gradientType === 'linear' ? `Linear (${gradientAngle}°)` : 'Radial'}
+                            </span>
+                          </div>
+
+                          {/* Gradient Type Buttons */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setGradientType('linear')}
+                              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${gradientType === 'linear'
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                                }`}
+                            >
+                              Linear
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setGradientType('radial')}
+                              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${gradientType === 'radial'
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                                }`}
+                            >
+                              Radial
+                            </button>
+                          </div>
+
+                          {/* Angle Slider (if Linear) */}
+                          {gradientType === 'linear' && (
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+                                <span>Angle ({gradientAngle}°)</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setGradientAngle(135)}
+                                  className="text-[10px] font-bold text-slate-400 hover:text-slate-700"
+                                >
+                                  Reset (135°)
+                                </button>
+                              </div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="360"
+                                value={gradientAngle}
+                                onChange={(e) => setGradientAngle(Number(e.target.value))}
+                                className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                              />
+                            </div>
+                          )}
+
+                          {/* Color 1 & Color 2 Pickers */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-600 block">Start Color</label>
+                              <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl p-1.5">
+                                <input
+                                  type="color"
+                                  value={gradientColor1}
+                                  onChange={(e) => setGradientColor1(e.target.value)}
+                                  className="w-7 h-7 rounded-lg cursor-pointer border border-slate-300 p-0 overflow-hidden shrink-0"
+                                />
+                                <input
+                                  type="text"
+                                  value={gradientColor1.toUpperCase()}
+                                  onChange={(e) => setGradientColor1(e.target.value)}
+                                  className="w-full text-xs font-bold text-slate-800 uppercase focus:outline-none"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-600 block">End Color</label>
+                              <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl p-1.5">
+                                <input
+                                  type="color"
+                                  value={gradientColor2}
+                                  onChange={(e) => setGradientColor2(e.target.value)}
+                                  className="w-7 h-7 rounded-lg cursor-pointer border border-slate-300 p-0 overflow-hidden shrink-0"
+                                />
+                                <input
+                                  type="text"
+                                  value={gradientColor2.toUpperCase()}
+                                  onChange={(e) => setGradientColor2(e.target.value)}
+                                  className="w-full text-xs font-bold text-slate-800 uppercase focus:outline-none"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Apply Gradient Button */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const css = gradientType === 'linear'
+                                ? `linear-gradient(${gradientAngle}deg, ${gradientColor1}, ${gradientColor2})`
+                                : `radial-gradient(circle, ${gradientColor1}, ${gradientColor2})`;
+                              handleBackgroundChange(css);
+                            }}
+                            className="w-full py-2.5 bg-[#0070e0] hover:bg-blue-600 text-white font-bold rounded-xl text-xs transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-2"
+                          >
+                            <span>Apply Custom Gradient</span>
+                          </button>
+                        </div>
                       </div>
                     ) : (
+                      /* CMYK Tab Content */
                       /* CMYK Tab Content */
                       <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
                         <p className="text-xs font-semibold text-slate-600">Enter exact CMYK printing color values:</p>
@@ -2790,20 +3227,6 @@ function StudioEditorContent() {
                     </div>
                   </div>
                 )}
-
-                {/* --- TAB 8: MORE --- */}
-                {activeTab === 'More' && (
-                  <div className="space-y-4 text-center py-6">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center mx-auto text-xl font-bold">
-                      ⚡
-                    </div>
-                    <h4 className="text-sm font-black text-slate-900">Advanced Studio Tools</h4>
-                    <p className="text-xs text-slate-500 max-w-55 mx-auto leading-relaxed">
-                      QR Code Generator, Foil & Spot UV texture previews, and bulk variable printing tools will be enabled here when you run follow-up commands!
-                    </p>
-                  </div>
-                )}
-
               </div>
             </div>
           </>
@@ -2867,6 +3290,288 @@ function StudioEditorContent() {
               </button>
             </div>
           </div>
+
+          {/* Top Floating Toolbar when element is selected */}
+          {selectedId && !isPreviewMode && (() => {
+            const el = currentElements.find(item => item.id === selectedId);
+            if (!el) return null;
+
+            return el.type === 'text' ? (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="absolute top-20 left-1/2 -translate-x-1/2 bg-white text-slate-800 rounded-xl px-2.5 py-1.5 flex flex-wrap items-center justify-center gap-1.5 shadow-2xl border border-slate-200/90 z-40 text-xs w-max pointer-events-auto"
+              >
+                {/* Font Family */}
+                <select
+                  value={el.fontFamily || 'Fira Sans'}
+                  onChange={(e) => updateSelectedProperty('fontFamily', e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer w-28 max-w-27.5"
+                >
+                  {FONT_FAMILIES.map(font => (
+                    <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>
+                  ))}
+                </select>
+
+                {/* Font Size */}
+                <div className="flex items-center border border-slate-200 rounded-lg bg-slate-50 overflow-hidden shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => updateSelectedProperty('fontSize', Math.max(8, (el.fontSize || 16) - 2))}
+                    className="px-2 py-1 hover:bg-slate-200 text-slate-700 font-extrabold text-xs cursor-pointer"
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    value={el.fontSize || 16}
+                    onChange={(e) => updateSelectedProperty('fontSize', parseInt(e.target.value) || 16)}
+                    className="w-9 text-center text-xs font-black border-x border-slate-200 py-1 bg-white focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => updateSelectedProperty('fontSize', Math.min(120, (el.fontSize || 16) + 2))}
+                    className="px-2 py-1 hover:bg-slate-200 text-slate-700 font-extrabold text-xs cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
+
+                {/* Bold */}
+                <button
+                  type="button"
+                  onClick={() => updateSelectedProperty('bold', !el.bold)}
+                  className={`w-7 h-7 rounded-lg font-black flex items-center justify-center text-xs transition-colors shrink-0 cursor-pointer ${el.bold ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-100 text-slate-700'
+                    }`}
+                  title="Bold"
+                >
+                  B
+                </button>
+
+                {/* Italic */}
+                <button
+                  type="button"
+                  onClick={() => updateSelectedProperty('italic', !el.italic)}
+                  className={`w-7 h-7 rounded-lg italic font-bold flex items-center justify-center text-xs transition-colors shrink-0 cursor-pointer ${el.italic ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-100 text-slate-700'
+                    }`}
+                  title="Italic"
+                >
+                  I
+                </button>
+
+                {/* Underline */}
+                <button
+                  type="button"
+                  onClick={() => updateSelectedProperty('underline', !el.underline)}
+                  className={`w-7 h-7 rounded-lg underline font-bold flex items-center justify-center text-xs transition-colors shrink-0 cursor-pointer ${el.underline ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-100 text-slate-700'
+                    }`}
+                  title="Underline"
+                >
+                  U
+                </button>
+
+                {/* Text Color */}
+                <div className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-slate-100 shrink-0 border border-slate-200/60 bg-white" title="Text Color">
+                  <input
+                    type="color"
+                    value={el.color || el.fill || '#1e293b'}
+                    onChange={(e) => {
+                      updateSelectedProperty('color', e.target.value);
+                      updateSelectedProperty('fill', e.target.value);
+                    }}
+                    className="w-5 h-5 rounded-full cursor-pointer border border-slate-300 p-0 overflow-hidden"
+                  />
+                </div>
+
+                {/* Alignments */}
+                <div className="flex items-center gap-0.5 border border-slate-200 rounded-lg p-0.5 bg-slate-50 shrink-0">
+                  {['left', 'center', 'right'].map((align) => (
+                    <button
+                      key={align}
+                      type="button"
+                      onClick={() => updateSelectedProperty('align', align)}
+                      className={`w-6 h-6 rounded flex items-center justify-center text-xs transition-colors cursor-pointer ${el.align === align ? 'bg-blue-600 text-white font-bold shadow-2xs' : 'hover:bg-slate-200 text-slate-600'
+                        }`}
+                      title={`Align ${align}`}
+                    >
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                        {align === 'left' && <path d="M3 4h18v2H3V4zm0 7h12v2H3v-2zm0 7h18v2H3v-2z" />}
+                        {align === 'center' && <path d="M3 4h18v2H3V4zm3 7h12v2H6v-2zm-3 7h18v2H3v-2z" />}
+                        {align === 'right' && <path d="M3 4h18v2H3V4zm6 7h12v2H9v-2zm-6 7h18v2H3v-2z" />}
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Format Dropdown & Menu (Case Popover) */}
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowFormatMenu(!showFormatMenu);
+                    }}
+                    className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg transition-colors cursor-pointer ${showFormatMenu || (el.textCase && el.textCase !== 'none')
+                      ? 'bg-blue-100 text-blue-700 font-extrabold border border-blue-300 shadow-2xs'
+                      : 'hover:bg-slate-100 text-slate-700 border border-slate-200/60 bg-white'
+                      }`}
+                    title="Format Case (Uppercase, Lowercase, Normal)"
+                  >
+                    <span><VscTextSize className='w-5 h-5' /></span>
+                    <span className="hidden sm:inline">Format</span>
+                  </button>
+
+                  {/* Case Popover Menu */}
+                  {showFormatMenu && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 flex items-center gap-3.5 whitespace-nowrap min-w-47.5"
+                    >
+                      <span className="text-xs font-extrabold text-slate-800">Case</span>
+
+                      <div className="flex items-center gap-1.5">
+                        {/* Normal / As Typed Case (Aa) */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateSelectedProperty('textCase', 'none');
+                            setShowFormatMenu(false);
+                          }}
+                          className={`px-3 py-1.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center cursor-pointer ${!el.textCase || el.textCase === 'none'
+                            ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
+                            : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
+                            }`}
+                          title="Normal / As Typed"
+                        >
+                          Aa
+                        </button>
+
+                        {/* Lowercase (a↓) */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateSelectedProperty('textCase', 'lowercase');
+                            setShowFormatMenu(false);
+                          }}
+                          className={`px-3 py-1.5 rounded-xl font-bold text-sm transition-all flex items-center gap-0.5 justify-center cursor-pointer ${el.textCase === 'lowercase'
+                            ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
+                            : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
+                            }`}
+                          title="Lowercase"
+                        >
+                          <span>a</span>
+                          <span className="text-xs font-black">↓</span>
+                        </button>
+
+                        {/* Uppercase (A↑) */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateSelectedProperty('textCase', 'uppercase');
+                            setShowFormatMenu(false);
+                          }}
+                          className={`px-3 py-1.5 rounded-xl font-bold text-sm transition-all flex items-center gap-0.5 justify-center cursor-pointer ${el.textCase === 'uppercase'
+                            ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
+                            : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
+                            }`}
+                          title="Uppercase"
+                        >
+                          <span>A</span>
+                          <span className="text-xs font-black">↑</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Effects Button */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab(activeTab === 'Effects' ? 'Text' : 'Effects')}
+                  className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg transition-colors shrink-0 cursor-pointer ${activeTab === 'Effects' || (el.effect && el.effect !== 'none' && el.effect !== 'original') || (el.textShape && el.textShape !== 'none')
+                    ? 'bg-blue-100 text-blue-700 font-extrabold border border-blue-300 shadow-2xs'
+                    : 'hover:bg-slate-100 text-slate-700 border border-slate-200/60 bg-white'
+                    }`}
+                  title="Text Effects & Shapes"
+                >
+                  <span>✨</span>
+                  <span className="hidden sm:inline">Effects</span>
+                </button>
+
+                {/* Duplicate & Delete */}
+                <div className="flex items-center gap-1 pl-1.5 border-l border-slate-200 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleDuplicateElement(el)}
+                    title="Duplicate"
+                    className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-blue-600 flex items-center justify-center font-bold text-sm cursor-pointer"
+                  >
+                    <HiDocumentDuplicate className='w-5 h-5' />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteElement(el.id)}
+                    title="Delete"
+                    className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-rose-600 flex items-center justify-center font-bold text-sm cursor-pointer"
+                  >
+                    <MdDelete className='w-5 h-5' />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white rounded-xl px-3 py-1.5 flex items-center gap-2.5 shadow-2xl border border-slate-800 z-40 text-xs w-max pointer-events-auto"
+              >
+                <span className="font-extrabold truncate max-w-25 text-[10px] text-sky-300">{el.label || el.type}</span>
+                {el.type === 'image' && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCroppingElement(el);
+                      setCropBounds({ top: 0, bottom: 0, left: 0, right: 0 });
+                    }}
+                    className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1 rounded-lg font-extrabold text-xs cursor-pointer transition-colors shadow-2xs"
+                    title="Crop Image"
+                  >
+                    <FiCrop className="w-3.5 h-3.5" />
+                    <span>Crop</span>
+                  </button>
+                )}
+                {el.type === 'shape' && (
+                  <div className="flex items-center gap-1.5 px-1 bg-slate-800 rounded">
+                    <span className="text-[10px] text-slate-300 font-semibold">Fill:</span>
+                    <input
+                      type="color"
+                      value={el.fill || '#2563EB'}
+                      onChange={(e) => updateSelectedProperty('fill', e.target.value)}
+                      className="w-5 h-5 rounded-full cursor-pointer border border-slate-600 p-0 overflow-hidden"
+                    />
+                  </div>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDuplicateElement(el);
+                  }}
+                  title="Duplicate"
+                  className="hover:text-blue-400 cursor-pointer"
+                >
+                  <HiDocumentDuplicate className='w-5 h-5' />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteElement(el.id);
+                  }}
+                  title="Delete"
+                  className="hover:text-rose-400 cursor-pointer"
+                >
+                  <MdDelete className='w-5 h-5' />
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Rulers visualization along top and left */}
           <div
@@ -3005,284 +3710,6 @@ function StudioEditorContent() {
                     className={`absolute select-none group/el cursor-move transition-shadow ${isSelected ? 'ring-2 ring-blue-600 shadow-lg bg-blue-50/10 rounded-lg p-1' : 'hover:ring-1 hover:ring-blue-300/80 p-1'
                       }`}
                   >
-                    {/* Floating Toolbar when selected */}
-                    {isSelected && !isPreviewMode && (
-                      el.type === 'text' ? (
-                        <div
-                          onClick={(e) => e.stopPropagation()}
-                          style={{
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            ...(el.y < 52
-                              ? { top: '100%', marginTop: '8px' }
-                              : { bottom: '100%', marginBottom: '10px' })
-                          }}
-                          className="absolute bg-white text-slate-800 rounded-xl px-2.5 py-1.5 flex flex-wrap items-center justify-center gap-1.5 shadow-2xl border border-slate-200/90 z-50 text-xs w-max pointer-events-auto"
-                        >
-                          {/* Font Family */}
-                          <select
-                            value={el.fontFamily || 'Fira Sans'}
-                            onChange={(e) => updateSelectedProperty('fontFamily', e.target.value)}
-                            className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer w-28 max-w-27.5"
-                          >
-                            {FONT_FAMILIES.map(font => (
-                              <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>
-                            ))}
-                          </select>
-
-                          {/* Font Size */}
-                          <div className="flex items-center border border-slate-200 rounded-lg bg-slate-50 overflow-hidden shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => updateSelectedProperty('fontSize', Math.max(8, (el.fontSize || 16) - 2))}
-                              className="px-2 py-1 hover:bg-slate-200 text-slate-700 font-extrabold text-xs cursor-pointer"
-                            >
-                              −
-                            </button>
-                            <input
-                              type="number"
-                              value={el.fontSize || 16}
-                              onChange={(e) => updateSelectedProperty('fontSize', parseInt(e.target.value) || 16)}
-                              className="w-9 text-center text-xs font-black border-x border-slate-200 py-1 bg-white focus:outline-none"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => updateSelectedProperty('fontSize', Math.min(120, (el.fontSize || 16) + 2))}
-                              className="px-2 py-1 hover:bg-slate-200 text-slate-700 font-extrabold text-xs cursor-pointer"
-                            >
-                              +
-                            </button>
-                          </div>
-
-                          {/* Bold */}
-                          <button
-                            type="button"
-                            onClick={() => updateSelectedProperty('bold', !el.bold)}
-                            className={`w-7 h-7 rounded-lg font-black flex items-center justify-center text-xs transition-colors shrink-0 cursor-pointer ${el.bold ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-100 text-slate-700'
-                              }`}
-                            title="Bold"
-                          >
-                            B
-                          </button>
-
-                          {/* Italic */}
-                          <button
-                            type="button"
-                            onClick={() => updateSelectedProperty('italic', !el.italic)}
-                            className={`w-7 h-7 rounded-lg italic font-bold flex items-center justify-center text-xs transition-colors shrink-0 cursor-pointer ${el.italic ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-100 text-slate-700'
-                              }`}
-                            title="Italic"
-                          >
-                            I
-                          </button>
-
-                          {/* Underline */}
-                          <button
-                            type="button"
-                            onClick={() => updateSelectedProperty('underline', !el.underline)}
-                            className={`w-7 h-7 rounded-lg underline font-bold flex items-center justify-center text-xs transition-colors shrink-0 cursor-pointer ${el.underline ? 'bg-blue-600 text-white shadow-2xs' : 'hover:bg-slate-100 text-slate-700'
-                              }`}
-                            title="Underline"
-                          >
-                            U
-                          </button>
-
-                          {/* Text Color */}
-                          <div className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-slate-100 shrink-0 border border-slate-200/60 bg-white" title="Text Color">
-                            <input
-                              type="color"
-                              value={el.color || el.fill || '#1e293b'}
-                              onChange={(e) => {
-                                updateSelectedProperty('color', e.target.value);
-                                updateSelectedProperty('fill', e.target.value);
-                              }}
-                              className="w-5 h-5 rounded-full cursor-pointer border border-slate-300 p-0 overflow-hidden"
-                            />
-                          </div>
-
-                          {/* Alignments */}
-                          <div className="flex items-center gap-0.5 border border-slate-200 rounded-lg p-0.5 bg-slate-50 shrink-0">
-                            {['left', 'center', 'right'].map((align) => (
-                              <button
-                                key={align}
-                                type="button"
-                                onClick={() => updateSelectedProperty('align', align)}
-                                className={`w-6 h-6 rounded flex items-center justify-center text-xs transition-colors cursor-pointer ${el.align === align ? 'bg-blue-600 text-white font-bold shadow-2xs' : 'hover:bg-slate-200 text-slate-600'
-                                  }`}
-                                title={`Align ${align}`}
-                              >
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                                  {align === 'left' && <path d="M3 4h18v2H3V4zm0 7h12v2H3v-2zm0 7h18v2H3v-2z" />}
-                                  {align === 'center' && <path d="M3 4h18v2H3V4zm3 7h12v2H6v-2zm-3 7h18v2H3v-2z" />}
-                                  {align === 'right' && <path d="M3 4h18v2H3V4zm6 7h12v2H9v-2zm-6 7h18v2H3v-2z" />}
-                                </svg>
-                              </button>
-                            ))}
-                          </div>
-
-                          {/* Format Dropdown & Menu (Case Popover) */}
-                          <div className="relative shrink-0">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowFormatMenu(!showFormatMenu);
-                              }}
-                              className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg transition-colors cursor-pointer ${showFormatMenu || (el.textCase && el.textCase !== 'none')
-                                ? 'bg-blue-100 text-blue-700 font-extrabold border border-blue-300 shadow-2xs'
-                                : 'hover:bg-slate-100 text-slate-700 border border-slate-200/60 bg-white'
-                                }`}
-                              title="Format Case (Uppercase, Lowercase, Normal)"
-                            >
-                              <span className="text-[11px]">T🗚</span>
-                              <span className="hidden sm:inline">Format</span>
-                            </button>
-
-                            {/* Case Popover Menu */}
-                            {showFormatMenu && (
-                              <div
-                                onClick={(e) => e.stopPropagation()}
-                                className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 flex items-center gap-3.5 whitespace-nowrap min-w-47.5"
-                              >
-                                <span className="text-xs font-extrabold text-slate-800">Case</span>
-
-                                <div className="flex items-center gap-1.5">
-                                  {/* Normal / As Typed Case (Aa) */}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      updateSelectedProperty('textCase', 'none');
-                                      setShowFormatMenu(false);
-                                    }}
-                                    className={`px-3 py-1.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center cursor-pointer ${!el.textCase || el.textCase === 'none'
-                                      ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
-                                      : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
-                                      }`}
-                                    title="Normal / As Typed"
-                                  >
-                                    Aa
-                                  </button>
-
-                                  {/* Lowercase (a↓) */}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      updateSelectedProperty('textCase', 'lowercase');
-                                      setShowFormatMenu(false);
-                                    }}
-                                    className={`px-3 py-1.5 rounded-xl font-bold text-sm transition-all flex items-center gap-0.5 justify-center cursor-pointer ${el.textCase === 'lowercase'
-                                      ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
-                                      : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
-                                      }`}
-                                    title="Lowercase"
-                                  >
-                                    <span>a</span>
-                                    <span className="text-xs font-black">↓</span>
-                                  </button>
-
-                                  {/* Uppercase (A↑) */}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      updateSelectedProperty('textCase', 'uppercase');
-                                      setShowFormatMenu(false);
-                                    }}
-                                    className={`px-3 py-1.5 rounded-xl font-bold text-sm transition-all flex items-center gap-0.5 justify-center cursor-pointer ${el.textCase === 'uppercase'
-                                      ? 'bg-sky-50 text-blue-900 border-2 border-blue-600 shadow-2xs'
-                                      : 'text-slate-700 hover:bg-slate-100 border-2 border-transparent'
-                                      }`}
-                                    title="Uppercase"
-                                  >
-                                    <span>A</span>
-                                    <span className="text-xs font-black">↑</span>
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Effects Button */}
-                          <button
-                            type="button"
-                            onClick={() => setActiveTab(activeTab === 'Effects' ? 'Text' : 'Effects')}
-                            className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg transition-colors shrink-0 cursor-pointer ${activeTab === 'Effects' || (el.effect && el.effect !== 'none' && el.effect !== 'original') || (el.textShape && el.textShape !== 'none')
-                              ? 'bg-blue-100 text-blue-700 font-extrabold border border-blue-300 shadow-2xs'
-                              : 'hover:bg-slate-100 text-slate-700 border border-slate-200/60 bg-white'
-                              }`}
-                            title="Text Effects & Shapes"
-                          >
-                            <span>✨</span>
-                            <span className="hidden sm:inline">Effects</span>
-                          </button>
-
-                          {/* Duplicate & Delete */}
-                          <div className="flex items-center gap-1 pl-1.5 border-l border-slate-200 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleDuplicateElement(el)}
-                              title="Duplicate"
-                              className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-blue-600 flex items-center justify-center font-bold text-sm cursor-pointer"
-                            >
-                              ❐
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteElement(el.id)}
-                              title="Delete"
-                              className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-rose-600 flex items-center justify-center font-bold text-sm cursor-pointer"
-                            >
-                              🗑
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          onClick={(e) => e.stopPropagation()}
-                          style={{
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            ...(el.y < 44
-                              ? { top: '100%', marginTop: '8px' }
-                              : { bottom: '100%', marginBottom: '8px' })
-                          }}
-                          className="absolute bg-slate-900 text-white rounded-lg px-2.5 py-1.5 flex items-center gap-2 shadow-xl z-50 text-xs w-max pointer-events-auto"
-                        >
-                          <span className="font-extrabold truncate max-w-25 text-[10px] text-sky-300">{el.label || el.type}</span>
-                          {el.type === 'shape' && (
-                            <div className="flex items-center gap-1.5 px-1 bg-slate-800 rounded">
-                              <span className="text-[10px] text-slate-300 font-semibold">Fill:</span>
-                              <input
-                                type="color"
-                                value={el.fill || '#2563EB'}
-                                onChange={(e) => updateSelectedProperty('fill', e.target.value)}
-                                className="w-5 h-5 rounded-full cursor-pointer border border-slate-600 p-0 overflow-hidden"
-                              />
-                            </div>
-                          )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDuplicateElement(el);
-                            }}
-                            title="Duplicate"
-                            className="hover:text-blue-400 cursor-pointer"
-                          >
-                            ❐
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteElement(el.id);
-                            }}
-                            title="Delete"
-                            className="hover:text-rose-400 cursor-pointer"
-                          >
-                            🗑
-                          </button>
-                        </div>
-                      )
-                    )}
-
                     {/* Element Rendered Content */}
                     {el.type === 'image' ? (
                       <img
@@ -3928,6 +4355,190 @@ function StudioEditorContent() {
               )}
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* CROP IMAGE MODAL DIALOG */}
+      {croppingElement && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg">
+                  <FiCrop />
+                </span>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">Crop Image</h3>
+                  <p className="text-[11px] text-slate-500 font-medium">Adjust handles or sliders to crop this image</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCroppingElement(null)}
+                className="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-500 font-bold flex items-center justify-center text-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Interactive Image Preview with Crop Overlay */}
+            <div className="relative w-full h-64 bg-slate-900/90 rounded-2xl flex items-center justify-center p-4 overflow-hidden shadow-inner">
+              <div className="relative max-w-full max-h-full flex items-center justify-center">
+                <img
+                  src={croppingElement.originalUrl || croppingElement.url}
+                  alt="Crop Target"
+                  className="max-w-full max-h-56 object-contain pointer-events-none rounded"
+                />
+                {/* Crop Box Overlay Mask */}
+                <div
+                  style={{
+                    top: `${cropBounds.top}%`,
+                    bottom: `${cropBounds.bottom}%`,
+                    left: `${cropBounds.left}%`,
+                    right: `${cropBounds.right}%`,
+                    borderRadius: cropShape === 'circle' ? '50%' : '8px'
+                  }}
+                  className="absolute border-2 border-blue-500 ring-4 ring-black/40 shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] pointer-events-none transition-all duration-75 flex items-center justify-center"
+                >
+                  <span className="text-[9px] font-black text-white bg-blue-600 px-2 py-0.5 rounded shadow-xs opacity-80">
+                    {cropShape === 'circle' ? 'Circle Crop' : 'Crop Region'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Shape Switcher */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCropShape('rect')}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${cropShape === 'rect'
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                  }`}
+              >
+                Rectangle / Free
+              </button>
+              <button
+                type="button"
+                onClick={() => setCropShape('circle')}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${cropShape === 'circle'
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                  }`}
+              >
+                Circle / Oval
+              </button>
+            </div>
+
+            {/* Crop Sliders */}
+            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 text-xs font-bold text-slate-700">
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <span>Top Crop</span>
+                  <span className="text-slate-400">{cropBounds.top}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="40"
+                  value={cropBounds.top}
+                  onChange={(e) => setCropBounds(p => ({ ...p, top: Number(e.target.value) }))}
+                  className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <span>Bottom Crop</span>
+                  <span className="text-slate-400">{cropBounds.bottom}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="40"
+                  value={cropBounds.bottom}
+                  onChange={(e) => setCropBounds(p => ({ ...p, bottom: Number(e.target.value) }))}
+                  className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <span>Left Crop</span>
+                  <span className="text-slate-400">{cropBounds.left}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="40"
+                  value={cropBounds.left}
+                  onChange={(e) => setCropBounds(p => ({ ...p, left: Number(e.target.value) }))}
+                  className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <span>Right Crop</span>
+                  <span className="text-slate-400">{cropBounds.right}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="40"
+                  value={cropBounds.right}
+                  onChange={(e) => setCropBounds(p => ({ ...p, right: Number(e.target.value) }))}
+                  className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Preset Quick Crops */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase mr-1">Presets:</span>
+              {[
+                { label: 'Full', t: 0, b: 0, l: 0, r: 0 },
+                { label: '1:1 Square', t: 10, b: 10, l: 10, r: 10 },
+                { label: 'Center Focus', t: 15, b: 15, l: 15, r: 15 },
+              ].map((p, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setCropBounds({ top: p.t, bottom: p.b, left: p.l, right: p.r })}
+                  className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold cursor-pointer transition-colors"
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3 pt-2">
+              {croppingElement.originalUrl && (
+                <button
+                  type="button"
+                  onClick={handleResetCrop}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                >
+                  Reset Original
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setCroppingElement(null)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer text-center"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleApplyCrop}
+                className="flex-1 py-2.5 bg-[#0070e0] hover:bg-blue-600 text-white font-extrabold rounded-xl text-xs transition-all shadow-md cursor-pointer text-center"
+              >
+                Apply Crop
+              </button>
+            </div>
           </div>
         </div>
       )}
