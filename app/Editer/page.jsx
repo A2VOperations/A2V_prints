@@ -20,7 +20,6 @@ import { CiPickerHalf } from "react-icons/ci";
 import { FiCrop } from "react-icons/fi";
 import { BsQrCode } from "react-icons/bs";
 
-
 // Initial default elements for Front and Back sides
 const DEFAULT_FRONT_ELEMENTS = [];
 
@@ -35,12 +34,6 @@ const FONT_FAMILIES = [
   'Montserrat',
   'Courier New',
   'Arial'
-];
-
-const COLOR_PALETTE = [
-  '#2563EB', '#1e3a8a', '#3b82f6', '#0284c7', '#0d9488',
-  '#16a34a', '#ca8a04', '#ea580c', '#dc2626', '#9333ea',
-  '#475569', '#1e293b', '#000000', '#ffffff', '#f8fafc'
 ];
 
 const TEMPLATES_LIST = [
