@@ -34,6 +34,13 @@ const templateSchema = new mongoose.Schema(
     finish: { type: String, default: "Matte" },
     industry: { type: String, default: "Corporate & Executive" },
     style: { type: String, default: "Bold & Modern" },
+    fullDesignSize: { type: String, default: "93.00 mm x 56.00 mm" },
+    finalCardSize: { type: String, default: "90.00 mm x 53.00 mm" },
+    safeAreaSize: { type: String, default: "82.00 mm x 45.00 mm" },
+    bleedArea: { type: Number, default: 1.5 },
+    safeArea: { type: Number, default: 5.5 },
+    bleedSize: { type: String, default: "1.5mm x 1.5mm" },
+    safeSize: { type: String, default: "5.5mm x 5.5mm" },
     isActive: { type: Boolean, default: true, index: true },
   },
   {

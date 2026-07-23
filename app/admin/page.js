@@ -18,6 +18,19 @@ const parseMmAspectRatio = (sizeStr) => {
   return "1.75 / 1";
 };
 
+const parseMmDimensions = (str, defaultX = 2, defaultY = 2) => {
+  if (!str) return { x: defaultX, y: defaultY };
+  const matches = String(str).match(/(\d+(?:\.\d+)?)\s*(?:mm)?\s*(?:[xX×*,\s])*\s*(\d+(?:\.\d+)?)\s*(?:mm)?/i);
+  if (matches && matches[1]) {
+    const x = parseFloat(matches[1]);
+    const y = matches[2] ? parseFloat(matches[2]) : x;
+    return { x: isNaN(x) ? defaultX : x, y: isNaN(y) ? defaultY : y };
+  }
+  const singleNum = parseFloat(str);
+  if (!isNaN(singleNum)) return { x: singleNum, y: singleNum };
+  return { x: defaultX, y: defaultY };
+};
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("overview");
@@ -71,7 +84,19 @@ export default function AdminDashboardPage() {
     status: "Published",
     orientation: "Horizontal",
     industry: "Corporate & Executive",
-    style: "Bold & Modern"
+    style: "Bold & Modern",
+    fullDesignSize: "93.00 mm x 56.00 mm",
+    finalCardSize: "90.00 mm x 53.00 mm",
+    safeAreaSize: "82.00 mm x 45.00 mm",
+    size: "90.00 mm x 53.00 mm",
+    bleedArea: 1.5,
+    safeArea: 5.5,
+    bleedSize: "1.5mm x 1.5mm",
+    safeSize: "5.5mm x 5.5mm",
+    bleedMarginX: 1.5,
+    bleedMarginY: 1.5,
+    safeMarginX: 5.5,
+    safeMarginY: 5.5
   });
 
   // Graphics Library State (Cloudinary / DB)
@@ -321,7 +346,19 @@ export default function AdminDashboardPage() {
       status: "Published",
       orientation: "Horizontal",
       industry: "Corporate & Executive",
-      style: "Bold & Modern"
+      style: "Bold & Modern",
+      fullDesignSize: "93.00 mm x 56.00 mm",
+      finalCardSize: "90.00 mm x 53.00 mm",
+      safeAreaSize: "82.00 mm x 45.00 mm",
+      size: "90.00 mm x 53.00 mm",
+      bleedArea: 1.5,
+      safeArea: 5.5,
+      bleedSize: "1.5mm x 1.5mm",
+      safeSize: "5.5mm x 5.5mm",
+      bleedMarginX: 1.5,
+      bleedMarginY: 1.5,
+      safeMarginX: 5.5,
+      safeMarginY: 5.5
     });
     setActiveTab("template-detail");
   };
@@ -329,19 +366,35 @@ export default function AdminDashboardPage() {
   const handleEditTemplate = (tpl) => {
     setEditingTemplateId(tpl.id || tpl._id);
     const cat = categoryTemplateMap[tpl.categorySlug] || {};
+    const bx = tpl.bleedMarginX ?? tpl.bleedArea ?? 1.5;
+    const by = tpl.bleedMarginY ?? tpl.bleedArea ?? 1.5;
+    const sx = tpl.safeMarginX ?? tpl.safeArea ?? 5.5;
+    const sy = tpl.safeMarginY ?? tpl.safeArea ?? 5.5;
+
     setTemplateForm({
       title: tpl.title || "",
       categorySlug: tpl.categorySlug || "visiting-cards",
       price: tpl.price || cat.basePrice || "₹200.00",
       unitPrice: tpl.unitPrice || cat.unitPriceText || "₹2.00 each / 100 units",
-      size: tpl.size || "85mm x 55mm",
+      size: tpl.finalCardSize || tpl.size || "90.00 mm x 53.00 mm",
+      fullDesignSize: tpl.fullDesignSize || "93.00 mm x 56.00 mm",
+      finalCardSize: tpl.finalCardSize || tpl.size || "90.00 mm x 53.00 mm",
+      safeAreaSize: tpl.safeAreaSize || "82.00 mm x 45.00 mm",
       frontImage: tpl.frontImage || tpl.image || "",
       backImage: tpl.backImage || tpl.frontImage || tpl.image || "",
       badge: tpl.badge || "New",
       status: tpl.isActive !== false ? "Published" : "Draft",
       orientation: tpl.orientation || "Horizontal",
       industry: tpl.industry || "Corporate & Executive",
-      style: tpl.style || "Bold & Modern"
+      style: tpl.style || "Bold & Modern",
+      bleedArea: bx,
+      safeArea: sx,
+      bleedSize: tpl.bleedSize || `${bx}mm x ${by}mm`,
+      safeSize: tpl.safeSize || `${sx}mm x ${sy}mm`,
+      bleedMarginX: bx,
+      bleedMarginY: by,
+      safeMarginX: sx,
+      safeMarginY: sy
     });
     setActiveTab("template-detail");
   };
@@ -356,13 +409,25 @@ export default function AdminDashboardPage() {
 
     try {
       const catData = categoryTemplateMap[templateForm.categorySlug] || {};
+      const fullP = parseMmDimensions(templateForm.fullDesignSize || "93.00 mm x 56.00 mm", 93, 56);
+      const finalP = parseMmDimensions(templateForm.finalCardSize || "90.00 mm x 53.00 mm", 90, 53);
+      const safeP = parseMmDimensions(templateForm.safeAreaSize || "82.00 mm x 45.00 mm", 82, 45);
+
+      const bleedX = Math.max(0, (fullP.x - finalP.x) / 2);
+      const bleedY = Math.max(0, (fullP.y - finalP.y) / 2);
+      const safeX = Math.max(0, (fullP.x - safeP.x) / 2);
+      const safeY = Math.max(0, (fullP.y - safeP.y) / 2);
+
       const payload = {
         title: templateForm.title,
         categorySlug: templateForm.categorySlug,
         categoryName: catData.name || templateForm.categorySlug.replace("-", " "),
         price: templateForm.price,
         unitPrice: templateForm.unitPrice,
-        size: templateForm.size || "85mm x 55mm",
+        fullDesignSize: templateForm.fullDesignSize || "93.00 mm x 56.00 mm",
+        finalCardSize: templateForm.finalCardSize || "90.00 mm x 53.00 mm",
+        safeAreaSize: templateForm.safeAreaSize || "82.00 mm x 45.00 mm",
+        size: templateForm.finalCardSize || templateForm.size || "90.00 mm x 53.00 mm",
         hasBackSide: isVisitingCard,
         frontImage: templateForm.frontImage,
         backImage: isVisitingCard ? templateForm.backImage : templateForm.frontImage,
@@ -371,6 +436,14 @@ export default function AdminDashboardPage() {
         orientation: templateForm.orientation,
         industry: templateForm.industry,
         style: templateForm.style,
+        bleedArea: bleedX,
+        safeArea: safeX,
+        bleedSize: `${bleedX}mm x ${bleedY}mm`,
+        safeSize: `${safeX}mm x ${safeY}mm`,
+        bleedMarginX: bleedX,
+        bleedMarginY: bleedY,
+        safeMarginX: safeX,
+        safeMarginY: safeY,
         isActive: templateForm.status === "Published"
       };
 
@@ -695,11 +768,22 @@ export default function AdminDashboardPage() {
       templateTitle: formState.title || '',
       bgImage: formState.frontImage || '',
       backBgImage: formState.backImage || formState.frontImage || '',
-      size: formState.size || '85mm x 55mm',
+      size: formState.finalCardSize || formState.size || '90.00 mm x 53.00 mm',
+      fullDesignSize: formState.fullDesignSize || '93.00 mm x 56.00 mm',
+      finalCardSize: formState.finalCardSize || formState.size || '90.00 mm x 53.00 mm',
+      safeAreaSize: formState.safeAreaSize || '82.00 mm x 45.00 mm',
       orientation: formState.orientation || 'Standard',
       category: formState.categorySlug || 'visiting-cards',
       frontBackground: formState.frontImage || '',
-      backBackground: formState.backImage || formState.frontImage || ''
+      backBackground: formState.backImage || formState.frontImage || '',
+      bleedArea: formState.bleedArea !== undefined ? formState.bleedArea : 1.5,
+      safeArea: formState.safeArea !== undefined ? formState.safeArea : 5.5,
+      bleedSize: formState.bleedSize || '1.5mm x 1.5mm',
+      safeSize: formState.safeSize || '5.5mm x 5.5mm',
+      bleedMarginX: formState.bleedMarginX !== undefined ? formState.bleedMarginX : 1.5,
+      bleedMarginY: formState.bleedMarginY !== undefined ? formState.bleedMarginY : 1.5,
+      safeMarginX: formState.safeMarginX !== undefined ? formState.safeMarginX : 5.5,
+      safeMarginY: formState.safeMarginY !== undefined ? formState.safeMarginY : 5.5
     };
     try {
       sessionStorage.setItem('a2v_editor_session', JSON.stringify(sessionData));
@@ -712,9 +796,20 @@ export default function AdminDashboardPage() {
       adminMode: 'true',
       templateId: tplId,
       templateTitle: formState.title || '',
-      size: formState.size || '85mm x 55mm',
+      size: formState.finalCardSize || formState.size || '90.00 mm x 53.00 mm',
+      fullDesignSize: formState.fullDesignSize || '93.00 mm x 56.00 mm',
+      finalCardSize: formState.finalCardSize || formState.size || '90.00 mm x 53.00 mm',
+      safeAreaSize: formState.safeAreaSize || '82.00 mm x 45.00 mm',
       orientation: formState.orientation || 'Standard',
-      category: formState.categorySlug || 'visiting-cards'
+      category: formState.categorySlug || 'visiting-cards',
+      bleedArea: formState.bleedArea !== undefined ? formState.bleedArea : 1.5,
+      safeArea: formState.safeArea !== undefined ? formState.safeArea : 5.5,
+      bleedSize: formState.bleedSize || '1.5mm x 1.5mm',
+      safeSize: formState.safeSize || '5.5mm x 5.5mm',
+      bleedMarginX: formState.bleedMarginX !== undefined ? formState.bleedMarginX : 1.5,
+      bleedMarginY: formState.bleedMarginY !== undefined ? formState.bleedMarginY : 1.5,
+      safeMarginX: formState.safeMarginX !== undefined ? formState.safeMarginX : 5.5,
+      safeMarginY: formState.safeMarginY !== undefined ? formState.safeMarginY : 5.5
     };
 
     if (formState.frontImage && formState.frontImage.length < 500 && !formState.frontImage.startsWith('data:')) {
@@ -2333,6 +2428,62 @@ export default function AdminDashboardPage() {
                           <option value="Draft">Draft</option>
                         </select>
                       </div>
+                    </div>
+
+                    {/* Print Dimensions Specification (Full Design Size, Safe Area, Final Card Size) */}
+                    <div className="space-y-4 pt-2 border-t border-outline-variant">
+                      <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-primary text-[18px]">straighten</span>
+                        <span>Print Dimensions & Guidelines (MM)</span>
+                      </h4>
+
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                            Full Design Size (Including Bleed) *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={templateForm.fullDesignSize || ""}
+                            onChange={(e) => setTemplateForm({ ...templateForm, fullDesignSize: e.target.value })}
+                            placeholder="e.g. W: 93.00 mm X H: 56.00 mm"
+                            className="w-full px-4 py-2.5 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm focus:outline-none focus:border-primary font-bold text-red-600"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                            Maximum Text Area (Safe Area) *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={templateForm.safeAreaSize || ""}
+                            onChange={(e) => setTemplateForm({ ...templateForm, safeAreaSize: e.target.value })}
+                            placeholder="e.g. W: 82.00 mm X H: 45.00 mm"
+                            className="w-full px-4 py-2.5 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm focus:outline-none focus:border-primary font-bold text-red-600"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                            Final Card Size (After Cutting) *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={templateForm.finalCardSize || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setTemplateForm({ ...templateForm, finalCardSize: val, size: val });
+                            }}
+                            placeholder="e.g. W: 90.00 mm x H: 53.00 mm"
+                            className="w-full px-4 py-2.5 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm focus:outline-none focus:border-primary font-bold text-red-600"
+                          />
+                        </div>
+                      </div>
+
                     </div>
                   </div>
 

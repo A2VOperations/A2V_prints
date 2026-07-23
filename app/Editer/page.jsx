@@ -18,7 +18,7 @@ import { VscTextSize } from "react-icons/vsc";
 import { FaArrowRight } from "react-icons/fa6";
 import { CiPickerHalf } from "react-icons/ci";
 import { FiCrop } from "react-icons/fi";
-
+import { BsQrCode } from "react-icons/bs";
 
 
 // Initial default elements for Front and Back sides
@@ -202,6 +202,44 @@ const getCanvasDimensions = (orientationStr = '', sizeStr = '') => {
   return isVertical ? { width: '360px', height: '620px' } : { width: '620px', height: '350px' };
 };
 
+const getPxPerMm = (orientationStr = '', sizeStr = '') => {
+  const combined = `${sizeStr || ''} ${orientationStr || ''}`;
+  const matches = combined.match(/(\d+(?:\.\d+)?)\s*(?:mm|cm)?\s*(?:[xX×*])\s*(\d+(?:\.\d+)?)\s*(?:mm|cm)?/i);
+  if (matches && matches[1] && matches[2]) {
+    let w = parseFloat(matches[1]);
+    let h = parseFloat(matches[2]);
+    const isVertical = orientationStr.toLowerCase().includes('vertical');
+    if (isVertical && w > h) {
+      const temp = w;
+      w = h;
+      h = temp;
+    }
+    const cardW = w >= h ? w : w;
+    const calcDim = getCanvasDimensions(orientationStr, sizeStr);
+    const pxW = parseFloat(calcDim.width) || 620;
+    return pxW / (cardW || 91.8);
+  }
+  return 620 / 91.8; // Default ~6.753 px per mm
+};
+
+const convertMmToPx = (mm, orientationStr = '', sizeStr = '') => {
+  const pxPerMm = getPxPerMm(orientationStr, sizeStr);
+  return Math.round(Number(mm || 0) * pxPerMm);
+};
+
+const parseMmDimensions = (str, defaultX = 2, defaultY = 2) => {
+  if (!str) return { x: defaultX, y: defaultY };
+  const matches = String(str).match(/(\d+(?:\.\d+)?)\s*(?:mm)?\s*(?:[xX×*,\s])*\s*(\d+(?:\.\d+)?)\s*(?:mm)?/i);
+  if (matches && matches[1]) {
+    const x = parseFloat(matches[1]);
+    const y = matches[2] ? parseFloat(matches[2]) : x;
+    return { x: isNaN(x) ? defaultX : x, y: isNaN(y) ? defaultY : y };
+  }
+  const singleNum = parseFloat(str);
+  if (!isNaN(singleNum)) return { x: singleNum, y: singleNum };
+  return { x: defaultX, y: defaultY };
+};
+
 const getBackgroundStyles = (bgValue) => {
   if (!bgValue || bgValue === 'transparent') {
     return {
@@ -333,7 +371,7 @@ const renderDesignPreview = (elements = [], background = '#ffffff', corners = ''
                     whiteSpace: 'pre-wrap',
                     transform: isCurved ? `perspective(400px) rotateX(${el.curveRadius !== undefined ? el.curveRadius : 30}deg)` : 'none'
                   }}
-                  className="w-full break-words transition-all"
+                  className="w-full wrap-break-word transition-all"
                 >
                   {isCurved ? (
                     <svg viewBox="0 0 300 120" className="w-full h-auto overflow-visible">
@@ -380,6 +418,17 @@ function StudioEditorContent() {
   const [zoomLevel, setZoomLevel] = useState(100); // 75 | 100 | 125 | 150
   const [showSafetyArea, setShowSafetyArea] = useState(true);
   const [showBleed, setShowBleed] = useState(true);
+  const [fullDesignSizeStr, setFullDesignSizeStr] = useState('W: 93.00 mm X H: 56.00 mm');
+  const [finalCardSizeStr, setFinalCardSizeStr] = useState('W: 90.00 mm x H: 53.00 mm');
+  const [safeAreaSizeStr, setSafeAreaSizeStr] = useState('W: 82.00 mm X H: 45.00 mm');
+  const [bleedMargin, setBleedMargin] = useState(1.5); // in mm
+  const [bleedMarginX, setBleedMarginX] = useState(1.5); // in mm
+  const [bleedMarginY, setBleedMarginY] = useState(1.5); // in mm
+  const [safetyMargin, setSafetyMargin] = useState(5.5); // in mm
+  const [safetyMarginX, setSafetyMarginX] = useState(5.5); // in mm
+  const [safetyMarginY, setSafetyMarginY] = useState(5.5); // in mm
+  const [showAdminGuidelinePanel, setShowAdminGuidelinePanel] = useState(false);
+  const [showPointsToNote, setShowPointsToNote] = useState(false);
   const [showGridLines, setShowGridLines] = useState(false);
   const [activeGuides, setActiveGuides] = useState([]);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -667,6 +716,15 @@ function StudioEditorContent() {
     const customPerson = searchParams.get('customPerson');
     const customTitle = searchParams.get('customTitle');
     const selectedColor = searchParams.get('selectedColor');
+    const bleedParamX = searchParams.get('bleedMarginX') || searchParams.get('bleedArea');
+    const bleedParamY = searchParams.get('bleedMarginY') || searchParams.get('bleedArea');
+    const safeParamX = searchParams.get('safeMarginX') || searchParams.get('safeArea');
+    const safeParamY = searchParams.get('safeMarginY') || searchParams.get('safeArea');
+
+    if (bleedParamX !== null && !isNaN(Number(bleedParamX))) { setBleedMarginX(Number(bleedParamX)); setBleedMargin(Number(bleedParamX)); }
+    if (bleedParamY !== null && !isNaN(Number(bleedParamY))) setBleedMarginY(Number(bleedParamY));
+    if (safeParamX !== null && !isNaN(Number(safeParamX))) { setSafetyMarginX(Number(safeParamX)); setSafetyMargin(Number(safeParamX)); }
+    if (safeParamY !== null && !isNaN(Number(safeParamY))) setSafetyMarginY(Number(safeParamY));
 
     let localSessionBg = null;
     let localSessionBackBg = null;
@@ -678,6 +736,14 @@ function StudioEditorContent() {
           if (parsedAdmin.templateId === templateId || searchParams?.get('adminMode') === 'true' || !templateId) {
             localSessionBg = parsedAdmin.bgImage || parsedAdmin.frontBackground;
             localSessionBackBg = parsedAdmin.backBgImage || parsedAdmin.backBackground;
+            const bx = parsedAdmin.bleedMarginX ?? parsedAdmin.bleedArea;
+            const by = parsedAdmin.bleedMarginY ?? parsedAdmin.bleedArea;
+            const sx = parsedAdmin.safeMarginX ?? parsedAdmin.safeArea;
+            const sy = parsedAdmin.safeMarginY ?? parsedAdmin.safeArea;
+            if (bx !== undefined) { setBleedMarginX(Number(bx)); setBleedMargin(Number(bx)); }
+            if (by !== undefined) setBleedMarginY(Number(by));
+            if (sx !== undefined) { setSafetyMarginX(Number(sx)); setSafetyMargin(Number(sx)); }
+            if (sy !== undefined) setSafetyMarginY(Number(sy));
             setAvailableBackTemplate({
               backBackground: parsedAdmin.templateBackBackground || parsedAdmin.backBgImage || parsedAdmin.backBackground,
               backElements: parsedAdmin.templateBackElements || parsedAdmin.backElements || []
@@ -739,6 +805,22 @@ function StudioEditorContent() {
             const currentUrlBg = searchParams?.get('bgImage');
             const currentUrlBackBg = searchParams?.get('backBgImage');
 
+            if (tpl.fullDesignSize) setFullDesignSizeStr(tpl.fullDesignSize);
+            if (tpl.finalCardSize || tpl.size) setFinalCardSizeStr(tpl.finalCardSize || tpl.size);
+            if (tpl.safeAreaSize) setSafeAreaSizeStr(tpl.safeAreaSize);
+
+            const fullP = parseMmDimensions(tpl.fullDesignSize || "93.00 mm x 56.00 mm", 93, 56);
+            const finalP = parseMmDimensions(tpl.finalCardSize || tpl.size || "90.00 mm x 53.00 mm", 90, 53);
+            const safeP = parseMmDimensions(tpl.safeAreaSize || "82.00 mm x 45.00 mm", 82, 45);
+
+            const bx = Math.max(0, (fullP.x - finalP.x) / 2);
+            const by = Math.max(0, (fullP.y - finalP.y) / 2);
+            const sx = Math.max(0, (fullP.x - safeP.x) / 2);
+            const sy = Math.max(0, (fullP.y - safeP.y) / 2);
+
+            setBleedMarginX(bx); setBleedMargin(bx); setBleedMarginY(by);
+            setSafetyMarginX(sx); setSafetyMargin(sx); setSafetyMarginY(sy);
+
             setAvailableBackTemplate(prev => ({
               backBackground: tpl.backBackground || tpl.backImage || (tpl.backElements && tpl.backElements.length > 0 ? (tpl.frontImage || tpl.image) : null) || prev?.backBackground,
               backElements: (tpl.backElements && Array.isArray(tpl.backElements) && tpl.backElements.length > 0) ? tpl.backElements : (prev?.backElements || [])
@@ -757,10 +839,10 @@ function StudioEditorContent() {
             if (!currentUrlBackBg || currentUrlBackBg.trim() === '') {
               if (localSessionBackBg && localSessionBackBg !== '#ffffff') {
                 setBackBackground(localSessionBackBg);
-              } else if (searchParams?.get('adminMode') === 'true') {
-                if (tpl.backBackground || tpl.backImage || tpl.frontImage || tpl.image) {
-                  setBackBackground(tpl.backBackground || tpl.backImage || tpl.frontImage || tpl.image);
-                }
+              } else if (tpl.backBackground || tpl.backImage) {
+                setBackBackground(tpl.backBackground || tpl.backImage);
+              } else if (tpl.backElements && Array.isArray(tpl.backElements) && tpl.backElements.length > 0) {
+                setBackBackground(tpl.frontImage || tpl.image || '#ffffff');
               } else {
                 setBackBackground('#ffffff');
               }
@@ -773,8 +855,9 @@ function StudioEditorContent() {
             } else if (customCompany || customPerson || customTitle || selectedColor) {
               setFrontElements(prev => applyOverrides(prev));
             }
-            if (searchParams?.get('adminMode') === 'true' && tpl.backElements && Array.isArray(tpl.backElements) && tpl.backElements.length > 0) {
-              setBackElements(tpl.backElements);
+
+            if (tpl.backElements && Array.isArray(tpl.backElements) && tpl.backElements.length > 0) {
+              setBackElements(applyOverrides(tpl.backElements));
             } else if (!localSessionBackBg || localSessionBackBg === '#ffffff') {
               setBackElements([]);
             }
@@ -1294,7 +1377,7 @@ function StudioEditorContent() {
                 )}
               </div>
               <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">
-                {productOptions.quantity.split(' -')[0]} • {isBackCustomized ? 'Double Sided' : 'Single Sided'}
+                {isBackCustomized ? 'Double Sided' : 'Single Sided'}
               </span>
             </div>
           )}
@@ -1314,7 +1397,19 @@ function StudioEditorContent() {
                       frontElements,
                       backElements,
                       frontBackground,
-                      backBackground
+                      backBackground,
+                      fullDesignSize: fullDesignSizeStr,
+                      finalCardSize: finalCardSizeStr,
+                      safeAreaSize: safeAreaSizeStr,
+                      size: finalCardSizeStr,
+                      bleedArea: bleedMarginX,
+                      safeArea: safetyMarginX,
+                      bleedSize: `${bleedMarginX}mm x ${bleedMarginY}mm`,
+                      safeSize: `${safetyMarginX}mm x ${safetyMarginY}mm`,
+                      bleedMarginX,
+                      bleedMarginY,
+                      safeMarginX,
+                      safeMarginY
                     })
                   });
                   if (res.ok) {
@@ -1450,7 +1545,7 @@ function StudioEditorContent() {
                                 }`}
                             >
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate max-w-[150px]">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate max-w-37.5">
                                   {el.label || 'Text Field'}
                                 </span>
                                 <div className="flex items-center gap-1">
@@ -2486,8 +2581,8 @@ function StudioEditorContent() {
                     <div>
                       <label className="border-2 border-dashed border-blue-400/80 rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-blue-50/40 hover:bg-blue-50 cursor-pointer transition-colors">
                         <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-base font-bold mb-1.5">⬆</span>
-                        <span className="text-xs font-extrabold text-blue-900">Upload custom image or texture</span>
-                        <span className="text-[10px] text-slate-500 mt-0.5">PNG, JPG up to 25MB</span>
+                        <span className="text-md font-extrabold text-blue-900">Upload custom image / texture</span>
+                        <span className="text-[12px] text-slate-500 mt-0.5">PNG, JPG up to 25MB</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -2528,44 +2623,11 @@ function StudioEditorContent() {
                                 ? 'border-blue-600 ring-2 ring-blue-600/30 scale-102'
                                 : 'border-slate-200 hover:border-slate-400'
                                 }`}
+                              onClick={() => handleBackgroundChange(item.url)}
                             >
                               <img src={item.url} alt={item.name} className="w-full h-24 object-cover group-hover:scale-105 transition-transform duration-300" />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent p-2 flex flex-col justify-between">
                                 <span className="text-[10px] font-extrabold text-white leading-tight line-clamp-1">{item.name}</span>
-                                <div className="flex items-center gap-1 mt-auto pt-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleBackgroundChange(item.url)}
-                                    className="flex-1 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[9px] font-bold transition-colors cursor-pointer text-center"
-                                    title="Set as background"
-                                  >
-                                    Background
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const newId = `el-img-${Date.now()}`;
-                                      setCurrentElements(prev => [
-                                        ...prev,
-                                        {
-                                          id: newId,
-                                          type: 'image',
-                                          url: item.url,
-                                          label: item.name,
-                                          x: 100,
-                                          y: 100,
-                                          width: 160,
-                                          height: 120
-                                        }
-                                      ]);
-                                      setSelectedId(newId);
-                                    }}
-                                    className="flex-1 py-1 bg-slate-800 hover:bg-slate-900 text-white rounded text-[9px] font-bold transition-colors cursor-pointer text-center"
-                                    title="Add to canvas as image"
-                                  >
-                                    + Element
-                                  </button>
-                                </div>
                               </div>
                             </div>
                           );
@@ -2793,18 +2855,18 @@ function StudioEditorContent() {
                           </h4>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                             {[
-                              { name: 'Ocean Breeze', css: 'linear-gradient(135deg, #0070e0 0%, #10b981 100%)' },
-                              { name: 'Sunset Glow', css: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)' },
-                              { name: 'Purple Haze', css: 'linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)' },
-                              { name: 'Midnight Dark', css: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' },
-                              { name: 'Rose Gold', css: 'linear-gradient(135deg, #f43f5e 0%, #fb7185 50%, #fde047 100%)' },
-                              { name: 'Emerald Luxe', css: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)' },
-                              { name: 'Peach Sunrise', css: 'linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%)' },
-                              { name: 'Neon Cyber', css: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 50%, #06b6d4 100%)' },
-                              { name: 'Soft Gray', css: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' },
-                              { name: 'Dark Luxury', css: 'linear-gradient(135deg, #111827 0%, #374151 50%, #d97706 100%)' },
-                              { name: 'Radial Aura', css: 'radial-gradient(circle, #3b82f6 0%, #1e1b4b 100%)' },
-                              { name: 'Cosmic Violet', css: 'linear-gradient(135deg, #4c1d95 0%, #c026d3 100%)' }
+                              { css: 'linear-gradient(135deg, #0070e0 0%, #10b981 100%)' },
+                              { css: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)' },
+                              { css: 'linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)' },
+                              { css: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' },
+                              { css: 'linear-gradient(135deg, #f43f5e 0%, #fb7185 50%, #fde047 100%)' },
+                              { css: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)' },
+                              { css: 'linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%)' },
+                              { css: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 50%, #06b6d4 100%)' },
+                              { css: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' },
+                              { css: 'linear-gradient(135deg, #111827 0%, #374151 50%, #d97706 100%)' },
+                              { css: 'radial-gradient(circle, #3b82f6 0%, #1e1b4b 100%)' },
+                              { css: 'linear-gradient(135deg, #4c1d95 0%, #c026d3 100%)' }
                             ].map((g, idx) => {
                               const isSelected = currentBackground === g.css;
                               return (
@@ -2818,9 +2880,6 @@ function StudioEditorContent() {
                                     : 'border-slate-300/80 hover:border-slate-400 hover:scale-101'
                                     }`}
                                 >
-                                  <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-xs p-1.5 text-center">
-                                    <span className="text-[10px] font-extrabold text-white truncate block">{g.name}</span>
-                                  </div>
                                 </button>
                               );
                             })}
@@ -3017,14 +3076,14 @@ function StudioEditorContent() {
                     {/* Live Preview Box */}
                     {(() => {
                       const QR_STYLES = [
-                        { id: 'classic', name: 'Classic Minimal', color: '000000', bgcolor: 'ffffff', margin: 5 },
-                        { id: 'royal-blue', name: 'Studio Blue', color: '0070e0', bgcolor: 'ffffff', margin: 5 },
-                        { id: 'luxury-purple', name: 'Deep Purple', color: '751FB8', bgcolor: 'ffffff', margin: 5 },
-                        { id: 'dark-carbon', name: 'Carbon Dark Mode', color: 'ffffff', bgcolor: '0f172a', margin: 5 },
-                        { id: 'emerald-cream', name: 'Warm Cream Green', color: '065f46', bgcolor: 'fffbeb', margin: 8 },
-                        { id: 'bold-yellow', name: 'High-Contrast Yellow', color: '000000', bgcolor: 'fde047', margin: 8 },
-                        { id: 'rose-blush', name: 'Rose Berry Elegance', color: '831843', bgcolor: 'fdf2f8', margin: 5 },
-                        { id: 'navy-sky', name: 'Corporate Navy Sky', color: '1e3a8a', bgcolor: 'f0f9ff', margin: 5 }
+                        { id: 'classic', color: '000000', bgcolor: 'ffffff', margin: 5 },
+                        { id: 'royal-blue', color: '0070e0', bgcolor: 'ffffff', margin: 5 },
+                        { id: 'luxury-purple', color: '751FB8', bgcolor: 'ffffff', margin: 5 },
+                        { id: 'dark-carbon', color: 'ffffff', bgcolor: '0f172a', margin: 5 },
+                        { id: 'emerald-cream', color: '065f46', bgcolor: 'fffbeb', margin: 8 },
+                        { id: 'bold-yellow', color: '000000', bgcolor: 'fde047', margin: 8 },
+                        { id: 'rose-blush', color: '831843', bgcolor: 'fdf2f8', margin: 5 },
+                        { id: 'navy-sky', color: '1e3a8a', bgcolor: 'f0f9ff', margin: 5 }
                       ];
                       const selectedStyleObj = QR_STYLES.find(s => s.id === qrStyle) || QR_STYLES[0];
                       const previewUrlInput = qrInput.trim().startsWith('http://') || qrInput.trim().startsWith('https://') || qrInput.trim().includes('.')
@@ -3046,7 +3105,7 @@ function StudioEditorContent() {
                                 />
                               ) : (
                                 <div style={{ color: `#${selectedStyleObj.color}` }} className="flex flex-col items-center justify-center gap-1.5 opacity-60">
-                                  <span className="text-4xl">▦</span>
+                                  <span className="text-4xl"><BsQrCode /></span>
                                   <span className="text-[10px] font-bold">QR Preview</span>
                                 </div>
                               )}
@@ -3076,16 +3135,9 @@ function StudioEditorContent() {
                                   >
                                     <div
                                       style={{ backgroundColor: `#${style.bgcolor}` }}
-                                      className="w-11 h-11 rounded-lg border border-slate-200/80 p-1 shrink-0 flex items-center justify-center shadow-2xs"
+                                      className="w-full h-full rounded-lg border border-slate-200/80 p-1 shrink-0 flex items-center justify-center shadow-2xs"
                                     >
                                       <img src={sampleUrl} alt={style.name} className="w-full h-full object-contain pointer-events-none" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <span className="block text-[11px] font-extrabold text-slate-800 truncate">{style.name}</span>
-                                      <div className="flex items-center gap-1.5 mt-1">
-                                        <span style={{ backgroundColor: `#${style.color}` }} className="w-2.5 h-2.5 rounded-full border border-slate-300 shadow-2xs" title={`Foreground: #${style.color}`} />
-                                        <span style={{ backgroundColor: `#${style.bgcolor}` }} className="w-2.5 h-2.5 rounded-full border border-slate-300 shadow-2xs" title={`Background: #${style.bgcolor}`} />
-                                      </div>
                                     </div>
                                   </button>
                                 );
@@ -3254,10 +3306,11 @@ function StudioEditorContent() {
         >
           {/* Top Info Rulers & Bleed Toggles */}
           <div className="absolute top-4 inset-x-8 flex items-center justify-between pointer-events-none z-10">
-            <div className="flex items-center gap-4 text-xs font-extrabold text-slate-500 bg-white/90 backdrop-blur-xs px-3.5 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs pointer-events-auto">
+            <div className="flex items-center gap-3 text-xs font-extrabold text-slate-500 bg-white/90 backdrop-blur-xs px-3.5 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs pointer-events-auto">
               <span>Ruler: <strong className="text-slate-800">{searchParams?.get('size') || (productOptions.orientation.includes('Vertical') ? '5.38cm x 9.18cm' : '9.18cm x 5.38cm')}</strong></span>
               <span className="text-slate-300">•</span>
               <span>Zoom: <strong className="text-slate-800">{zoomLevel}%</strong></span>
+              <span className="text-slate-300">•</span>
             </div>
 
             <div className="flex items-center gap-2 pointer-events-auto">
@@ -3288,6 +3341,117 @@ function StudioEditorContent() {
               >
                 Bleed
               </button>
+
+              {isAdminMode && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowAdminGuidelinePanel(!showAdminGuidelinePanel)}
+                    className="text-xs font-black px-3 py-1.5 rounded-xl transition-all border bg-slate-900 text-white border-slate-900 hover:bg-slate-800 shadow-xs flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>⚙ Guideline Insets</span>
+                  </button>
+
+                  {showAdminGuidelinePanel && (
+                    <div className="absolute top-10 right-0 w-80 bg-white rounded-2xl p-4 shadow-2xl border border-slate-200 z-50 animate-in fade-in zoom-in-95 duration-150 space-y-3.5">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">Set Width & Height Margins (MM)</h4>
+                        <button
+                          onClick={() => setShowAdminGuidelinePanel(false)}
+                          className="text-slate-400 hover:text-slate-700 text-xs font-bold"
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {/* Bleed Area */}
+                        <div className="p-2.5 bg-blue-50/70 rounded-xl border border-blue-200/80 space-y-2">
+                          <span className="text-[11px] font-black text-blue-800 uppercase block">Bleed Area (MM)</span>
+                          <div className="space-y-1.5">
+                            <div>
+                              <div className="flex justify-between items-center text-[10px] font-bold text-blue-700">
+                                <span>Width (Left/Right):</span>
+                                <span className="font-mono text-slate-900">{bleedMarginX} mm</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="20"
+                                step="0.5"
+                                value={bleedMarginX}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  setBleedMarginX(val); setBleedMargin(val);
+                                }}
+                                className="w-full h-1.5 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                              />
+                            </div>
+                            <div>
+                              <div className="flex justify-between items-center text-[10px] font-bold text-blue-700">
+                                <span>Height (Top/Bottom):</span>
+                                <span className="font-mono text-slate-900">{bleedMarginY} mm</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="20"
+                                step="0.5"
+                                value={bleedMarginY}
+                                onChange={(e) => setBleedMarginY(Number(e.target.value))}
+                                className="w-full h-1.5 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Safe Area */}
+                        <div className="p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-200/80 space-y-2">
+                          <span className="text-[11px] font-black text-emerald-800 uppercase block">Safe Area (MM)</span>
+                          <div className="space-y-1.5">
+                            <div>
+                              <div className="flex justify-between items-center text-[10px] font-bold text-emerald-700">
+                                <span>Width (Left/Right):</span>
+                                <span className="font-mono text-slate-900">{safetyMarginX} mm</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="25"
+                                step="0.5"
+                                value={safetyMarginX}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  setSafetyMarginX(val); setSafetyMargin(val);
+                                }}
+                                className="w-full h-1.5 bg-emerald-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                              />
+                            </div>
+                            <div>
+                              <div className="flex justify-between items-center text-[10px] font-bold text-emerald-700">
+                                <span>Height (Top/Bottom):</span>
+                                <span className="font-mono text-slate-900">{safetyMarginY} mm</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="25"
+                                step="0.5"
+                                value={safetyMarginY}
+                                onChange={(e) => setSafetyMarginY(Number(e.target.value))}
+                                className="w-full h-1.5 bg-emerald-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-semibold">
+                        Click "Save Admin Template Layout" to save in DB.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -3520,7 +3684,7 @@ function StudioEditorContent() {
             ) : (
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white rounded-xl px-3 py-1.5 flex items-center gap-2.5 shadow-2xl border border-slate-800 z-40 text-xs w-max pointer-events-auto"
+                className="absolute top-20 left-1/2 -translate-x-1/2 bg-slate-900 text-white rounded-xl px-3 py-1.5 flex items-center gap-2.5 shadow-2xl border border-slate-800 z-40 text-xs w-max pointer-events-auto"
               >
                 <span className="font-extrabold truncate max-w-25 text-[10px] text-sky-300">{el.label || el.type}</span>
                 {el.type === 'image' && (
@@ -3578,24 +3742,6 @@ function StudioEditorContent() {
             style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'center center' }}
             className="relative transition-transform duration-200 flex items-center justify-center my-auto"
           >
-            {/* Top Ruler Bar */}
-            <div className="absolute -top-7 left-0 right-0 h-6 bg-white/80 border border-slate-300/80 rounded-t-md flex items-end justify-between px-2 text-[9px] font-extrabold text-slate-500 select-none">
-              <span>0 cm</span>
-              <span>2 cm</span>
-              <span>4 cm</span>
-              <span>6 cm</span>
-              <span>8 cm</span>
-              <span>9.18 cm</span>
-            </div>
-
-            {/* Left Ruler Bar */}
-            <div className="absolute -left-7 top-0 bottom-0 w-6 bg-white/80 border border-slate-300/80 rounded-l-md flex flex-col items-center justify-between py-2 text-[9px] font-extrabold text-slate-500 select-none">
-              <span>0</span>
-              <span>2</span>
-              <span>4</span>
-              <span>5.38</span>
-            </div>
-
             {/* THE ACTUAL PRINT CARD CANVAS (approx 620px x 350px scaled) */}
             <div
               ref={canvasRef}
@@ -3613,22 +3759,40 @@ function StudioEditorContent() {
               }}
               className={`relative shadow-2xl border border-slate-300 ${selectedId && !isPreviewMode ? 'overflow-visible' : 'overflow-hidden'} transition-all duration-300 shrink-0 group cursor-default ${productOptions.corners.includes('Rounded') ? 'rounded-3xl' : 'rounded-none'}`}
             >
-              {/* Bleed Margin Overlay */}
-              {showBleed && (
-                <div className="absolute inset-2 border border-blue-400/40 pointer-events-none flex items-start justify-end p-1">
-                  <span className="text-[9px] font-bold text-blue-500 bg-blue-50/90 px-1.5 rounded uppercase tracking-wider">Bleed</span>
-                </div>
-              )}
+              {/* Final Card Cut Line Overlay */}
+              {!isPreviewMode && showBleed && (() => {
+                const bleedPxX = convertMmToPx(bleedMarginX, productOptions.orientation, searchParams?.get('size'));
+                const bleedPxY = convertMmToPx(bleedMarginY, productOptions.orientation, searchParams?.get('size'));
+                return (
+                  <div
+                    style={{ left: `${bleedPxX}px`, right: `${bleedPxX}px`, top: `${bleedPxY}px`, bottom: `${bleedPxY}px` }}
+                    className="absolute border border-blue-500/70 pointer-events-none flex items-start justify-end p-1 z-20 transition-all"
+                  >
+                    <span className="text-[9px] font-bold text-blue-700 bg-blue-50/90 px-1.5 py-0.5 rounded uppercase tracking-wider shadow-2xs">
+                      After Cutting
+                    </span>
+                  </div>
+                );
+              })()}
 
-              {/* Safety Margin Overlay (dashed green box exactly like Vistaprint) */}
-              {showSafetyArea && (
-                <div className="absolute inset-7 border-2 border-dashed border-emerald-500/60 pointer-events-none flex items-end justify-end p-1.5 rounded-sm">
-                  <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50/90 px-1.5 py-0.5 rounded uppercase tracking-wider shadow-2xs">Safety Area</span>
-                </div>
-              )}
+              {/* Safety Area Overlay */}
+              {!isPreviewMode && showSafetyArea && (() => {
+                const safePxX = convertMmToPx(safetyMarginX, productOptions.orientation, searchParams?.get('size'));
+                const safePxY = convertMmToPx(safetyMarginY, productOptions.orientation, searchParams?.get('size'));
+                return (
+                  <div
+                    style={{ left: `${safePxX}px`, right: `${safePxX}px`, top: `${safePxY}px`, bottom: `${safePxY}px` }}
+                    className="absolute border-2 border-dashed border-emerald-500/80 pointer-events-none flex items-end justify-end p-1.5 rounded-sm z-20 transition-all"
+                  >
+                    <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50/95 px-1.5 py-0.5 rounded uppercase tracking-wider shadow-2xs">
+                      Safe Area
+                    </span>
+                  </div>
+                );
+              })()}
 
               {/* Background Grid Lines Overlay */}
-              {showGridLines && (
+              {!isPreviewMode && showGridLines && (
                 <div
                   className="absolute inset-0 pointer-events-none z-0"
                   style={{
