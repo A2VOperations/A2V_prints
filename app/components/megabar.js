@@ -554,13 +554,6 @@ export default function Megabar() {
                                 {activeData.href && (
                                     <>
                                         <Link
-                                            href={`/template/${activeData.id}`}
-                                            onClick={() => setActiveCategory(null)}
-                                            className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-[#031A30] hover:bg-[#0A2D4E] px-3.5 py-1.5 rounded-full transition-all cursor-pointer shadow-2xs"
-                                        >
-                                            <span>🎨 {activeData.name} Templates</span>
-                                        </Link>
-                                        <Link
                                             href={activeData.href}
                                             onClick={() => setActiveCategory(null)}
                                             className="inline-flex items-center gap-1.5 text-xs font-bold text-[#e53e3e] hover:text-[#c53030] bg-red-50 hover:bg-red-100/80 px-3.5 py-1.5 rounded-full transition-all cursor-pointer shadow-2xs"

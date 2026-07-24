@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import React, { useState, useRef, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { getCart, getWishlist } from '../lib/cartWishlist'
+import { getCart, getWishlist, getDrafts } from '../lib/cartWishlist'
 
 const categories = [
     'Category',
@@ -23,6 +23,7 @@ export default function Navbar() {
     const [isCategoryOpen, setIsCategoryOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
     const [wishlistCount, setWishlistCount] = useState(0)
+    const [draftsCount, setDraftsCount] = useState(0)
     const [cartCount, setCartCount] = useState(0)
     const [user, setUser] = useState(null)
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -32,7 +33,9 @@ export default function Navbar() {
 
     const refreshCounts = (u) => {
         const uid = u ? u.id : null
-        setWishlistCount(getWishlist(uid).length)
+        const drafts = getDrafts(uid)
+        setDraftsCount(drafts.length)
+        setWishlistCount(drafts.length)
         setCartCount(getCart(uid).reduce((s, i) => s + (i.quantity || 1), 0))
     }
 
@@ -63,8 +66,10 @@ export default function Navbar() {
             refreshCounts(user)
         }
         window.addEventListener('cart-wishlist-change', handleCartWishlistChange)
+        window.addEventListener('cart-draft-change', handleCartWishlistChange)
         return () => {
             window.removeEventListener('cart-wishlist-change', handleCartWishlistChange)
+            window.removeEventListener('cart-draft-change', handleCartWishlistChange)
         }
     }, [user])
 
@@ -143,8 +148,8 @@ export default function Navbar() {
                                                 setIsCategoryOpen(false)
                                             }}
                                             className={`w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer flex items-center justify-between ${selectedCategory === cat
-                                                    ? 'bg-purple-50 text-[#9842dc] font-semibold'
-                                                    : 'hover:bg-gray-50 text-gray-700'
+                                                ? 'bg-purple-50 text-[#9842dc] font-semibold'
+                                                : 'hover:bg-gray-50 text-gray-700'
                                                 }`}
                                         >
                                             <span>{cat}</span>
@@ -181,7 +186,7 @@ export default function Navbar() {
                     {/* Hotline Info */}
                     <div className="flex items-center gap-3 shrink-0">
                         <a
-                            href="tel:196475"
+                            href="tel:+919625177615"
                             className="w-11 h-11 rounded-full bg-white border border-gray-200/80 shadow-sm flex items-center justify-center text-gray-700 shrink-0 hover:border-[#9842dc] hover:text-[#9842dc] hover:scale-105 transition-all duration-200 cursor-pointer"
                             aria-label="Call Hotline"
                         >
@@ -194,21 +199,22 @@ export default function Navbar() {
                             </svg>
                         </a>
                         <div className="hidden lg:block">
-                            <div className="text-sm font-bold text-[#1a1f36] leading-tight">Hotline: 196475</div>
+                            <div className="text-sm font-bold text-[#1a1f36] leading-tight">Hotline: +91 9625177615</div>
                             <div className="text-xs text-gray-500 font-normal mt-0.5">Call us for free</div>
                         </div>
                     </div>
 
-                    {/* Action Icons: Wishlist, Cart, User Account */}
+                    {/* Action Icons: Drafts, Cart, User Account */}
                     <div className="flex items-center gap-4 sm:gap-6 pl-2 sm:pl-4 border-l border-gray-200/80">
-                        {/* Wishlist & Shopping Cart (Only visible when logged in) */}
+                        {/* Drafts & Shopping Cart (Only visible when logged in) */}
                         {user && (
                             <>
-                                {/* Wishlist */}
+                                {/* Saved Drafts */}
                                 <Link
-                                    href="/wishlist"
-                                    aria-label="Wishlist"
-                                    className="relative p-1 text-gray-700 hover:text-[#f54278] transition-colors cursor-pointer focus:outline-none group"
+                                    href="/drafts"
+                                    aria-label="My Saved Drafts"
+                                    title="My Saved Drafts"
+                                    className="relative p-1 text-gray-700 hover:text-[#38bdf8] transition-colors cursor-pointer focus:outline-none group"
                                 >
                                     <svg
                                         className="w-6 h-6 transition-transform group-hover:scale-110 duration-200"
@@ -220,11 +226,11 @@ export default function Navbar() {
                                         <path
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
-                                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                                            d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V3"
                                         />
                                     </svg>
-                                    <span className="absolute -top-1.5 -right-2 bg-[#6366f1] text-white text-[11px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm transition-transform group-hover:scale-110">
-                                        {wishlistCount}
+                                    <span className="absolute -top-1.5 -right-2 bg-[#38bdf8] text-white text-[11px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm transition-transform group-hover:scale-110">
+                                        {draftsCount}
                                     </span>
                                 </Link>
 
@@ -302,6 +308,16 @@ export default function Navbar() {
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                                                 </svg>
                                                 My Dashboard
+                                            </Link>
+                                            <Link
+                                                href="/drafts"
+                                                onClick={() => setIsUserMenuOpen(false)}
+                                                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#38bdf8] transition-colors"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V3" />
+                                                </svg>
+                                                My Saved Drafts ({draftsCount})
                                             </Link>
                                             <button
                                                 type="button"

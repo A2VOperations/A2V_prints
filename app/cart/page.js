@@ -431,7 +431,7 @@ export default function CartPage() {
     addToWishlist(uid, item)
     const updated = removeFromCart(uid, item.id)
     setCart(updated)
-    showToast('Saved to your wishlist!')
+    showToast('Saved to your drafts!')
   }
 
   const handleCheckout = async () => {
@@ -787,9 +787,9 @@ export default function CartPage() {
                           <button
                             type="button"
                             onClick={() => handleSaveForLater(item)}
-                            className="text-purple-600 hover:text-purple-800 transition-colors cursor-pointer"
+                            className="text-sky-600 hover:text-sky-800 transition-colors cursor-pointer"
                           >
-                            ♥ Save to Wishlist
+                            💾 Save to Drafts
                           </button>
                           <button
                             type="button"

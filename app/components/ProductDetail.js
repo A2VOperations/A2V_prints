@@ -360,7 +360,7 @@ function ProductDetailInner({ category: propCategory, id: propId, initialCategor
       uploadedImageUrls: uploadedImageUrls.filter(Boolean)
     })
     setIsWishlisted(true)
-    showProductToast('Saved to Wishlist!')
+    showProductToast('Saved to My Drafts!')
   }
 
   const handleRemoveFile = (indexToRemove) => {

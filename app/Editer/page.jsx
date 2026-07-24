@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { addToCart, compressImageForStorage } from '../lib/cartWishlist';
+import { addToCart, saveDraft, getDrafts, compressImageForStorage } from '../lib/cartWishlist';
 import { useDatabaseData } from '../lib/useDatabaseData';
 import { BiText } from "react-icons/bi";
 import { FaCloudUploadAlt } from "react-icons/fa";
@@ -428,6 +428,44 @@ function StudioEditorContent() {
   const [showNextModal, setShowNextModal] = useState(false);
   const [hasApprovedDesign, setHasApprovedDesign] = useState(false);
   const [reviewStep, setReviewStep] = useState('review'); // 'review' | 'final'
+  const [activeDraftId, setActiveDraftId] = useState(searchParams?.get('draftId') || null);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const handleSaveUserDraft = async () => {
+    let uid = null;
+    try {
+      const res = await fetch('/api/auth/me');
+      const data = await res.json();
+      if (data?.user?.id) uid = data.user.id;
+    } catch (e) { }
+
+    const draftId = activeDraftId || searchParams?.get('draftId') || `draft_${Date.now()}`;
+    const frontImg = frontElements.find(e => e.type === 'image')?.url || '/home/visiting-cards/card-stack.png';
+    const title = searchParams?.get('templateTitle') || productOptions.category || 'Custom Studio Design Draft';
+
+    const draftItem = {
+      id: draftId,
+      title: title,
+      previewImage: frontImg,
+      image: frontImg,
+      templateId: searchParams?.get('templateId') || adminTemplateId || null,
+      frontElements,
+      backElements,
+      frontBackground,
+      backBackground,
+      productOptions: {
+        ...productOptions,
+        size: searchParams?.get('size') || productOptions.size || '91.8mm x 53.8mm'
+      },
+      isBackCustomized,
+      size: searchParams?.get('size') || productOptions.size || '91.8mm x 53.8mm'
+    };
+
+    saveDraft(uid, draftItem);
+    setActiveDraftId(draftId);
+    setToastMessage('💾 Design saved to your Drafts!');
+    setTimeout(() => setToastMessage(''), 3000);
+  };
 
   // Product configuration state
   const [productOptions, setProductOptions] = useState({
@@ -869,6 +907,27 @@ function StudioEditorContent() {
     }
   }, [searchParams]);
 
+  // Restore saved draft if draftId is provided in URL params
+  useEffect(() => {
+    const draftId = searchParams?.get('draftId');
+    if (draftId) {
+      fetch('/api/auth/me').then(res => res.json()).then(data => {
+        const uid = data?.user?.id || null;
+        const drafts = getDrafts(uid);
+        const draft = drafts.find(d => String(d.id) === String(draftId));
+        if (draft) {
+          setActiveDraftId(draft.id);
+          if (draft.frontElements && draft.frontElements.length > 0) setFrontElements(draft.frontElements);
+          if (draft.backElements && draft.backElements.length > 0) setBackElements(draft.backElements);
+          if (draft.frontBackground) setFrontBackground(draft.frontBackground);
+          if (draft.backBackground) setBackBackground(draft.backBackground);
+          if (draft.productOptions) setProductOptions(draft.productOptions);
+          if (draft.isBackCustomized !== undefined) setIsBackCustomized(draft.isBackCustomized);
+        }
+      }).catch(() => { });
+    }
+  }, [searchParams]);
+
   // Restore session on accidental page refresh (sessionStorage is automatically wiped on tab/window close)
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -977,6 +1036,8 @@ function StudioEditorContent() {
     return sum + (foundChoice && foundChoice.priceModifier ? Number(foundChoice.priceModifier) : 0);
   }, 0);
 
+  const singleSidedPrice = frontPrice + qualityModifier + styleModifier + customModifiers;
+  const doubleSidedPrice = (frontPrice * 1.5) + qualityModifier + styleModifier + customModifiers;
   const calculatedFinalPrice = totalPrice + qualityModifier + styleModifier + customModifiers;
 
   // Save snapshot for undo/redo
@@ -1278,7 +1339,13 @@ function StudioEditorContent() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#F2F4F7] text-slate-800 select-none font-sans">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#F2F4F7] text-slate-800 select-none font-sans relative">
+
+      {toastMessage && (
+        <div className="fixed top-16 right-6 z-50 bg-slate-900/90 backdrop-blur-md text-white font-bold text-xs sm:text-sm px-5 py-3 rounded-2xl shadow-xl animate-in fade-in slide-in-from-top-4 duration-200 flex items-center gap-2 border border-slate-700">
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
       {/* 1. STUDIO HEADER / TOPBAR (Replicating exact Vistaprint Topbar) */}
       <header className="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between shrink-0 z-40 shadow-xs">
@@ -1309,8 +1376,8 @@ function StudioEditorContent() {
             <button
               onClick={handleUndo}
               disabled={historyIndex <= 0}
-              title="Undo (Ctrl+Z)"
-              className="p-1.5 rounded hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+              title="Undo"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
@@ -1319,59 +1386,149 @@ function StudioEditorContent() {
             <button
               onClick={handleRedo}
               disabled={historyIndex >= history.length - 1}
-              title="Redo (Ctrl+Y)"
-              className="p-1.5 rounded hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+              title="Redo"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" />
-              </svg>
-            </button>
-            <button
-              onClick={() => {
-                if (confirm('Clear custom design elements and reset canvas?')) {
-                  setFrontElements(DEFAULT_FRONT_ELEMENTS);
-                  setBackElements(DEFAULT_BACK_ELEMENTS);
-                  setFrontBackground('#ffffff');
-                  setBackBackground('#ffffff');
-                  try { sessionStorage.removeItem('a2v_editor_session'); } catch (e) { }
-                }
-              }}
-              title="Reset Canvas"
-              className="p-1.5 rounded hover:bg-slate-100 transition-colors text-slate-500 hover:text-rose-600 ml-1"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
               </svg>
             </button>
           </div>
         </div>
 
-        {/* Right: Preview, Price & Next Button */}
-        <div className="flex items-center gap-3 sm:gap-5">
-          <button
-            onClick={() => setIsPreviewMode(!isPreviewMode)}
-            className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition-all border ${isPreviewMode
-              ? 'bg-slate-900 text-white border-slate-900 shadow-md'
-              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-              }`}
-          >
-            <span>👁</span>
-            <span>{isPreviewMode ? 'Exit Preview' : 'Preview'}</span>
-          </button>
+        {/* Center: Orientation / Sides Indicator */}
+        <div className="hidden md:flex items-center gap-3 bg-slate-100/80 px-3 py-1 rounded-xl border border-slate-200/60 text-xs font-bold">
+          <span className="text-slate-500 uppercase tracking-wider text-[10px]">Canvas Mode:</span>
+          <span className="text-slate-800 font-extrabold">{productOptions.orientation?.split(' (')[0] || 'Horizontal'}</span>
+          <span className="w-1 h-1 rounded-full bg-slate-400"></span>
+          <span className="text-[#38bdf8] font-extrabold">{activeSide} Side</span>
+        </div>
 
+        {/* Right: Actions (Save Draft, Next, Admin Save) */}
+        <div className="flex items-center gap-2">
+          {/* Interactive Amount Toggle: Without Back & With Back */}
           {!isAdminMode && (
-            <div className="text-right hidden md:block">
-              <div className="text-sm font-black text-slate-900 leading-none flex items-center justify-end gap-1.5">
-                <span>₹{calculatedFinalPrice.toFixed(2)}</span>
-                {isBackCustomized && (
-                  <span className="text-[9px] font-extrabold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full uppercase tracking-wider" title="Back side custom design (+50%)">
-                    +50% Back
-                  </span>
-                )}
-              </div>
-              <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">
-                {isBackCustomized ? 'Double Sided' : 'Single Sided'}
-              </span>
+            <div className="hidden sm:flex items-center bg-slate-100/90 p-1 rounded-2xl border border-slate-200 shrink-0 text-xs select-none shadow-2xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setBackElements([]);
+                  setBackBackground('#ffffff');
+                  setActiveSide('Front');
+                  saveToHistory();
+                }}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${!isBackCustomized
+                  ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200'
+                  : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/60'
+                  }`}
+                title="Select Single Sided Print (Without Back)"
+              >
+                <span className={`w-2 h-2 rounded-full ${!isBackCustomized ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
+                <span>Without Back:</span>
+                <span className={!isBackCustomized ? 'font-black text-emerald-600' : 'font-semibold text-slate-700'}>
+                  ₹{singleSidedPrice.toFixed(2)}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isBackCustomized) {
+                    if (availableBackTemplate?.backElements && availableBackTemplate.backElements.length > 0) {
+                      setBackElements(JSON.parse(JSON.stringify(availableBackTemplate.backElements)));
+                      if (availableBackTemplate?.backBackground) {
+                        setBackBackground(availableBackTemplate.backBackground);
+                      } else if (frontBackground && frontBackground !== 'transparent') {
+                        setBackBackground(frontBackground);
+                      }
+                    } else {
+                      // Create a rich professional back template layout
+                      const companyName = frontElements.find(e => e.type === 'text' && (e.text?.toLowerCase().includes('company') || e.text?.toLowerCase().includes('inc') || e.text?.toLowerCase().includes('ltd') || e.fontSize > 16))?.text || 'YOUR BRAND / COMPANY';
+                      const defaultBackLayout = [
+                        {
+                          id: `txt_back_title_${Date.now()}`,
+                          type: 'text',
+                          text: companyName,
+                          x: 150,
+                          y: 40,
+                          fontSize: 18,
+                          fontFamily: 'Inter',
+                          color: '#0f172a',
+                          align: 'center',
+                          fontWeight: 'bold'
+                        },
+                        {
+                          id: `txt_back_tagline_${Date.now()}`,
+                          type: 'text',
+                          text: 'Premium Print & Design Solutions',
+                          x: 150,
+                          y: 65,
+                          fontSize: 10,
+                          fontFamily: 'Inter',
+                          color: '#64748b',
+                          align: 'center',
+                          fontWeight: 'normal'
+                        },
+                        {
+                          id: `line_back_divider_${Date.now()}`,
+                          type: 'shape',
+                          shapeType: 'line',
+                          x: 50,
+                          y: 85,
+                          width: 200,
+                          height: 2,
+                          fill: '#38bdf8'
+                        },
+                        {
+                          id: `txt_back_services_${Date.now()}`,
+                          type: 'text',
+                          text: '• Professional Services & Consultation\n• High Quality Print & Quick Delivery',
+                          x: 50,
+                          y: 100,
+                          fontSize: 10,
+                          fontFamily: 'Inter',
+                          color: '#334155',
+                          align: 'left',
+                          fontWeight: 'normal'
+                        },
+                        {
+                          id: `txt_back_contact_${Date.now()}`,
+                          type: 'text',
+                          text: '🌐 www.yourbrand.com | ✉ info@yourbrand.com',
+                          x: 150,
+                          y: 145,
+                          fontSize: 9,
+                          fontFamily: 'Inter',
+                          color: '#475569',
+                          align: 'center',
+                          fontWeight: 'semibold'
+                        }
+                      ];
+                      setBackElements(defaultBackLayout);
+                      if (frontBackground && frontBackground !== 'transparent') {
+                        setBackBackground(frontBackground);
+                      } else {
+                        setBackBackground('#ffffff');
+                      }
+                    }
+                    setActiveSide('Back');
+                    saveToHistory();
+                  } else {
+                    setActiveSide('Back');
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${isBackCustomized
+                  ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200'
+                  : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/60'
+                  }`}
+                title="Select Double Sided Print (With Back) and apply back template layout"
+              >
+                <span className={`w-2 h-2 rounded-full ${isBackCustomized ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
+                <span>With Back (+50%):</span>
+                <span className={isBackCustomized ? 'font-black text-emerald-600' : 'font-semibold text-slate-700'}>
+                  ₹{doubleSidedPrice.toFixed(2)}
+                </span>
+              </button>
             </div>
           )}
 
@@ -1421,17 +1578,27 @@ function StudioEditorContent() {
               <span>💾 Save Admin Template Layout</span>
             </button>
           ) : (
-            <button
-              onClick={() => {
-                setHasApprovedDesign(false);
-                setReviewStep('review');
-                setShowNextModal(true);
-              }}
-              className="bg-[#38bdf8] hover:bg-[#0ea5e9] text-white font-extrabold px-5 py-2 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
-            >
-              <span>Next</span>
-              <span>→</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSaveUserDraft}
+                className="bg-slate-800 hover:bg-slate-900 text-white font-extrabold px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5 border border-slate-700"
+                title="Save progress to My Drafts"
+              >
+                <span>💾 Save Draft</span>
+              </button>
+              <button
+                onClick={() => {
+                  setHasApprovedDesign(false);
+                  setReviewStep('review');
+                  setShowNextModal(true);
+                }}
+                className="bg-[#38bdf8] hover:bg-[#0ea5e9] text-white font-extrabold px-5 py-2 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span>Next</span>
+                <span>→</span>
+              </button>
+            </div>
           )}
         </div>
       </header>
@@ -4122,11 +4289,6 @@ function StudioEditorContent() {
 
                   {!isBackCustomized ? (
                     <div className="space-y-2.5">
-                      <div className="flex justify-center items-center gap-2 p-2.5 bg-sky-50/80 rounded-xl border border-sky-200/80 text-[11px] font-bold text-sky-900 leading-snug">
-                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
-                        <span>Single Sided currently <br /> (+₹0.00 add-on).</span>
-                      </div>
-
                       {(availableBackTemplate?.backBackground || availableBackTemplate?.backElements?.length > 0 || frontBackground) && (
                         <button
                           type="button"
@@ -4151,10 +4313,6 @@ function StudioEditorContent() {
                     </div>
                   ) : (
                     <div className="space-y-2.5">
-                      <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] font-bold text-emerald-800 leading-snug flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                        <span>Double Sided Active (+50% price applied)</span>
-                      </div>
                       <button
                         type="button"
                         onClick={() => {

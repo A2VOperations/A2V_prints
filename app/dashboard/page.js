@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getDrafts, removeFromDrafts, moveToCartFromDraft } from "../lib/cartWishlist";
 
 export default function UserDashboardPage() {
   const router = useRouter();
@@ -270,19 +271,99 @@ export default function UserDashboardPage() {
           </div>
         )}
 
-        {/* TAB 2: SAVED DESIGNS */}
+        {/* TAB 2: SAVED DESIGNS / DRAFTS */}
         {activeTab === "designs" && (
-          <div className="bg-white rounded-2xl p-8 border border-gray-200/80 shadow-sm text-center space-y-4">
-            <h3 className="text-lg font-bold text-gray-900">Your Cloud Studio Designs</h3>
-            <p className="text-sm text-gray-500 max-w-md mx-auto">
-              Custom vector artwork, visiting card layouts, and uploaded brand assets will appear here.
-            </p>
-            <Link
-              href="/graphic-services"
-              className="inline-block px-6 py-2.5 rounded-xl bg-purple-600 text-white font-bold text-sm"
-            >
-              Upload Artwork to Studio
-            </Link>
+          <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-200/80 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+              <div>
+                <h3 className="text-xl font-extrabold text-gray-900">Your Saved Design Drafts</h3>
+                <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+                  Custom editor layouts, modified templates, and saved artwork ready to customize or order.
+                </p>
+              </div>
+              <Link
+                href="/Editer"
+                className="px-5 py-2.5 rounded-xl bg-[#38bdf8] hover:bg-[#0ea5e9] text-white font-extrabold text-xs sm:text-sm shadow-sm transition-all shrink-0"
+              >
+                + New Studio Design
+              </Link>
+            </div>
+
+            {(() => {
+              const userDrafts = getDrafts(user.id);
+              if (userDrafts.length === 0) {
+                return (
+                  <div className="text-center py-10 space-y-4">
+                    <div className="w-16 h-16 rounded-2xl bg-sky-50 text-[#38bdf8] flex items-center justify-center mx-auto text-2xl">
+                      🎨
+                    </div>
+                    <div>
+                      <h4 className="text-base font-bold text-gray-900">No saved drafts found</h4>
+                      <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
+                        Customize any product layout or template in our Studio Editor and click &quot;Save Draft&quot; to view them here.
+                      </p>
+                    </div>
+                    <Link
+                      href="/Editer"
+                      className="inline-block px-6 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs"
+                    >
+                      Open Studio Editor
+                    </Link>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {userDrafts.map((draft) => (
+                    <div key={draft.id} className="border border-gray-200 rounded-2xl p-4 flex flex-col justify-between hover:shadow-md transition-shadow bg-gray-50/50">
+                      <div>
+                        <div className="h-36 bg-white rounded-xl border border-gray-100 flex items-center justify-center p-3 mb-3 overflow-hidden">
+                          <img
+                            src={draft.previewImage || draft.image || '/home/visiting-cards/card-stack.png'}
+                            alt={draft.title}
+                            className="max-h-full max-w-full object-contain"
+                            onError={(e) => { e.currentTarget.src = '/home/visiting-cards/card-stack.png' }}
+                          />
+                        </div>
+                        <h4 className="font-extrabold text-gray-900 text-sm line-clamp-1">{draft.title}</h4>
+                        <p className="text-[11px] text-gray-500 mt-0.5">Card Size: {draft.size || '91.8mm x 53.8mm'}</p>
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-200/60">
+                        <Link
+                          href={`/Editer?draftId=${draft.id}`}
+                          className="flex-1 py-2 px-3 rounded-lg bg-[#38bdf8] text-white font-extrabold text-xs text-center hover:bg-[#0ea5e9] transition-colors"
+                        >
+                          Edit
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            moveToCartFromDraft(user.id, draft);
+                            router.push('/cart');
+                          }}
+                          className="flex-1 py-2 px-3 rounded-lg bg-slate-900 text-white font-bold text-xs text-center hover:bg-slate-800 transition-colors"
+                        >
+                          Order
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            removeFromDrafts(user.id, draft.id);
+                            setUser({ ...user }); // trigger re-render
+                          }}
+                          className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                          title="Delete Draft"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         )}
 

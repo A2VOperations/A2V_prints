@@ -2,6 +2,7 @@
 
 const CART_PREFIX = 'a2v_cart_'
 const WISHLIST_PREFIX = 'a2v_wishlist_'
+const DRAFTS_PREFIX = 'a2v_drafts_'
 
 function getKey(prefix, userId) {
   if (!userId) return `${prefix}guest`
@@ -92,6 +93,7 @@ function safeSetStorage(key, dataArray) {
 export function notifyCartWishlistChange() {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('cart-wishlist-change'))
+    window.dispatchEvent(new CustomEvent('cart-draft-change'))
   }
 }
 
@@ -164,43 +166,98 @@ export function clearCart(userId) {
   notifyCartWishlistChange()
 }
 
-// WISHLIST FUNCTIONS
-export function getWishlist(userId) {
+// DRAFTS FUNCTIONS
+export function getDrafts(userId) {
   if (typeof window === 'undefined') return []
   try {
-    const raw = localStorage.getItem(getKey(WISHLIST_PREFIX, userId))
-    return raw ? JSON.parse(raw) : []
+    const raw = localStorage.getItem(getKey(DRAFTS_PREFIX, userId))
+    if (raw) return JSON.parse(raw)
+    // Fallback: migrate old wishlist items if any
+    const wishlistRaw = localStorage.getItem(getKey(WISHLIST_PREFIX, userId))
+    return wishlistRaw ? JSON.parse(wishlistRaw) : []
   } catch {
     return []
   }
 }
 
-export function addToWishlist(userId, item) {
+export function saveDraft(userId, item) {
   if (typeof window === 'undefined') return []
-  const list = getWishlist(userId)
-  const exists = list.some((i) => String(i.productId) === String(item.productId))
-  if (!exists) {
-    list.push({
-      id: `${item.productId}_${Date.now()}`,
-      addedAt: new Date().toISOString(),
-      ...item,
-    })
-    safeSetStorage(getKey(WISHLIST_PREFIX, userId), list)
-    notifyCartWishlistChange()
-  }
-  return list
-}
+  const list = getDrafts(userId)
+  const draftId = item.id || `draft_${Date.now()}`
+  const existingIndex = list.findIndex((i) => String(i.id) === String(draftId))
 
-export function removeFromWishlist(userId, itemId) {
-  if (typeof window === 'undefined') return []
-  const list = getWishlist(userId).filter((i) => i.id !== itemId)
-  safeSetStorage(getKey(WISHLIST_PREFIX, userId), list)
+  const draftData = {
+    id: draftId,
+    title: item.title || item.name || 'Custom Studio Design Draft',
+    updatedAt: new Date().toISOString(),
+    image: item.image || item.previewImage || '/home/visiting-cards/card-stack.png',
+    previewImage: item.previewImage || item.image || '/home/visiting-cards/card-stack.png',
+    productId: item.productId || `custom_draft_${Date.now()}`,
+    templateId: item.templateId || null,
+    frontElements: item.frontElements || item.customDesign?.frontElements || [],
+    backElements: item.backElements || item.customDesign?.backElements || [],
+    frontBackground: item.frontBackground || item.customDesign?.frontBackground || '#ffffff',
+    backBackground: item.backBackground || item.customDesign?.backBackground || '#ffffff',
+    productOptions: item.productOptions || item.customDesign?.productOptions || {},
+    isBackCustomized: item.isBackCustomized ?? item.customDesign?.isBackCustomized ?? false,
+    size: item.size || item.productOptions?.size || '91.8mm x 53.8mm',
+    price: item.price || 0,
+    numericPrice: item.numericPrice || item.price || 0,
+  }
+
+  if (existingIndex > -1) {
+    list[existingIndex] = { ...list[existingIndex], ...draftData }
+  } else {
+    list.unshift(draftData)
+  }
+
+  safeSetStorage(getKey(DRAFTS_PREFIX, userId), list)
   notifyCartWishlistChange()
   return list
 }
 
-export function moveToCart(userId, item) {
-  if (typeof window === 'undefined') return
-  addToCart(userId, item)
-  removeFromWishlist(userId, item.id)
+export function removeFromDrafts(userId, draftId) {
+  if (typeof window === 'undefined') return []
+  const list = getDrafts(userId).filter((i) => String(i.id) !== String(draftId))
+  safeSetStorage(getKey(DRAFTS_PREFIX, userId), list)
+  notifyCartWishlistChange()
+  return list
 }
+
+export function clearDrafts(userId) {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem(getKey(DRAFTS_PREFIX, userId))
+  notifyCartWishlistChange()
+}
+
+export function moveToCartFromDraft(userId, item) {
+  if (typeof window === 'undefined') return
+  const cartItem = {
+    productId: item.productId || `custom_studio_${Date.now()}`,
+    title: item.title || 'Custom Studio Design',
+    price: item.price || item.numericPrice || 450,
+    numericPrice: item.numericPrice || item.price || 450,
+    qtyOption: (item.productOptions?.quantity || '250 cards').split(' -')[0],
+    quality: item.productOptions?.quality || item.productOptions?.stock || 'Standard Matte (300 gsm)',
+    style: item.productOptions?.style || (item.isBackCustomized ? 'Double Sided Custom Print' : 'Single Sided Custom Print'),
+    image: item.previewImage || item.image || '/home/visiting-cards/card-stack.png',
+    quantity: 1,
+    customDesign: {
+      frontElements: item.frontElements || [],
+      backElements: item.backElements || [],
+      frontBackground: item.frontBackground || '#ffffff',
+      backBackground: item.backBackground || '#ffffff',
+      productOptions: item.productOptions || {},
+      isBackCustomized: item.isBackCustomized || false,
+    }
+  }
+  addToCart(userId, cartItem)
+  removeFromDrafts(userId, item.id)
+}
+
+// WISHLIST LEGACY ALIASES
+export const getWishlist = getDrafts
+export const addToWishlist = saveDraft
+export const removeFromWishlist = removeFromDrafts
+export const moveToCart = moveToCartFromDraft
+
